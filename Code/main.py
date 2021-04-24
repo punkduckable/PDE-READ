@@ -4,7 +4,7 @@ from typing import Tuple;
 import matplotlib.pyplot as plt;
 
 from Network import Neural_Network, Collocation_Loss, Data_Loss;
-from Plotter import Update_Axes, Generate_Plot_Gridpoints, Setup_Axes;
+from Plotter import Update_Axes, Setup_Axes;
 from Setup_File_Reader import Setup_File_Reader, Setup_Data_Container;
 from Data_Loader import Data_Loader;
 
@@ -218,13 +218,10 @@ def main():
                     "Optimizer_State" : Optimizer.state_dict()},
                     Setup_Data.Save_File_Name);
 
-    exit();
-
     # Plot final results.
-    fig, Axes = Setup_Axes();
-    Plotting_Points = Generate_Plot_Gridpoints(50);
-    Update_Axes(fig, Axes, u_NN, Plotting_Points, 50);
-    plt.show();
+    #fig, Axes = Setup_Axes();
+    #Update_Axes(fig, Axes, u_NN, N_NN, Test_Data_Coords, Test_Data_Values);
+    #plt.show();
 
 
 if __name__ == '__main__':

@@ -78,6 +78,65 @@ class Neural_Network(torch.nn.Module):
 
 
 
+# Evaluate the PDE Network
+def PDE_Residual(u_NN : Neural_Network, N_NN : Neural_Network, xt : torch.Tensor) -> torch.Tensor:
+    """ This function evaluates the "residual" of the PDE at a given point.
+    For brevtiy, let u = u_NN, and N = N_NN. This function computes
+            du/dt - N(u, du/dx, d^2u/dx^2,... )
+    (which we call the residual) at the specified coodinate (x, t).
+
+    ----------------------------------------------------------------------------
+    Arguments:
+    u_NN : The neural network that approximates the solution.
+
+    N_NN : The neural network that approximates the PDE.
+
+    xt : A 2 element tensor containing coordinates. The first element should be
+    the x coordinate and the second should be the t coodinate.
+
+    ----------------------------------------------------------------------------
+    Returns :
+    A single element tensor containing the residual. """
+
+    # We need to compute the gradeint of u with respect to the x t
+    # coordinates.
+    xt.requires_grad_(True);
+
+    # Calculate approximate solution at this collocation point.
+    u = u_NN(xt)[0];
+
+    # Compute gradient of u with respect to xt. We have to create the graph
+    # used to compute grad_u so that we can evaluate second derivatives.
+    # We also need to set retain_graph to True (which is implicitly set by
+    # setting create_graph = True, though I keep it to make the code more
+    # explicit) so that torch keeps the computational graph for u, which we
+    # will need when we do backpropigation.
+    grad_u = torch.autograd.grad(u, xt, retain_graph = True, create_graph = True)[0];
+
+    # compute du/dx and du/dt. grad_u is a two element tensor. It's first
+    # element holds du/dx, and its second element holds du/dt.
+    du_dx = grad_u[0];
+    du_dt = grad_u[1];
+
+    # Now compute the gradients of du_dx with respect to xt. We
+    # need to create graphs for this so that torch can track this operation
+    # when constructing the computational graph for the loss function
+    # (which it will use in backpropigation). We also need to retain
+    # grad_u's graph for when we do backpropigation.
+    grad_du_dx = torch.autograd.grad(du_dx, xt, retain_graph = True, create_graph = True)[0];
+
+    # We want d^2u/dx^2, which should be the [0] element of grad_du_dx.
+    d2u_dx2 = grad_du_dx[0];
+
+    # Evaluate the learned operator N at this point.
+    N_u_ux_uxx = N_NN(torch.stack((u, du_dx, d2u_dx2)))[0];
+
+    # Now we're done. Return the tensor!
+    return du_dt - N_u_ux_uxx;
+
+
+
+
 # Loss from enforcing the PDE at the collocation points.
 def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_Coords : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well u_NN satisifies the learned PDE at the
@@ -108,43 +167,11 @@ def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_C
     # Now, initialize the loss and loop through the collocation points!
     Loss = torch.tensor(0, dtype = torch.float);
     for i in range(num_Collocation_Points):
+        # Get the coordinates of the ith collocation point.
         xt = Collocation_Coords[i];
 
-        # We need to compute the gradeint of u with respect to the x t
-        # coordinates.
-        xt.requires_grad_(True);
-
-        # Calculate approximate solution at this collocation point.
-        u = u_NN(xt)[0];
-
-        # Compute gradient of u with respect to xt. We have to create the graph
-        # used to compute grad_u so that we can evaluate second derivatives.
-        # We also need to set retain_graph to True (which is implicitly set by
-        # setting create_graph = True, though I keep it to make the code more
-        # explicit) so that torch keeps the computational graph for u, which we
-        # will need when we do backpropigation.
-        grad_u = torch.autograd.grad(u, xt, retain_graph = True, create_graph = True)[0];
-
-        # compute du/dx and du/dt. grad_u is a two element tensor. It's first
-        # element holds du/dx, and its second element holds du/dt.
-        du_dx = grad_u[0];
-        du_dt = grad_u[1];
-
-        # Now compute the gradients of du_dx with respect to xt. We
-        # need to create graphs for this so that torch can track this operation
-        # when constructing the computational graph for the loss function
-        # (which it will use in backpropigation). We also need to retain
-        # grad_u's graph for when we do backpropigation.
-        grad_du_dx = torch.autograd.grad(du_dx, xt, retain_graph = True, create_graph = True)[0];
-
-        # We want d^2u/dx^2, which should be the [0] element of grad_du_dx.
-        d2u_dx2 = grad_du_dx[0];
-
-        # Evaluate the learned operator N at this point.
-        N_u_ux_uxx = N_NN(torch.stack((u, du_dx, d2u_dx2)))[0];
-
-        # Evaluate the Learned PDE at this point.
-        Loss += (du_dt - N_u_ux_uxx) ** 2;
+        # Evaluate the Residual from the learned PDE at this point.
+        Loss += PDE_Residual(u_NN, N_NN, xt) ** 2;
 
     # Divide the accmulated loss by the number of collocation points to get
     # the mean square collocation loss.
