@@ -30,7 +30,7 @@ Load u Network State [bool] :                    False
 Load N Network State [bool] :                    False
 Load Optimizer State [bool] :                    False
   Load File Name [str] :                         Test_Save3
-Save State [Bool] :                              True
+Save State [Bool] :                              False
   Save File Name [str] :                         Test_Save3
 
 
@@ -51,12 +51,14 @@ N Network - Training Enabled [bool] :            True
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         200
+Number of Epochs [int] :                         1
 Learning Rate [float] :                          .0015
 
 
 
 ################################################################################
-# Data source
+# Data
 
 Data File Name [str] :                           burgers_sine.mat
+Number of Training Points [int] :                1000
+Number of Testing Points [int] :                 2000

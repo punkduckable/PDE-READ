@@ -104,7 +104,7 @@ def Testing_Loop(   u_NN : Neural_Network,
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
     Coloc_Loss : float = Collocation_Loss(u_NN = u_NN, N_NN = N_NN, Collocation_Coords = Collocation_Coords).item();
-    Data_loss : float = Boundary_Loss(u_NN = u_NN, Data_Coords = Data_Coords, Data_Values = Data_Values).item();
+    Data_loss : float = Data_Loss(u_NN = u_NN, Data_Coords = Data_Coords, Data_Values = Data_Values).item();
 
     # Return the losses.
     return (Coloc_Loss, Data_loss);
@@ -183,7 +183,7 @@ def main():
      Train_Data_Values,
      Test_Coloc_Coords,
      Test_Data_Coords,
-     Test_Data_Values) = Data_Loader("../" + Setup_Data.Data_File_Name);
+     Test_Data_Values) = Data_Loader("../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
 
     # Set up array to hold the testing losses.
     Collocation_Losses = np.empty((Epochs), dtype = np.float);
@@ -201,7 +201,7 @@ def main():
 
         (Collocation_Losses[t], Data_Losses[t]) = Testing_Loop( u_NN = u_NN,
                                                                 N_NN = N_NN,
-                                                                Collocation_Coords = Test_Coloc_Points,
+                                                                Collocation_Coords = Test_Coloc_Coords,
                                                                 Data_Coords = Test_Data_Coords,
                                                                 Data_Values = Test_Data_Values );
 
@@ -217,6 +217,8 @@ def main():
                     "N_Network_State" : N_NN.state_dict(),
                     "Optimizer_State" : Optimizer.state_dict()},
                     Setup_Data.Save_File_Name);
+
+    exit();
 
     # Plot final results.
     fig, Axes = Setup_Axes();

@@ -115,7 +115,7 @@ def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_C
         xt.requires_grad_(True);
 
         # Calculate approximate solution at this collocation point.
-        u = u_NN(xt);
+        u = u_NN(xt)[0];
 
         # Compute gradient of u with respect to xt. We have to create the graph
         # used to compute grad_u so that we can evaluate second derivatives.
@@ -141,7 +141,7 @@ def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_C
         d2u_dx2 = grad_du_dx[0];
 
         # Evaluate the learned operator N at this point.
-        N_u_ux_uxx = N_NN(u, u_x, u_xx);
+        N_u_ux_uxx = N_NN(torch.stack((u, du_dx, d2u_dx2)))[0];
 
         # Evaluate the Learned PDE at this point.
         Loss += (du_dt - N_u_ux_uxx) ** 2;
@@ -180,22 +180,22 @@ def Data_Loss(u_NN : Neural_Network, Data_Coords : torch.Tensor, Data_Values : t
     Mean Square Error between the learned solution and the true solution at
     the data points. """
 
-    num_Data_Points : int = Data_Coordinates.shape[0];
+    num_Data_Points : int = Data_Coords.shape[0];
 
     # Now, initialize the Loss and loop through the Boundary Points.
     Loss = torch.tensor(0, dtype = torch.float);
     for i in range(num_Data_Points):
-        xt = Boundary_Points[i];
+        xt = Data_Coords[i];
 
         # Compute learned solution at this Data point.
-        u_approx = u_NN(xt);
+        u_approx = u_NN(xt)[0];
 
         # Get exact solution at this data point.
         u_true = Data_Values[i];
 
         # Aggregate square of difference between the required BC and the learned
         # solution at this data point.
-        Loss += (u_appox - u_true)**2;
+        Loss += (u_approx - u_true)**2;
 
     # Divide the accmulated loss by the number of boundary points to get
     # the mean square boundary loss.
