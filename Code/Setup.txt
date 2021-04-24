@@ -1,0 +1,62 @@
+# Instructions:
+# This file controls the setup of the program. The file consists of comment
+#(lines that begin with '#') and setting lines. Each setting line consists of
+# a setting name, a data type, and a value. They use the following format:
+#         <Setting Name> [<data type>] : <value>
+# <value>'s data type must match <data type>. You can place any number of spaces
+# between the colon and <value> (the spacing doesn't matter, so long as
+# the setting is all on one line). Nothing can appear after <value> on a setting
+# line. You CAN NOT reorder the setting lines.
+#
+# The reader will ignore all blank lines, as well as any comment lines. Feel
+# free to add in blank lines/comments as you see fit, as they will not break the
+# reader.
+#
+# If you plan to load either network's, then the network Architecture settings
+# must be identical to those of the saved network. (same number of layers and
+# nodes per layer). Likewise, if you plan to load the optimizer state, then you
+# must use the same optimizer as the staved state. Further, if we Load the
+# Optimizer state, then Learning Rate hyper-parameters will be ignored.
+#
+# The Load/Save File Name, as well as the Data File Name can not contain spaces
+# The Data File Name should include the file's file extension.
+
+
+
+################################################################################
+# Save/Load parameters
+
+Load u Network State [bool] :                    False
+Load N Network State [bool] :                    False
+Load Optimizer State [bool] :                    False
+  Load File Name [str] :                         Test_Save3
+Save State [Bool] :                              True
+  Save File Name [str] :                         Test_Save3
+
+
+
+################################################################################
+# Network Architecture
+
+u Network - Number of Hidden Layers [int] :      5
+u Network - Nodes per Hidden Layer [int] :       20
+u Network - Training Enabled [bool] :            True
+
+N Network - Number of Hidden Layers [int] :      2
+N Network - Nodes per Hidden Layer [int] :       100
+N Network - Training Enabled [bool] :            True
+
+
+
+################################################################################
+# Learning hyper-parameters
+
+Number of Epochs [int] :                         200
+Learning Rate [float] :                          .0015
+
+
+
+################################################################################
+# Data source
+
+Data File Name [str] :                           burgers_sine.mat
