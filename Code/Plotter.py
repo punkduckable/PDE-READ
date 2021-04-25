@@ -8,7 +8,7 @@ from Network import Neural_Network, PDE_Residual;
 
 
 # Determine how well the network satisifies the PDE at a set of point.
-def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Coords : torch.Tensor) -> np.array:
+def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Point_Coords : torch.Tensor) -> np.array:
     """ For brevity, let u = u_NN and N = N_NN. At each coordinate, this
     function computes
                     du/dt - N(u, du_dx,... )
@@ -22,10 +22,10 @@ def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Coords : to
 
     N_NN : The Neural Network that approximates the PDE.
 
-    Coords : a tensor of coordinates of points where we want to evaluate the
-    residual This must be a N by 2 tensor, where N is the number of points. The
-    ith row of this tensor should contain the x,t coordinates of the ith point
-    where we want to evaluate the residual.
+    Point_Coords : a tensor of coordinates of points where we want to evaluate
+    the residual This must be a N by 2 tensor, where N is the number of points.
+    The ith row of this tensor should contain the x,t coordinates of the ith
+    point where we want to evaluate the residual.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -33,12 +33,12 @@ def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Coords : to
     element of points. """
 
     # First, determine the number of points and intiailize the residual array.
-    num_points : int = Coords.shape[0];
+    num_points : int = Point_Coords.shape[0];
     Residual = np.empty((num_points), dtype = np.float);
 
     for i in range(num_points):
         # Get the xy coordinate of the ith collocation point.
-        xt = Coords[i];
+        xt = Point_Coords[i];
 
         # Evaluate the Residual from the learned PDE at this point.
         Residual[i] = PDE_Residual(u_NN, N_NN, xt).item();
@@ -48,15 +48,15 @@ def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Coords : to
 
 
 # Evaluate solution at a set of points.
-def Evaluate_Approx_Sol(u_NN : Neural_Network, Coords : torch.Tensor) -> np.array:
+def Evaluate_Approx_Sol(u_NN : Neural_Network, Point_Coords : torch.Tensor) -> np.array:
     """ This function evaluates the approximate solution at each element of
-    Coords.
+    Point_Coords.
 
     ----------------------------------------------------------------------------
     Arguments:
     u_NN : the Neural Network that approximates solution to the learned PDE.
 
-    Coords : The set of points where we want to evaluate the approximate
+    Point_Coords : The set of points where we want to evaluate the approximate
     solution. This should be a Nx2 tensor of floats whose ith row holds the x,t
     coordinates of the ith point where we want to evaluate the approximate
     solution.
@@ -64,15 +64,16 @@ def Evaluate_Approx_Sol(u_NN : Neural_Network, Coords : torch.Tensor) -> np.arra
     ----------------------------------------------------------------------------
     Returns:
     A numpy array whose ith element is the value of u_NN at the ith element of
-    Coords. If Coords is a Nx2 tensor, then this is a N element numpy array. """
+    Point_Coords. If Point_Coords is a Nx2 tensor, then this is a N element
+    numpy array. """
 
     # Get number of points, initialize the u array.
-    num_Points : int = Coords.shape[0];
+    num_Points : int = Point_Coords.shape[0];
     u_NN_at_Points = np.empty((num_Points), dtype = np.float);
 
     # Loop through the points, evaluate the network at each one.
     for i in range(num_Points):
-        u_NN_at_Points[i] = u_NN.forward(Coords[i]).item();
+        u_NN_at_Points[i] = u_NN.forward(Point_Coords[i]).item();
 
     return u_NN_at_Points;
 
@@ -129,7 +130,13 @@ def Setup_Axes() -> Tuple[plt.figure, np.array]:
 
 
 # The plotting function!
-def Update_Axes(fig : plt.figure, Axes : np.ndarray, u_NN : Neural_Network, N_NN : Neural_Network, Coords : torch.Tensor, True_Sol_at_Points : np.array) -> None:
+def Update_Axes(fig                 : plt.figure,
+                Axes                : np.ndarray,
+                u_NN                : Neural_Network,
+                N_NN                : Neural_Network,
+                x_points            : np.array,
+                t_points            : np.array,
+                True_Sol_On_Grid    : np.array) -> None:
     """ This function plots the approximate solution and residual at the
     specified points.
 
@@ -145,38 +152,50 @@ def Update_Axes(fig : plt.figure, Axes : np.ndarray, u_NN : Neural_Network, N_NN
 
     N_NN : The Neural Network that approximates the PDE.
 
-    Coords : The coordinates of the points we want to evaluate the approximate
-    and true solutions, as well as the PDE Residual.
+    x_points, t_points : The set of possible x and t values, respectively. We
+    use this to construct the grid of points.
 
     True_Sol_at_Points : A numpy array containing the true solution at each
-    element of Coords. 
+    possible x, t coordinate.
 
     ----------------------------------------------------------------------------
     Returns:
     Nothing! """
 
-    # First, evaluate the network's approximate solution, the true solution, and
-    # the PDE residual at the specified Points. We need to reshape these into
-    # nxn grids, because that's what matplotlib's contour function wants. It's
-    # annoying, but it is what it is.
-    u_NN_at_Points      = Evaluate_Approx_Sol(u_NN, Coords).reshape(n,n);
-    Residual_at_Points  = Evaluate_Residuals(u_NN, N_NN, Coords).reshape(n,n);
+    # First, construct the set of possible coordinates.
+    # You may wonder why we do this again, when we did it in the data loader.
+    # The answer is memory. There are a lot of coordinates, and storing them
+    # in memory is wasteful. We really only need these coordinates when loading
+    # the data, and when plotting. Thus, we recreate the grid points here. Sure,
+    # this means we do the same computations twice, but we only run them twice,
+    # so they won't tank overall performance.
+    grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
 
-    # Extract the x and y coordinates of points, as np arrays. We also need to
-    # reshape these as nxn grids (same reason as above.
-    x = Points[:, 0].numpy().reshape(n,n);
-    y = Points[:, 1].numpy().reshape(n,n);
+    # Flatten t_coods, x_coords. use them to generate grid point coodinates.
+    flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
+    flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
+    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_x_coords, flattened_grid_t_coords))).float();
+
+    # Get number of possible x and t values, respectively.
+    n_x = len(x_points);
+    n_t = len(t_points);
+
+    # Evaluate the network's approximate solution and the PDE residual at the
+    # specified Points. We need to reshape these into n_x by n_t grids, because
+    # that's what matplotlib's contour function wants.
+    u_NN_on_Grid      = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
+    Residual_on_Grid  = Evaluate_Residuals(u_NN, N_NN, Grid_Point_Coords).reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
-    ColorMap0 = Axes[0].contourf(x, y, u_NN_at_Points.reshape(n,n), levels = 50, cmap = plt.cm.jet);
+    ColorMap0 = Axes[0].contourf(grid_x_coords, grid_t_coords, u_NN_on_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the true solution + colorbar
-    ColorMap1 = Axes[1].contourf(x, y, True_Sol_at_Points.reshape(n,n), levels = 50, cmap = plt.cm.jet);
+    ColorMap1 = Axes[1].contourf(grid_x_coords, grid_t_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the residual + colorbar
-    ColorMap2 = Axes[2].contourf(x, y, Residual_at_Points.reshape(n,n), levels = 50, cmap = plt.cm.jet);
+    ColorMap2 = Axes[2].contourf(grid_x_coords, grid_t_coords, Residual_on_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap2, ax = Axes[2], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Set tight layout (to prevent overlapping... I have no idea why this isn't

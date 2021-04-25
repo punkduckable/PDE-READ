@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt;
 from Network import Neural_Network, Collocation_Loss, Data_Loss;
 from Plotter import Update_Axes, Setup_Axes;
 from Setup_File_Reader import Setup_File_Reader, Setup_Data_Container;
-from Data_Loader import Data_Loader;
+from Data_Loader import Data_Loader, Data_Container;
 
 
 
@@ -141,16 +141,16 @@ def main():
 
 
     # Set up the neural network to approximate the PDE solution.
-    u_NN = Neural_Network(  Num_Hidden_Layers = Setup_Data.u_Num_Hidden_Layers,
-                            Nodes_Per_Layer = Setup_Data.u_Nodes_Per_Layer,
-                            Input_Dim = 2,
-                            Output_Dim = 1);
+    u_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.u_Num_Hidden_Layers,
+                            Nodes_Per_Layer     = Setup_Data.u_Nodes_Per_Layer,
+                            Input_Dim           = 2,
+                            Output_Dim          = 1);
 
     # Set up the neural network to approximate the PDE operator N.
-    N_NN = Neural_Network(  Num_Hidden_Layers = Setup_Data.N_Num_Hidden_Layers,
-                            Nodes_Per_Layer = Setup_Data.N_Nodes_Per_Layer,
-                            Input_Dim = 3,
-                            Output_Dim = 1);
+    N_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.N_Num_Hidden_Layers,
+                            Nodes_Per_Layer     = Setup_Data.N_Nodes_Per_Layer,
+                            Input_Dim           = 3,
+                            Output_Dim          = 1);
 
     # Pick an optimizer.
     Optimizer = torch.optim.Adam(list(u_NN.parameters()) + list(N_NN.parameters()), lr = Learning_Rate);
@@ -178,12 +178,7 @@ def main():
             Optimizer.load_state_dict(Checkpoint["Optimizer_State"]);
 
     # Set up training and training collocation/boundary points.
-    (Train_Coloc_Coords,
-     Train_Data_Coords,
-     Train_Data_Values,
-     Test_Coloc_Coords,
-     Test_Data_Coords,
-     Test_Data_Values) = Data_Loader("../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
+    Container = Data_Loader("../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
 
     # Set up array to hold the testing losses.
     Collocation_Losses = np.empty((Epochs), dtype = np.float);
@@ -192,24 +187,24 @@ def main():
     # Loop through the epochs.
     for t in range(Epochs):
         # Run training, testing for this epoch. Log the losses.
-        Training_Loop(  u_NN = u_NN,
-                        N_NN = N_NN,
-                        Collocation_Coords = Train_Coloc_Coords,
-                        Data_Coords = Train_Data_Coords,
-                        Data_Values = Train_Data_Values,
-                        Optimizer = Optimizer);
+        Training_Loop(  u_NN                = u_NN,
+                        N_NN                = N_NN,
+                        Collocation_Coords  = Container.Train_Coloc_Coords,
+                        Data_Coords         = Container.Train_Data_Coords,
+                        Data_Values         = Container.Train_Data_Values,
+                        Optimizer           = Optimizer);
 
-        (Collocation_Losses[t], Data_Losses[t]) = Testing_Loop( u_NN = u_NN,
-                                                                N_NN = N_NN,
-                                                                Collocation_Coords = Test_Coloc_Coords,
-                                                                Data_Coords = Test_Data_Coords,
-                                                                Data_Values = Test_Data_Values );
+        (Collocation_Losses[t], Data_Losses[t]) = Testing_Loop( u_NN                = u_NN,
+                                                                N_NN                = N_NN,
+                                                                Collocation_Coords  = Container.Test_Coloc_Coords,
+                                                                Data_Coords         = Container.Test_Data_Coords,
+                                                                Data_Values         = Container.Test_Data_Values );
 
         # Print losses.
-        print(("Epoch #%-4d: " % t), end = '');
-        print(("\tCollocation Loss = %7f" % Collocation_Losses[t]), end = '');
-        print((",\t Data Loss = %7f" % Data_Losses[t]), end = '');
-        print((",\t Total Loss = %7f" % (Collocation_Losses[t] + Data_Losses[t])));
+        print(("Epoch #%-4d: "              % t)                    , end = '');
+        print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
+        print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
+        print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
 
     # Save the network and optimizer states!
     if(Setup_Data.Save_To_File == True):
@@ -218,10 +213,17 @@ def main():
                     "Optimizer_State" : Optimizer.state_dict()},
                     Setup_Data.Save_File_Name);
 
-    # Plot final results.
-    #fig, Axes = Setup_Axes();
-    #Update_Axes(fig, Axes, u_NN, N_NN, Test_Data_Coords, Test_Data_Values);
-    #plt.show();
+    # Plot final results (if we should)
+    if(Setup_Data.Plot_Final_Results == True):
+        fig, Axes = Setup_Axes();
+        Update_Axes(fig                 = fig,
+                    Axes                = Axes,
+                    u_NN                = u_NN,
+                    N_NN                = N_NN,
+                    x_points            = Container.x_points,
+                    t_points            = Container.t_points,
+                    True_Sol_On_Grid    = Container.True_Sol_On_Grid);
+        plt.show();
 
 
 if __name__ == '__main__':

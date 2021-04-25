@@ -24,14 +24,17 @@
 
 
 ################################################################################
-# Save/Load parameters
+# General Settings
 
 Load u Network State [bool] :                    False
 Load N Network State [bool] :                    False
 Load Optimizer State [bool] :                    False
   Load File Name [str] :                         Test_Save3
+
 Save State [Bool] :                              False
   Save File Name [str] :                         Test_Save3
+
+Plot Final Result [bool] :                       True
 
 
 

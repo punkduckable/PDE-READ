@@ -147,7 +147,7 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
 
     ############################################################################
-    # Save/Load options.
+    # General Settings
 
     # Load u network state from File?
     Buffer = Read_Line_After(File, "Load u Network State [bool] :").strip();
@@ -177,6 +177,7 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
         Setup_Data.Load_File_Name = Read_Line_After(File, "Load File Name [str] :").strip();
 
+
     # Save to file?
     Buffer = Read_Line_After(File, "Save State [bool] :").strip();
     if(Buffer[0] == 'T' or Buffer[0] == 't'):
@@ -187,6 +188,14 @@ def Setup_File_Reader() -> Setup_Data_Container:
     # If so, get save file name.
     if(Setup_Data.Save_To_File == True):
         Setup_Data.Save_File_Name = Read_Line_After(File, "Save File Name [str] :").strip();
+
+
+    # Should we plot the final results?
+    Buffer = Read_Line_After(File, "Plot Final Result [bool] :").strip();
+    if(Buffer[0] == 'T' or Buffer[0] == 't'):
+        Setup_Data.Plot_Final_Results = True;
+    else:
+        Setup_Data.Plot_Final_Results = False;
 
 
 
