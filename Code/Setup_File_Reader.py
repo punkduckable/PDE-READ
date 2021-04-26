@@ -205,20 +205,16 @@ def Setup_File_Reader() -> Setup_Data_Container:
     # Load u's network Architecture
     Setup_Data.u_Num_Hidden_Layers = int(Read_Line_After(File, "u Network - Number of Hidden Layers [int] :").strip());
     Setup_Data.u_Nodes_Per_Layer = int(Read_Line_After(File, "u Network - Nodes per Hidden Layer [int] :").strip());
-    Buffer = Read_Line_After(File, "u Network - Training Enabled [bool] :");
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Setup_Data.u_Training_Enabled = True;
-    else:
-        Setup_Data.u_Training_Enabled = False;
 
     # Load N's network Architecture
+    Setup_Data.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - Number u derivatives [int] :").strip());
     Setup_Data.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
     Setup_Data.N_Nodes_Per_Layer = int(Read_Line_After(File, "N Network - Nodes per Hidden Layer [int] :").strip());
-    Buffer = Read_Line_After(File, "N Network - Training Enabled [bool] :");
+    Buffer = Read_Line_After(File, "N Network - Learning Enabled [bool] :");
     if(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Setup_Data.N_Training_Enabled = True;
+        Setup_Data.N_Learning_Enabled = True;
     else:
-        Setup_Data.N_Training_Enabled = False;
+        Setup_Data.N_Learning_Enabled = False;
 
 
 

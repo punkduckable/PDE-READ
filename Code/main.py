@@ -124,21 +124,54 @@ def Testing_Loop(   u_NN : Neural_Network,
 
 
 
+def Setup_Optimizer(    u_NN : Neural_Network,
+                        N_NN : Neural_Network,
+                        N_Learning_Enabled : bool,
+                        Learning_Rate : float) -> torch.optim.Optimizer:
+    """ This function sets up the optimizer depending on if the N Network has
+    learning enabled or not. It also disables gradients for all network
+    parameters that are not being learned.
 
-# main function!
+    ----------------------------------------------------------------------------
+    Arguments :
+
+    u_NN : The neural network that approximates the solution.
+
+    N_NN : The neural network that approximates the PDE.
+
+    N_Learning_Enabled : True if we want to learn N. False otherwise.
+
+    Learning_Rate : the desired learning rate.
+
+    ----------------------------------------------------------------------------
+    Returns:
+    The optimizer! """
+
+    # If N_NN has learning learning enabled, then we need to pass u_NN and
+    # N_NN's parameters to the Optimizer.
+    if(N_Learning_Enabled == True):
+        return torch.optim.Adam(list(u_NN.parameters()) + list(N_NN.parameters()), lr = Learning_Rate);
+    else:
+        # If not, then disable gradients for N_NN.
+        N_NN.requires_grad_(False);
+
+        # Now setup the optimizer using only u_NN's parameters.
+        return torch.optim.Adam(u_NN.parameters(), lr = Learning_Rate);
+
+
+
 def main():
     # Load setup data from the setup file.
     Setup_Data = Setup_File_Reader();
 
     # Test that we got the correct input.
-    print("Training PINN with the following parameters:")
+    print("Training PINN with the following settings:")
     for item in Setup_Data.__dict__.items():
         print(item);
 
     # Initialize Network hyperparameters.
     Epochs        : int   = Setup_Data.Epochs;
     Learning_Rate : float = Setup_Data.Learning_Rate;
-
 
     # Set up the neural network to approximate the PDE solution.
     u_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.u_Num_Hidden_Layers,
@@ -149,16 +182,19 @@ def main():
     # Set up the neural network to approximate the PDE operator N.
     N_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.N_Num_Hidden_Layers,
                             Nodes_Per_Layer     = Setup_Data.N_Nodes_Per_Layer,
-                            Input_Dim           = 3,
+                            Input_Dim           = Setup_Data.N_Num_u_derivatives + 1,
                             Output_Dim          = 1);
 
-    # Pick an optimizer.
-    Optimizer = torch.optim.Adam(list(u_NN.parameters()) + list(N_NN.parameters()), lr = Learning_Rate);
+    # Select the optimizer.
+    Optimizer = Setup_Optimizer(u_NN = u_NN,
+                                N_NN = N_NN,
+                                N_Learning_Enabled = Setup_Data.N_Learning_Enabled,
+                                Learning_Rate = Learning_Rate );
 
-    # If we're loading from file, load in the store network's parameters.
+    # Check if we're loading anything from file.
     if(     Setup_Data.Load_u_Network_State == True or
             Setup_Data.Load_N_Network_State == True or
-            Setup_Data.Load_Optimize_State  == True ):
+            Setup_Data.Load_Optimize_State  == True):
 
         # Load the saved checkpoint.
         Checkpoint = torch.load(Setup_Data.Load_File_Name);
@@ -171,10 +207,10 @@ def main():
             N_NN.load_state_dict(Checkpoint["N_Network_State"]);
             N_NN.train();
 
-        # Note that this will overwrite the specified Learning Rate using the
+        # Note that this will overwrite the Learning Rate using the
         # Learning rate in the saved state. Thus, if this is set to true, then
         # we essentially ignore the learning rate in the setup file.
-        if(Setup_Data.Load_Optimize_State == True):
+        if(Setup_Data.Load_Optimize_State  == True):
             Optimizer.load_state_dict(Checkpoint["Optimizer_State"]);
 
     # Set up training and training collocation/boundary points.
