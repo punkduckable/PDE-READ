@@ -52,7 +52,7 @@ def Training_Loop(  u_NN : Neural_Network,
     num_Collocation_Points : int = Collocation_Coords.shape[0];
     num_Data_Points        : int = Data_Coords.shape[0];
 
-    # Zero out the gradients in the neural network.
+    # Zero out the gradients in the neural networks.
     Optimizer.zero_grad();
 
     # Evaluate the Loss (Note, we enforce a BC of 0)
@@ -165,7 +165,7 @@ def main():
     Setup_Data = Setup_File_Reader();
 
     # Test that we got the correct input.
-    print("Training PINN with the following settings:")
+    print("Training PINN with the following settings:");
     for item in Setup_Data.__dict__.items():
         print(item);
 
@@ -184,6 +184,7 @@ def main():
                             Nodes_Per_Layer     = Setup_Data.N_Nodes_Per_Layer,
                             Input_Dim           = Setup_Data.N_Num_u_derivatives + 1,
                             Output_Dim          = 1);
+
 
     # Select the optimizer.
     Optimizer = Setup_Optimizer(u_NN = u_NN,
@@ -222,6 +223,7 @@ def main():
 
     # Loop through the epochs.
     for t in range(Epochs):
+
         # Run training, testing for this epoch. Log the losses.
         Training_Loop(  u_NN                = u_NN,
                         N_NN                = N_NN,

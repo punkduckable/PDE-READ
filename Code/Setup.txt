@@ -36,7 +36,7 @@ Load Optimizer State [bool] :                    False
   Load File Name [str] :                         Test_Save
 
 Save State [Bool] :                              True
-  Save File Name [str] :                         Test_Save
+  Save File Name [str] :                         Burgers_Save
 
 Plot Final Result [bool] :                       True
 

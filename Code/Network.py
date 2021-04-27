@@ -117,12 +117,12 @@ def PDE_Residual(u_NN : Neural_Network, N_NN : Neural_Network, xt : torch.Tensor
     # setting create_graph = True, though I keep it to make the code more
     # explicit) so that torch keeps the computational graph for u, which we
     # will need when we do backpropigation.
-    grad_u_new = torch.autograd.grad(u_derivatives[0], xt, retain_graph = True, create_graph = True)[0];
+    grad_u = torch.autograd.grad(u_derivatives[0], xt, retain_graph = True, create_graph = True)[0];
 
     # compute du/dx and du/dt. grad_u is a two element tensor. It's 0 element
     # holds du/dx, and its 1 element holds du/dt.
-    u_derivatives[1] = grad_u_new[0];
-    du_dt = grad_u_new[1];
+    u_derivatives[1] = grad_u[0];
+    du_dt = grad_u[1];
 
     # Compute higher order derivatives
     for i in range(2, n):
