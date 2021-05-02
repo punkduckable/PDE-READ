@@ -11,11 +11,15 @@
 # The reader will ignore all blank lines, as well as any comment lines. Feel
 # free to add in blank lines/comments as you see fit, as they will not break the
 # reader.
-#
-# If you plan to load either network's, then the network Architecture settings
-# must be identical to those of the saved network. (same number of layers and
-# nodes per layer). Further, if we Load the Optimizer state, then Learning Rate
-# hyper-parameters will be ignored.
+
+
+
+################################################################################
+# General Settings
+# If you plan to load the state of either network, then the network
+# Architecture settings must match those of the saved network. (same number of
+# layers and nodes per layer). Further, if we Load the Optimizer state, then
+# Learning Rate hyper-parameters will be ignored.
 #
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
 # The Data File Name should include the file's file extension.
@@ -26,16 +30,12 @@
 # enabled for the N Network here too (otherwise the code WILL break).
 
 
-
-################################################################################
-# General Settings
-
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    True
   Load File Name [str] :                         Burgers_Save
 
-Save State [Bool] :                              False
+Save State [Bool] :                              True
   Save File Name [str] :                         Burgers_Save
 
 Plot Final Result [bool] :                       True
@@ -58,7 +58,7 @@ N Network - Learning Enabled [bool] :            True
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         0
+Number of Epochs [int] :                         100
 Learning Rate [float] :                          .0015
 
 
