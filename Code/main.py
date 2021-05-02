@@ -198,24 +198,25 @@ def main():
             Setup_Data.Load_Optimize_State  == True):
 
         # Load the saved checkpoint.
-        Checkpoint = torch.load(Setup_Data.Load_File_Name);
+        Load_File_Path : str = "../Saves/" + Setup_Data.Load_File_Name;
+        Saved_State = torch.load(Load_File_Path);
 
         if(Setup_Data.Load_u_Network_State == True):
-            u_NN.load_state_dict(Checkpoint["u_Network_State"]);
+            u_NN.load_state_dict(Saved_State["u_Network_State"]);
             u_NN.train();
 
         if(Setup_Data.Load_N_Network_State == True):
-            N_NN.load_state_dict(Checkpoint["N_Network_State"]);
+            N_NN.load_state_dict(Saved_State["N_Network_State"]);
             N_NN.train();
 
         # Note that this will overwrite the Learning Rate using the
         # Learning rate in the saved state. Thus, if this is set to true, then
         # we essentially ignore the learning rate in the setup file.
         if(Setup_Data.Load_Optimize_State  == True):
-            Optimizer.load_state_dict(Checkpoint["Optimizer_State"]);
+            Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
     # Set up training and training collocation/boundary points.
-    Container = Data_Loader("../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
+    Data_Container = Data_Loader("../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
 
     # Set up array to hold the testing losses.
     Collocation_Losses = np.empty((Epochs), dtype = np.float);
@@ -227,16 +228,16 @@ def main():
         # Run training, testing for this epoch. Log the losses.
         Training_Loop(  u_NN                = u_NN,
                         N_NN                = N_NN,
-                        Collocation_Coords  = Container.Train_Coloc_Coords,
-                        Data_Coords         = Container.Train_Data_Coords,
-                        Data_Values         = Container.Train_Data_Values,
+                        Collocation_Coords  = Data_Container.Train_Coloc_Coords,
+                        Data_Coords         = Data_Container.Train_Data_Coords,
+                        Data_Values         = Data_Container.Train_Data_Values,
                         Optimizer           = Optimizer);
 
         (Collocation_Losses[t], Data_Losses[t]) = Testing_Loop( u_NN                = u_NN,
                                                                 N_NN                = N_NN,
-                                                                Collocation_Coords  = Container.Test_Coloc_Coords,
-                                                                Data_Coords         = Container.Test_Data_Coords,
-                                                                Data_Values         = Container.Test_Data_Values );
+                                                                Collocation_Coords  = Data_Container.Test_Coloc_Coords,
+                                                                Data_Coords         = Data_Container.Test_Data_Coords,
+                                                                Data_Values         = Data_Container.Test_Data_Values );
 
         # Print losses.
         print(("Epoch #%-4d: "              % t)                    , end = '');
@@ -246,10 +247,11 @@ def main():
 
     # Save the network and optimizer states!
     if(Setup_Data.Save_To_File == True):
+        Save_File_Path : str = "../Saves/" + Setup_Data.Save_File_Name;
         torch.save({"u_Network_State" : u_NN.state_dict(),
                     "N_Network_State" : N_NN.state_dict(),
                     "Optimizer_State" : Optimizer.state_dict()},
-                    Setup_Data.Save_File_Name);
+                    Save_File_Path);
 
     # Plot final results (if we should)
     if(Setup_Data.Plot_Final_Results == True):
@@ -258,9 +260,9 @@ def main():
                     Axes                = Axes,
                     u_NN                = u_NN,
                     N_NN                = N_NN,
-                    x_points            = Container.x_points,
-                    t_points            = Container.t_points,
-                    True_Sol_On_Grid    = Container.True_Sol_On_Grid);
+                    x_points            = Data_Container.x_points,
+                    t_points            = Data_Container.t_points,
+                    True_Sol_On_Grid    = Data_Container.True_Sol_On_Grid);
         plt.show();
 
 

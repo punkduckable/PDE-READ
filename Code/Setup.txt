@@ -30,12 +30,12 @@
 ################################################################################
 # General Settings
 
-Load u Network State [bool] :                    False
-Load N Network State [bool] :                    False
-Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Test_Save
+Load u Network State [bool] :                    True
+Load N Network State [bool] :                    True
+Load Optimizer State [bool] :                    True
+  Load File Name [str] :                         Burgers_Save
 
-Save State [Bool] :                              True
+Save State [Bool] :                              False
   Save File Name [str] :                         Burgers_Save
 
 Plot Final Result [bool] :                       True
@@ -58,7 +58,7 @@ N Network - Learning Enabled [bool] :            True
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         100
+Number of Epochs [int] :                         0
 Learning Rate [float] :                          .0015
 
 

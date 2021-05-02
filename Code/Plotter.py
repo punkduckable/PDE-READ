@@ -95,34 +95,37 @@ def Setup_Axes() -> Tuple[plt.figure, np.array]:
     a numpy array of axes objects (to be passed to Update_Axes). """
 
     # Set up the figure object.
-    fig = plt.figure(figsize = (12, 4));
+    fig = plt.figure(figsize = (9, 7));
 
     # Approx solution subplot.
-    Axes1 = fig.add_subplot(1, 3, 1);
+    Axes1 = fig.add_subplot(2, 2, 1);
     Axes1.set_title("Neural Network Approximation");
 
     # True solution subplot
-    Axes2 = fig.add_subplot(1, 3, 2);
+    Axes2 = fig.add_subplot(2, 2, 2);
     Axes2.set_title("True Solution");
 
+    # Difference between True and Approx solution
+    Axes3 = fig.add_subplot(2, 2, 3);
+    Axes3.set_title("Absolute Error");
+
     # Residual subplot.
-    Axes3 = fig.add_subplot(1, 3, 3);
-    Axes3.set_title("PDE Residual");
+    Axes4 = fig.add_subplot(2, 2, 4);
+    Axes4.set_title("PDE Residual");
 
     # Package axes objects into an array.
-    Axes = np.array([Axes1, Axes2, Axes3]);
+    Axes = np.array([Axes1, Axes2, Axes3, Axes4]);
 
     # Set settings that are the same for each Axes object.
-    # The domain of each Axes object is the unit (2) square, and it's aspect
-    # ratio should be equal. I set these parameters in a loop so that I only
-    # have to type them once, thereby improving code maintainability.
-    for i in range(3):
+    # I set these parameters in a loop so that I only have to type them once,
+    # thereby improving code maintainability.
+    for i in range(4):
         # Set x, y bounds
         Axes[i].set_xbound(0., 1.);
         Axes[i].set_ybound(0., 1.);
 
         # Force python to produce a square plot.
-        Axes[i].set_aspect('equal', adjustable = 'datalim');
+        Axes[i].set_aspect('auto', adjustable = 'datalim');
         Axes[i].set_box_aspect(1.);
 
     return (fig, Axes);
@@ -180,10 +183,12 @@ def Update_Axes(fig                 : plt.figure,
     n_x = len(x_points);
     n_t = len(t_points);
 
-    # Evaluate the network's approximate solution and the PDE residual at the
+    # Evaluate the network's approximate solution, the difference between the
+    # true and approximate solutions, and the PDE residual at the
     # specified Points. We need to reshape these into n_x by n_t grids, because
     # that's what matplotlib's contour function wants.
     u_NN_on_Grid      = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
+    Error_On_Grid     = np.abs(u_NN_on_Grid - True_Sol_On_Grid);
     Residual_on_Grid  = Evaluate_Residuals(u_NN, N_NN, Grid_Point_Coords).reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
@@ -194,9 +199,13 @@ def Update_Axes(fig                 : plt.figure,
     ColorMap1 = Axes[1].contourf(grid_x_coords, grid_t_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
-    # Plot the residual + colorbar
-    ColorMap2 = Axes[2].contourf(grid_x_coords, grid_t_coords, Residual_on_Grid, levels = 50, cmap = plt.cm.jet);
+    # Plot the Error between the true and approximate solution + colorbar.
+    ColorMap2 = Axes[2].contourf(grid_x_coords, grid_t_coords, Error_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap2, ax = Axes[2], fraction=0.046, pad=0.04, orientation='vertical');
+
+    # Plot the residual + colorbar
+    ColorMap3 = Axes[3].contourf(grid_x_coords, grid_t_coords, Residual_on_Grid, levels = 50, cmap = plt.cm.jet);
+    fig.colorbar(ColorMap3, ax = Axes[3], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Set tight layout (to prevent overlapping... I have no idea why this isn't
     # a default setting. Matplotlib, you are special kind of awful).
