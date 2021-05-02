@@ -166,13 +166,16 @@ def Update_Axes(fig                 : plt.figure,
     Nothing! """
 
     # First, construct the set of possible coordinates.
+    # grid_t_coords and grid_x_coords are 2d numpy arrays. Each row of these
+    # arrays corresponds to a specific position. Each column corresponds to a
+    # specific time.
+    grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
     # You may wonder why we do this again, when we did it in the data loader.
     # The answer is memory. There are a lot of coordinates, and storing them
     # in memory is wasteful. We really only need these coordinates when loading
     # the data, and when plotting. Thus, we recreate the grid points here. Sure,
     # this means we do the same computations twice, but we only run them twice,
     # so they won't tank overall performance.
-    grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
 
     # Flatten t_coods, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
@@ -192,19 +195,19 @@ def Update_Axes(fig                 : plt.figure,
     Residual_on_Grid  = Evaluate_Residuals(u_NN, N_NN, Grid_Point_Coords).reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
-    ColorMap0 = Axes[0].contourf(grid_x_coords, grid_t_coords, u_NN_on_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, u_NN_on_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the true solution + colorbar
-    ColorMap1 = Axes[1].contourf(grid_x_coords, grid_t_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap1 = Axes[1].contourf(grid_t_coords, grid_x_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the Error between the true and approximate solution + colorbar.
-    ColorMap2 = Axes[2].contourf(grid_x_coords, grid_t_coords, Error_On_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap2 = Axes[2].contourf(grid_t_coords, grid_x_coords, Error_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap2, ax = Axes[2], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the residual + colorbar
-    ColorMap3 = Axes[3].contourf(grid_x_coords, grid_t_coords, Residual_on_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap3 = Axes[3].contourf(grid_t_coords, grid_x_coords, Residual_on_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap3, ax = Axes[3], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Set tight layout (to prevent overlapping... I have no idea why this isn't
