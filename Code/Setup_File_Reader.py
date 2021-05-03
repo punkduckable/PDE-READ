@@ -151,24 +151,30 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
     # Load u network state from File?
     Buffer = Read_Line_After(File, "Load u Network State [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
+    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
         Setup_Data.Load_u_Network_State = True;
-    else:
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Setup_Data.Load_u_Network_State = False;
+    else:
+        raise Read_Error("\"Load u Network State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # Load N network state from File?
     Buffer = Read_Line_After(File, "Load N Network State [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
+    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
         Setup_Data.Load_N_Network_State = True;
-    else:
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Setup_Data.Load_N_Network_State = False;
+    else:
+        raise Read_Error("\"Load N Network State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # Load optimizer state from file?
     Buffer = Read_Line_After(File, "Load Optimizer State [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
+    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
         Setup_Data.Load_Optimize_State = True;
-    else:
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Setup_Data.Load_Optimize_State = False;
+    else:
+        raise Read_Error("\"Load Optimizer State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # If we are loading anything, get load file name.
     if(     Setup_Data.Load_u_Network_State == True or
@@ -182,8 +188,10 @@ def Setup_File_Reader() -> Setup_Data_Container:
     Buffer = Read_Line_After(File, "Save State [bool] :").strip();
     if(Buffer[0] == 'T' or Buffer[0] == 't'):
         Setup_Data.Save_To_File = True;
-    else:
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Setup_Data.Save_To_File = False;
+    else:
+        raise Read_Error("\"Save State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # If so, get save file name.
     if(Setup_Data.Save_To_File == True):
@@ -192,10 +200,31 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
     # Should we plot the final results?
     Buffer = Read_Line_After(File, "Plot Final Result [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
+    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
         Setup_Data.Plot_Final_Results = True;
-    else:
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Setup_Data.Plot_Final_Results = False;
+    else:
+        raise Read_Error("\"Plot Final Result\" should be \"True\" or \"False\". Got " + Buffer);
+
+
+
+    ############################################################################
+    # PINNS or PDE Discovery mode
+
+    # PDE Discovery or PINNs mode?
+    Buffer = Read_Line_After(File, "Discovery or PINNs mode [str] :").strip();
+    if  (Buffer[0] == 'P' or Buffer[0] == 'p'):
+        Setup_Data.Mode = "PINNs";
+    elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
+        Setup_Data.Mode = "Discovery";
+    else:
+        raise Read_Error("\"Discovery or PINNs mode\" should be \"PINNs\" or \"Discovery\". Got " + Buffer);
+
+    # If we'e in PINNs mode, then we need to know how many Periodic BCs to
+    # impose.
+    if(Setup_Data.Mode == "PINNs"):
+        Setup_Data.Periodic_BCs_Highest_Order = int(Read_Line_After(File, "Periodic BCs highest order [int] :").strip());
 
 
 
@@ -210,11 +239,6 @@ def Setup_File_Reader() -> Setup_Data_Container:
     Setup_Data.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - Number u derivatives [int] :").strip());
     Setup_Data.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
     Setup_Data.N_Nodes_Per_Layer = int(Read_Line_After(File, "N Network - Nodes per Hidden Layer [int] :").strip());
-    Buffer = Read_Line_After(File, "N Network - Learning Enabled [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Setup_Data.N_Learning_Enabled = True;
-    else:
-        Setup_Data.N_Learning_Enabled = False;
 
 
 

@@ -10,14 +10,15 @@ from Data_Loader import Data_Loader, Data_Container;
 
 
 
-def Training_Loop(  u_NN : Neural_Network,
-                    N_NN : Neural_Network,
-                    Collocation_Coords : torch.Tensor,
-                    Data_Coords : torch.Tensor,
-                    Data_Values : torch.Tensor,
-                    Optimizer : torch.optim.Optimizer) -> None:
-    """ This loop runs one epoch of training for the neural network. In
-    particular, we enforce the leaned PDE at the Collocation_Points, and the
+def Discovery_Training(
+        u_NN                : Neural_Network,
+        N_NN                : Neural_Network,
+        Collocation_Coords  : torch.Tensor,
+        Data_Coords         : torch.Tensor,
+        Data_Values         : torch.Tensor,
+        Optimizer           : torch.optim.Optimizer) -> None:
+    """ This function runs one epoch of training when in "Discovery" mode. In
+    this mode, we enforce the leaned PDE at the Collocation_Points, and the
     Data_Values at the Data_Points.
 
     ----------------------------------------------------------------------------
@@ -27,20 +28,17 @@ def Training_Loop(  u_NN : Neural_Network,
     N_NN : Neural network that approximates the PDE.
 
     Collocation_Coords : the collocation points at which we enforce the learned
-    PDE. Futher, these should be DISTINCT from the points we test the network at.
-    This should be an Nx2 tensor of floats, where N is the number of collocation
-    points. The ith row of this tensor should be the coordinates of the ith
-    collocation point.
+    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
+    coordinates of the ith collocation point.
 
     Data_Coords : A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. This should be a Mx2
-    tensor of floats, where M is the number of data points. The ith row of this
-    tensor should hold the coordinates of the ith data point.
+    compare the approximate solution to the true one. This should be a 2 column
+    tensor whose ith row holds the x,t coordinates of the ith data point.
 
     Data_Values : A tensor holding the value of the true solution at the data
-    points. If there are M data points, then this should be an M element
-    tensor. The ith element of this tensor should hold the value of the true
-    solution at the ith data point.
+    points. If Data_Coords has N rows, then this should be an N element tensor
+    of floats whose ith element holds the value of the true solution at the ith
+    data point.
 
     optimizer : the optimizer we use to train u_NN and N_NN. It should be
     loaded with the gradients of both networks.
@@ -49,10 +47,7 @@ def Training_Loop(  u_NN : Neural_Network,
     returns:
     Nothing! """
 
-    num_Collocation_Points : int = Collocation_Coords.shape[0];
-    num_Data_Points        : int = Data_Coords.shape[0];
-
-    # Zero out the gradients in the neural networks.
+    # Zero out the gradients.
     Optimizer.zero_grad();
 
     # Evaluate the Loss (Note, we enforce a BC of 0)
@@ -60,7 +55,7 @@ def Training_Loop(  u_NN : Neural_Network,
             Data_Loss(u_NN = u_NN, Data_Coords = Data_Coords, Data_Values = Data_Values));
 
     # Back-propigate to compute gradients of Loss with respect to network
-    # weights.
+    # parameters.
     Loss.backward();
 
     # update network weights.
@@ -68,16 +63,16 @@ def Training_Loop(  u_NN : Neural_Network,
 
 
 
-def Testing_Loop(   u_NN : Neural_Network,
-                    N_NN : Neural_Network,
-                    Collocation_Coords : torch.Tensor,
-                    Data_Coords : torch.Tensor,
-                    Data_Values : torch.Tensor) -> Tuple[float, float]:
-    """ This loop tests the neural network at the specified Collocation and
-    Data points. You CAN NOT run this function with no_grad set True.
-    Why? Because we need to evaluate derivatives of the solution with respect
-    to the inputs! This is a PINN, afterall! Thus, we need torch to build a
-    cmputa1tional graph.
+def Discovery_Testing(
+        u_NN                : Neural_Network,
+        N_NN                :  Neural_Network,
+        Collocation_Coords  : torch.Tensor,
+        Data_Coords         : torch.Tensor,
+        Data_Values         : torch.Tensor) -> Tuple[float, float]:
+    """ This function runs testing when in "Discovery" mode. You CAN NOT run this
+    function with no_grad set True. Why? Because we need to evaluate derivatives
+    of the solution with respect to the inputs! Thus, we need torch to build a
+    cmputational graph.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -85,17 +80,18 @@ def Testing_Loop(   u_NN : Neural_Network,
 
     N_NN : Neural network that approximates the learned PDE.
 
-    Collocation_Coords : the points at which enforce the learned PDE. These
-    should be DISTINCT from the collocation points that we use in the training
-    loop. This should be an Nx2 tensor of floats, where N is the number of
-    collocation points. The ith row of this tensor should be the coordinates of
-    the ith collocation point.
+    Collocation_Coords : the collocation points at which we enforce the learned
+    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
+    coordinates of the ith collocation point.
 
     Data_Coords : A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. These should be DISTINCT
-    from the data points we used in the training loop. This should be a Mx2
-    tensor of floats, where M is the number of data points. The ith row of this
-    tensor should hold the coordinates of the ith data point.
+    compare the approximate solution to the true one. This should be a 2 column
+    tensor whose ith row holds the x,t coordinates of the ith data point.
+
+    Data_Values : A tensor holding the value of the true solution at the data
+    points. If Data_Coords has N rows, then this should be an N element tensor
+    of floats whose ith element holds the value of the true solution at the ith
+    data point.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -103,15 +99,20 @@ def Testing_Loop(   u_NN : Neural_Network,
     the second holds the data loss. """
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
-    Coloc_Loss : float = Collocation_Loss(u_NN = u_NN, N_NN = N_NN, Collocation_Coords = Collocation_Coords).item();
-    Data_loss : float = Data_Loss(u_NN = u_NN, Data_Coords = Data_Coords, Data_Values = Data_Values).item();
+    Coloc_Loss : float = Collocation_Loss(
+                            u_NN = u_NN,
+                            N_NN = N_NN,
+                            Collocation_Coords = Collocation_Coords).item();
+    Data_loss : float  = Data_Loss(
+                            u_NN = u_NN,
+                            Data_Coords = Data_Coords,
+                            Data_Values = Data_Values).item();
 
     # Return the losses.
     return (Coloc_Loss, Data_loss);
 
     # Should we worry about the computational graph that we build in this
-    # function? No.
-    # Here's why:
+    # function? No. Here's why:
     # Cmputing the losses requires propigating the inputs through the network,
     # thereby building up a computational graph (we need to keep the graph
     # building enabled b/c we have to evaluate derivatives to compute the
@@ -124,10 +125,187 @@ def Testing_Loop(   u_NN : Neural_Network,
 
 
 
-def Setup_Optimizer(    u_NN : Neural_Network,
-                        N_NN : Neural_Network,
-                        N_Learning_Enabled : bool,
-                        Learning_Rate : float) -> torch.optim.Optimizer:
+def PINNs_Training(
+        u_NN                        : Neural_Network,
+        N_NN                        : Neural_Network,
+        IC_Coords                   : torch.Tensor,
+        IC_Data                     : torch.Tensor,
+        Lower_Bound_Coords          : torch.Tensor,
+        Upper_Bound_Coords          : torch.Tensor,
+        Periodic_BCs_Highest_Order  : int,
+        Collocation_Coords          : torch.Tensor,
+        Data_Coords                 : torch.Tensor,
+        Data_Values                 : torch.Tensor,
+        Optimizer                   : torch.optim.Optimizer) -> None:
+    """ This function runs one epoch of training when in "PINNs" mode. In
+    this mode, we enforce the leaned PDE at the Collocation_Points, impose
+    Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
+
+    ----------------------------------------------------------------------------
+    Arguments:
+    u_NN : Neural network that approximates the solution to the learned PDE.
+
+    N_NN : Neural network that approximates the PDE.
+
+    IC_Coords : A tensor that holds the coordinates of each point that we
+    enforce the Initial Condition. This should be a 2 column tensor of floats
+    whose ith row holds the x,t coordinates of the ith point where we enforce
+    the IC.
+
+    IC_Data : A tensor that holds the value of the initial condition at each
+    point in IC_Coords. If IC_Coords has N rows, then this should be an N
+    element tensor whose ith entry holds the value of the IC at the ith IC
+    point.
+
+    Lower_Bound_Coords : A tensor that holds the coordinates of each grid point
+    on the lower spatial bound of the domain.
+
+    Uppder_Bound_Coords : A tensor that holds the coordinates of each grid point
+    on the lower spatial bound of the domain.
+
+    Periodic_BCs_Highest_Order : If this is set to N, then we will enforce
+    periodic BCs on the solution and its first N-1 derivatives.
+
+    Collocation_Coords : the collocation points at which we enforce the learned
+    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
+    coordinates of the ith collocation point.
+
+    Data_Coords : A tensor holding the coordinates of the points at which we
+    compare the approximate solution to the true one. This should be a 2 column
+    tensor whose ith row holds the x,t coordinates of the ith data point.
+
+    Data_Values : A tensor holding the value of the true solution at the data
+    points. If Data_Coords has N rows, then this should be an N element tensor
+    of floats whose ith element holds the value of the true solution at the ith
+    data point.
+
+    optimizer : the optimizer we use to train u_NN.
+
+    ----------------------------------------------------------------------------
+    returns:
+    Nothing! """
+
+    # Zero out the gradients.
+    Optimizer.zero_grad();
+
+    # Evaluate the Loss (Note, we enforce a BC of 0)
+    Loss = (IC_Loss(
+                u_NN = u_NN,
+                N_NN = N_NN,
+                IC_Coords = IC_Coords,
+                IC_Data = IC_Data)
+
+            +
+
+            Periodic_BC_Loss(
+                u_NN = u_NN,
+                N_NN = N_NN,
+                Lower_Bound_Coords = Lower_Bound_Coords,
+                Upper_Bound_Coords = Upper_Bound_Coords,
+                Highest_Order = Periodic_BCs_Highest_Order)
+            +
+
+            Collocation_Loss(
+                u_NN = u_NN,
+                N_NN = N_NN,
+                Collocation_Coords = Collocation_Coords));
+
+    # Back-propigate to compute gradients of Loss with respect to network
+    # parameters
+    Loss.backward();
+
+    # update network weights.
+    Optimizer.step();
+
+
+
+def PINNs_Training(
+        u_NN                        : Neural_Network,
+        N_NN                        : Neural_Network,
+        IC_Coords                   : torch.Tensor,
+        IC_Data                     : torch.Tensor,
+        Lower_Bound_Coords          : torch.Tensor,
+        Upper_Bound_Coords          : torch.Tensor,
+        Periodic_BCs_Highest_Order  : int,
+        Collocation_Coords          : torch.Tensor,
+        Data_Coords                 : torch.Tensor,
+        Data_Values                 : torch.Tensor) -> Tuple[float, float, float]:
+    """ This function runs one epoch of testing when in "PINNs" mode. In
+    this mode, we enforce the leaned PDE at the Collocation_Points, impose
+    Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
+
+    ----------------------------------------------------------------------------
+    Arguments:
+    u_NN : Neural network that approximates the solution to the learned PDE.
+
+    N_NN : Neural network that approximates the PDE.
+
+    IC_Coords : A tensor that holds the coordinates of each point that we
+    enforce the Initial Condition. This should be a 2 column tensor of floats
+    whose ith row holds the x,t coordinates of the ith point where we enforce
+    the IC.
+
+    IC_Data : A tensor that holds the value of the initial condition at each
+    point in IC_Coords. If IC_Coords has N rows, then this should be an N
+    element tensor whose ith entry holds the value of the IC at the ith IC
+    point.
+
+    Lower_Bound_Coords : A tensor that holds the coordinates of each grid point
+    on the lower spatial bound of the domain.
+
+    Uppder_Bound_Coords : A tensor that holds the coordinates of each grid point
+    on the lower spatial bound of the domain.
+
+    Periodic_BCs_Highest_Order : If this is set to N, then we will enforce
+    periodic BCs on the solution and its first N-1 derivatives.
+
+    Collocation_Coords : the collocation points at which we enforce the learned
+    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
+    coordinates of the ith collocation point.
+
+    Data_Coords : A tensor holding the coordinates of the points at which we
+    compare the approximate solution to the true one. This should be a 2 column
+    tensor whose ith row holds the x,t coordinates of the ith data point.
+
+    Data_Values : A tensor holding the value of the true solution at the data
+    points. If Data_Coords has N rows, then this should be an N element tensor
+    of floats whose ith element holds the value of the true solution at the ith
+    data point.
+
+    ----------------------------------------------------------------------------
+    returns:
+    A tuple of three floats. The 0 element holds the IC loss, the 1 element
+    holds the BC loss, the 2 element holds the Collocation loss. """
+
+    # Get the losses at the passed collocation points (Note we enforce a 0 BC)
+    IC_Loss : float    = IC_Loss(
+                            u_NN = u_NN,
+                            N_NN = N_NN,
+                            IC_Coords = IC_Coords,
+                            IC_Data = IC_Data);
+
+    BC_Loss : float    = Periodic_BC_Loss(
+                            u_NN = u_NN,
+                            N_NN = N_NN,
+                            Lower_Bound_Coords = Lower_Bound_Coords,
+                            Upper_Bound_Coords = Upper_Bound_Coords,
+                            Highest_Order = Periodic_BCs_Highest_Order).item();
+
+    Coloc_Loss : float = Collocation_Loss(
+                            u_NN = u_NN,
+                            N_NN = N_NN,
+                            Collocation_Coords = Collocation_Coords).item();
+
+    # Return the losses.
+    return (IC_Loss, BC_Loss, Coloc_Loss);
+
+
+
+def Setup_Optimizer(
+        u_NN            : Neural_Network,
+        N_NN            : Neural_Network,
+        Mode            : str,
+        Learning_Rate   : float) -> torch.optim.Optimizer:
     """ This function sets up the optimizer depending on if the N Network has
     learning enabled or not. It also disables gradients for all network
     parameters that are not being learned.
@@ -139,7 +317,9 @@ def Setup_Optimizer(    u_NN : Neural_Network,
 
     N_NN : The neural network that approximates the PDE.
 
-    N_Learning_Enabled : True if we want to learn N. False otherwise.
+    Mode : Controls which mode the code is running in. Either "Discovery" or
+    "PINNs". If "Discovery", then both u_NN and N_NN are learned. Otherwise,
+    N_NN is fixed and u_NN is learned.
 
     Learning_Rate : the desired learning rate.
 
@@ -147,16 +327,19 @@ def Setup_Optimizer(    u_NN : Neural_Network,
     Returns:
     The optimizer! """
 
-    # If N_NN has learning learning enabled, then we need to pass u_NN and
-    # N_NN's parameters to the Optimizer.
-    if(N_Learning_Enabled == True):
+    if(Mode == "Discovery"):
+        # We need to train both u_NN and N_NN. Pass both networks' parameters to
+        # the optimizer.
         return torch.optim.Adam(list(u_NN.parameters()) + list(N_NN.parameters()), lr = Learning_Rate);
-    else:
-        # If not, then disable gradients for N_NN.
+    elif(Mode == "PINNs"):
+        # If we're in PINNs mode, then N_NN does not require gradients.
         N_NN.requires_grad_(False);
 
-        # Now setup the optimizer using only u_NN's parameters.
+        # Setup the optimizer using only u_NN's parameters.
         return torch.optim.Adam(u_NN.parameters(), lr = Learning_Rate);
+    else:
+        print("Mode is neither \"Discovery\" nor \"PINNs\". Something went wrong. Aborting");
+        exit();
 
 
 
@@ -165,7 +348,7 @@ def main():
     Setup_Data = Setup_File_Reader();
 
     # Test that we got the correct input.
-    print("Training PINN with the following settings:");
+    print("Loaded the following settings:");
     for item in Setup_Data.__dict__.items():
         print(item);
 
@@ -185,11 +368,10 @@ def main():
                             Input_Dim           = Setup_Data.N_Num_u_derivatives + 1,
                             Output_Dim          = 1);
 
-
-    # Select the optimizer.
+    # Select the optimizer based on mode.
     Optimizer = Setup_Optimizer(u_NN = u_NN,
                                 N_NN = N_NN,
-                                N_Learning_Enabled = Setup_Data.N_Learning_Enabled,
+                                Mode = Setup_Data.Mode,
                                 Learning_Rate = Learning_Rate );
 
     # Check if we're loading anything from file.
@@ -216,34 +398,74 @@ def main():
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
     # Set up training and training collocation/boundary points.
-    Data_Container = Data_Loader("../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
-
-    # Set up array to hold the testing losses.
-    Collocation_Losses = np.empty((Epochs), dtype = np.float);
-    Data_Losses        = np.empty((Epochs), dtype = np.float);
+    Data_Container = Data_Loader(Setup_Data.Mode, "../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
 
     # Loop through the epochs.
-    for t in range(Epochs):
+    if(Setup_Data.Mode == "Discovery"):
+        # Set up array for the different kinds of losses.
+        Collocation_Losses = np.empty((Epochs), dtype = np.float);
+        Data_Losses        = np.empty((Epochs), dtype = np.float);
 
-        # Run training, testing for this epoch. Log the losses.
-        Training_Loop(  u_NN                = u_NN,
-                        N_NN                = N_NN,
-                        Collocation_Coords  = Data_Container.Train_Coloc_Coords,
-                        Data_Coords         = Data_Container.Train_Data_Coords,
-                        Data_Values         = Data_Container.Train_Data_Values,
-                        Optimizer           = Optimizer);
+        for t in range(Epochs):
+            Discovery_Training(
+                u_NN                = u_NN,
+                N_NN                = N_NN,
+                Collocation_Coords  = Data_Container.Train_Coloc_Coords,
+                Data_Coords         = Data_Container.Train_Data_Coords,
+                Data_Values         = Data_Container.Train_Data_Values,
+                Optimizer           = Optimizer);
 
-        (Collocation_Losses[t], Data_Losses[t]) = Testing_Loop( u_NN                = u_NN,
-                                                                N_NN                = N_NN,
-                                                                Collocation_Coords  = Data_Container.Test_Coloc_Coords,
-                                                                Data_Coords         = Data_Container.Test_Data_Coords,
-                                                                Data_Values         = Data_Container.Test_Data_Values );
+            (Collocation_Losses[t], Data_Losses[t]) = Discovery_Testing(
+                u_NN                = u_NN,
+                N_NN                = N_NN,
+                Collocation_Coords  = Data_Container.Test_Coloc_Coords,
+                Data_Coords         = Data_Container.Test_Data_Coords,
+                Data_Values         = Data_Container.Test_Data_Values );
 
-        # Print losses.
-        print(("Epoch #%-4d: "              % t)                    , end = '');
-        print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
-        print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
-        print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
+            # Print losses.
+            print(("Epoch #%-4d: "              % t)                    , end = '');
+            print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
+            print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
+            print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
+
+    elif(Setup_Data.Mode == "PINNs"):
+        # Setup arrays for the diffeent kinds of losses.
+        IC_Losses          = np.empty((Epochs), dtype = np.float);
+        BC_Losses          = np.empty((Epochs), dtype = np.float);
+        Collocation_Losses = np.empty((Epochs), dtype = np.float);
+
+        for t in range(Epochs):
+            PINNs_Training(
+                u_NN                        = u_NN,
+                N_NN                        = N_NN,
+                IC_Coords                   = Data_Container.IC_Coords,
+                IC_Data                     = Data_Container.IC_Data,
+                Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
+                Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
+                Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
+                Collocation_Coords          = Data_Container.Train_Coloc_Coords,
+                Data_Coords                 = Data_Container.Train_Data_Coords,
+                Data_Values                 = Data_Container.Train_Data_Values,
+                Optimizer                   = Optimizer);
+
+            (IC_Losses[t], BC_Losses[t], Collocation_Losses[t]) = PINNs_Testing(
+                u_NN                        = u_NN,
+                N_NN                        = N_NN,
+                IC_Coords                   = Data_Container.IC_Coords,
+                IC_Data                     = Data_Container.IC_Data,
+                Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
+                Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
+                Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
+                Collocation_Coords          = Data_Container.Test_Coloc_Coords,
+                Data_Coords                 = Data_Container.Test_Data_Coords,
+                Data_Values                 = Data_Container.Test_Data_Values );
+
+            # Print losses.
+            print(("Epoch #%-4d: "              % t)                    , end = '');
+            print(("\IC Loss = %7f"             % IC_Losses[t])         , end = '');
+            print(("\BC Loss = %7f"             % BC_Losses[t])         , end = '');
+            print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
+            print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
 
     # Save the network and optimizer states!
     if(Setup_Data.Save_To_File == True):

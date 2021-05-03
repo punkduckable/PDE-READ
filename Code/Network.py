@@ -221,8 +221,33 @@ def IC_Loss(u_NN : Neural_Network, IC_Coords : torch.Tensor, IC_Data : torch.Ten
 
 
 # Loss from imposing periodic BCs
-#def Periodic_BC_Loss(u_NN : Neural_Network, IC_Coords : torch.Tensor, IC_Data : torch.Tensor) -> torch.Tensor:
-#    """Do me! """
+def Periodic_BC_Loss(
+        u_NN : Neural_Network,
+        Lower_Bound_Coords : torch.Tensor,
+        Upper_Bound_Coords : torch.Tensor,
+        Highest_Order : int) -> torch.Tensor:
+    """ I need a description!!!!
+
+    ENABLE MULTIPLE DERIVATIVES!!!!!! """
+
+    Num_BC_Points = Lower_Bound_Coords.shape[0];
+
+    Loss = torch.Tensor(0, dtype = torch.float);
+    for i in range(Num_BC_Points):
+        # evaluate the NN at the upper and lower bounds at the ith time
+        # coordinate.
+        xt_low = Lower_Bound_Coords[i];
+        u_low = u_NN(xt_low);
+
+        xt_high = Upper_Bound_Coords[i];
+        u_high = u_NN(xt_high);
+
+        # Evaluat the square of their difference.
+        Loss += (u_high - u_low)**2;
+
+    # Divide the accumulated loss by the number of BC points to get the mean
+    # square error.
+    return (Loss / Num_BC_Points);
 
 
 

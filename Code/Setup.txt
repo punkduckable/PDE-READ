@@ -43,6 +43,30 @@ Plot Final Result [bool] :                       True
 
 
 ################################################################################
+# PINNS or PDE Discovery mode
+# The "Discovery or PINNs" setting if the code attempts to learn the PDE or
+# learn a solution from a learned PDE. The allowed values for this setting are
+# "PINNs" and "Discovery". Actually, the parser will interpret any word that
+# begins with "p" or "P" as "PINNs", and any word that begins with "d" or "D"
+# as "Discovery".
+#
+# If we are in Discovery mode, then the N Network will have learning enabled.
+# The loss will come from the data and collocation losses. In this case, you can
+# ignore the "Periodic BCs Highest Order setting", as the parser will ignore it.
+#
+# If we are in PINNs mode, then the N Network will not learn (which probably
+# means that you should be loading a network from file). The loss will
+# come from the collocation points, the IC, and the periodic BCs. In this case,
+# you MUST set the "Periodic BCs highest order". If this setting is set to N,
+# then we will enforce periodic BCs on the solution and its first N-1
+# derivatives.
+
+Discovery or PINNs mode [str] :                  Discovery
+Periodic BCs highest order [int] :               1
+
+
+
+################################################################################
 # Network Architecture
 
 u Network - Number of Hidden Layers [int] :      5
@@ -67,5 +91,6 @@ Learning Rate [float] :                          .0015
 # Data
 
 Data File Name [str] :                           burgers_sine.mat
+
 Number of Training Points [int] :                1000
 Number of Testing Points [int] :                 2000
