@@ -19,46 +19,62 @@ class Data_Container:
     def __init__(   self,
                     x_points            : np.array,
                     t_points            : np.array,
-                    IC_Coords           : np.array,
-                    IC_Data             : np.array,
-                    Lower_Bound_Coords  : np.array,
-                    Upper_Bound_Coords  : np.array,
                     True_Sol_On_Grid    : np.array,
-                    Train_Coloc_Coords  : torch.Tensor,
+                    IC_Coords           : torch.Tensor,
+                    IC_Data             : torch.Tensor,
+                    Lower_Bound_Coords  : torch.Tensor,
+                    Upper_Bound_Coords  : torch.Tensor,
                     Train_Data_Coords   : torch.Tensor,
                     Train_Data_Values   : torch.Tensor,
+                    Train_Coloc_Coords  : torch.Tensor,
                     Test_Coloc_Coords   : torch.Tensor,
-                    Test_Data_Coords    : torch.Tensor,
-                    Test_Data_Values    : torch.Tensor):
+                    Test_Data_Values    : torch.Tensor,
+                    Test_Data_Coords    : torch.Tensor ):
 
-        # For plotting.
+        # Plotting.
         self.x_points           = x_points;
         self.t_points           = t_points;
         self.True_Sol_On_Grid   = True_Sol_On_Grid;
 
-        # For Initial Conditions
+        # Initial Conditions
         self.IC_Coords = IC_Coords;
         self.IC_Data   = IC_Data;
 
-        # For Periodic BCs
+        # Periodic BCs
         self.Lower_Bound_Coords = Lower_Bound_Coords;
         self.Upper_Bound_Coords = Upper_Bound_Coords;
 
-        # For training.
-        self.Train_Coloc_Coords = Train_Coloc_Coords;
+        # Training.
         self.Train_Data_Coords  = Train_Data_Coords;
         self.Train_Data_Values  = Train_Data_Values;
+        self.Train_Coloc_Coords = Train_Coloc_Coords;
 
-        # For testing.
-        self.Test_Coloc_Coords  = Test_Coloc_Coords;
+        # Testing.
         self.Test_Data_Coords   = Test_Data_Coords;
         self.Test_Data_Values   = Test_Data_Values;
+        self.Test_Coloc_Coords  = Test_Coloc_Coords;
 
 
 
 def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Points : int) -> Data_Container:
-    """ This function loads data from file and returns it. This is basically a
-    modified version of part of Raissi's original code.
+    """ This function loads data from file and returns it. We make a few
+    assumptions about the format of the data. For one, we assume that the .mat
+    file contains three fields: x, t, and usol.
+
+    x and t are arrays that are used to construct the grid of points. x and t
+    store the set of x, t values in the grid. We assume that the x values are
+    uniformly spaced!
+
+    u sol contains the value of the true solution at each gridpoint. Each row of
+    usol contains the solution for a fixed position, while each column contains
+    the solution for a fixed time.
+
+    We assume the problem has periodic boundary conditions (in space). In
+    particular, we assume that row 0 of usol contains the value of the solution
+    at the periodic boundary. The last row of usol contains the solution just
+    before the periodic boundary. This means that x[0] holds the x coordinate of
+    the lower bound of the domain, while the last element of x holds the x
+    coordinate just before the upper bound of the domain.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -72,7 +88,6 @@ def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Poi
     Returns:
     A Data Container object. See class definition above. """
 
-    # First, load the file
     data_in = scipy.io.loadmat(Data_File_Path);
 
     # Fetch spatial, temporal coordinates and the true solution.
@@ -88,9 +103,8 @@ def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Poi
     n_t = len(t_points);
 
     # Generate the grid of (x, t) coordinates where we'll evaluate the solution.
-    # grid_t_coords and grid_x_coords are 2d numpy arrays. Each row of these
-    # arrays corresponds to a specific position. Each column corresponds to a
-    # specific time.
+    # Each row of these arrays corresponds to a specific position. Each column
+    # corresponds to a specific time.
     grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
 
     # Flatten t_coods, x_coords. use them to generate the test data coodinates.
@@ -109,33 +123,35 @@ def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Poi
 
 
     ############################################################################
-    # Determine the initial conditions
+    # Initial Conditions
     # Since each column of True_Sol_in corresponds to a specific time, the
     # initial condition is just the 0 column of True_Sol_in. We also need the
     # corresponding coordinates.
 
-    # Generate IC coordinates. There is an IC coordinate for each possible
-    # x value. The corresponding time value for that coordinate is 0.
+    # There is an IC coordinate for each possible x value. The corresponding
+    # time value for that coordinate is 0.
     IC_Coords = np.zeros((n_x, 2), dtype = np.float);
     IC_Coords[:, 0] = x_points;
 
     # Since each column of True_Sol_in corresponds to a specific time, the
-    # initial condition is just the 0 column of True_Sol_in.
+    # 0 column of True_sol_in holds the initial condition.
     IC_Data = True_Sol_in[:, 0];
 
 
 
     ############################################################################
-    # Determine coordinates to enforce periodic BC.
+    # Periodic BC
     # To enforce periodic BCs, for each time, we need the solution to match at
     # the upper and lower spatial bounds. Thus, we need the coordinates of the
     # upper and lower spatial bounds of the domain.
 
-    # Recall that x_points only includes the lower spatial bound of the
-    # domain (the upper spatial bound is not the last element of this array).
-    # We can get the lower spatial bound from x_points. The upper spatial bound
-    # is then the negative of this value (we assume a symmetric spatial domain).
+    # x_points only includes the lower spatial bound of the domain. The last
+    # element of x_points holds the x value just before the upper bound. Thus,
+    # the lower spatial bound is just x_points[0]. The upper spatial bound is
+    # x_points[-1] plus the grid spacing (we assume the x values are uniformly
+    # spaced).
     x_lower = x_points[0];
+    x_upper = x_points[-1] + (x_points[-1] - x_points[-2]);
     x_upper = -x_lower;
 
     # Now, set up the upper and lower bound coordinates. Let's consider
@@ -152,42 +168,46 @@ def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Poi
 
 
     ############################################################################
-    # Determine training collocation points, data points, data values.
+    # Training points, values.
 
-    # First, randomly select Num_Training_Points indicies.
+    # Randomly select Num_Training_Points coordinate indicies.
     Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Training_Points, replace = False);
 
     # Select the corresponding collocation points, data points, and data values.
-    Train_Coloc_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).float();
-    Train_Data_Coords  = Train_Coloc_Coords;
+    # Currently, the Coloc and Data coords are the same, though this may change
+    # in the future.
+    Train_Data_Coords  = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).float();
     Train_Data_Values  = torch.from_numpy(All_Data_Values[Train_Indicies]).float();
+    Train_Coloc_Coords = Train_Data_Coords;
 
 
 
     ############################################################################
-    # Determine testing collocation points, data points, data values.
+    # Testing points, values
 
-    # First, randomly select Num_Testing_Points indicies
+    # Randomly select Num_Testing_Points coordinate indicies
     Test_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Testing_Points, replace = False);
 
     # Note that everything must be of type float32.
-    Test_Coloc_Coords = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).float();
-    Test_Data_Coords  = Test_Coloc_Coords;
+    Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).float();
     Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).float();
+    Test_Coloc_Coords = Test_Data_Coords;
 
 
 
-    # All done. Package everything into a Data Container object and return.
+    # Package everything into a Data Container object and return. Note that we
+    # convert some numpy arrays to tensors (this is almost free, because the
+    # tensors share storage with the array).
     return Data_Container(  x_points            = x_points,
                             t_points            = t_points,
-                            IC_Coords           = IC_Coords,
-                            IC_Data             = IC_Data,
-                            Lower_Bound_Coords  = Lower_Bound_Coords,
-                            Upper_Bound_Coords  = Upper_Bound_Coords,
                             True_Sol_On_Grid    = True_Sol_in,
-                            Train_Coloc_Coords  = Train_Coloc_Coords,
+                            IC_Coords           = torch.from_numpy(IC_Coords),
+                            IC_Data             = torch.from_numpy(IC_Data),
+                            Lower_Bound_Coords  = torch.from_numpy(Lower_Bound_Coords),
+                            Upper_Bound_Coords  = torch.from_numpy(Upper_Bound_Coords),
                             Train_Data_Coords   = Train_Data_Coords,
                             Train_Data_Values   = Train_Data_Values,
-                            Test_Coloc_Coords   = Test_Coloc_Coords,
+                            Train_Coloc_Coords  = Train_Coloc_Coords,
                             Test_Data_Coords    = Test_Data_Coords,
-                            Test_Data_Values    = Test_Data_Values);
+                            Test_Data_Values    = Test_Data_Values,
+                            Test_Coloc_Coords   = Test_Coloc_Coords);

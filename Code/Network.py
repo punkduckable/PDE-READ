@@ -184,7 +184,49 @@ def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_C
 
 
 
-# Loss from requiring the learned solution to satisify the training data.
+# Loss from the initial condition.
+def IC_Loss(u_NN : Neural_Network, IC_Coords : torch.Tensor, IC_Data : torch.Tensor) -> torch.Tensor:
+    """ This function evaluates how well u_NN satisifies the initial condition.
+    Specifically, for each point in IC_Coords, we evaluate u_NN. We then
+    calculate the square of the difference between this and the corresponding
+    true solution in IC_Data. We return the mean of these squared differences.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+    u_NN : the Neural Network that approximates the solution.
+
+    IC_Coords : The coordinates where we know the true initial condition. This
+    should be a Nx2 tensor whose ith row holds the x, t coodinates of the ith
+    point.
+
+    IC_Data : The value of the initial condition at each point in IC_Coords.
+    This should be an N element tensor. """
+
+    Num_IC_Points : int = IC_Coords.shape[0];
+
+    Loss = torch.tensor(0, dtype = torch.float);
+    for i in range(Num_IC_Points):
+        # Evaluate the Neural Network at the ith point.
+        xt = IC_Coords[i];
+        u_approx = u_NN(xt)[0];
+
+        # Evaluate the square difference between the true and approx solution.
+        u_true = Data_Values[i];
+        Loss += (u_true - u_approx)**2;
+
+    # Divide the accumulated loss by the number of IC points to get the mean
+    # square error.
+    return (Loss / Num_IC_Points);
+
+
+
+# Loss from imposing periodic BCs
+#def Periodic_BC_Loss(u_NN : Neural_Network, IC_Coords : torch.Tensor, IC_Data : torch.Tensor) -> torch.Tensor:
+#    """Do me! """
+
+
+
+# Loss from the training data.
 def Data_Loss(u_NN : Neural_Network, Data_Coords : torch.Tensor, Data_Values : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well the learned solution u satisifies the
     training data. Specifically, for each point ((x_i, t_i), u_i) in
