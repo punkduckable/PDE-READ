@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt;
-import torch;
 import numpy as np;
+import torch;
+import matplotlib.pyplot as plt;
 from typing import Tuple;
 
-from Network import Neural_Network, PDE_Residual;
+from Network import Neural_Network;
+from Loss_Functions import PDE_Residual;
 
 
 
@@ -133,13 +134,14 @@ def Setup_Axes() -> Tuple[plt.figure, np.array]:
 
 
 # The plotting function!
-def Update_Axes(fig                 : plt.figure,
-                Axes                : np.ndarray,
-                u_NN                : Neural_Network,
-                N_NN                : Neural_Network,
-                x_points            : np.array,
-                t_points            : np.array,
-                True_Sol_On_Grid    : np.array) -> None:
+def Update_Axes(
+        fig                 : plt.figure,
+        Axes                : np.ndarray,
+        u_NN                : Neural_Network,
+        N_NN                : Neural_Network,
+        x_points            : np.array,
+        t_points            : np.array,
+        True_Sol_On_Grid    : np.array) -> None:
     """ This function plots the approximate solution and residual at the
     specified points.
 

@@ -1,6 +1,5 @@
-import torch;
 import numpy as np;
-from typing import Tuple;
+import torch;
 import matplotlib.pyplot as plt;
 
 from Network import Neural_Network;
@@ -48,12 +47,14 @@ def Setup_Optimizer(
         # Setup the optimizer using only u_NN's parameters.
         return torch.optim.Adam(u_NN.parameters(), lr = Learning_Rate);
     else:
-        print("Mode is neither \"Discovery\" nor \"PINNs\". Something went wrong. Aborting");
+        print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
+        print("Something went wrong. Aborting. Thrown by Setup_Optimizer");
         exit();
 
 
 
 def main():
+    ############################################################################
     # Load setup data from the setup file.
     Setup_Data = Setup_File_Reader();
 
@@ -61,6 +62,11 @@ def main():
     print("Loaded the following settings:");
     for item in Setup_Data.__dict__.items():
         print(item);
+
+
+
+    ############################################################################
+    # Set up everything.
 
     # Initialize Network hyperparameters.
     Epochs        : int   = Setup_Data.Epochs;
@@ -108,9 +114,17 @@ def main():
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
     # Set up training and training collocation/boundary points.
-    Data_Container = Data_Loader(Setup_Data.Mode, "../Data/" + Setup_Data.Data_File_Name, Setup_Data.Num_Training_Points, Setup_Data.Num_Testing_Points);
+    Data_Container = Data_Loader(
+                        Mode = Setup_Data.Mode,
+                        Data_File_Path = "../Data/" + Setup_Data.Data_File_Name,
+                        Num_Training_Points = Setup_Data.Num_Training_Points,
+                        Num_Testing_Points = Setup_Data.Num_Testing_Points);
 
+
+
+    ############################################################################
     # Loop through the epochs.
+
     if(Setup_Data.Mode == "Discovery"):
         # Set up array for the different kinds of losses.
         Collocation_Losses = np.empty((Epochs), dtype = np.float);
@@ -154,8 +168,6 @@ def main():
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
                 Collocation_Coords          = Data_Container.Train_Coloc_Coords,
-                Data_Coords                 = Data_Container.Train_Data_Coords,
-                Data_Values                 = Data_Container.Train_Data_Values,
                 Optimizer                   = Optimizer);
 
             (IC_Losses[t], BC_Losses[t], Collocation_Losses[t]) = PINNs_Testing(
@@ -166,9 +178,7 @@ def main():
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
-                Collocation_Coords          = Data_Container.Test_Coloc_Coords,
-                Data_Coords                 = Data_Container.Test_Data_Coords,
-                Data_Values                 = Data_Container.Test_Data_Values );
+                Collocation_Coords          = Data_Container.Test_Coloc_Coords);
 
             # Print losses.
             print(("Epoch #%-4d: "              % t)                    , end = '');
@@ -176,8 +186,16 @@ def main():
             print(("\BC Loss = %7f"             % BC_Losses[t])         , end = '');
             print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
             print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
+    else:
+        print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
+        print("Something went wrong. Aborting. Thrown by main");
+        exit();
 
+
+
+    ############################################################################
     # Save the network and optimizer states!
+
     if(Setup_Data.Save_To_File == True):
         Save_File_Path : str = "../Saves/" + Setup_Data.Save_File_Name;
         torch.save({"u_Network_State" : u_NN.state_dict(),
@@ -185,7 +203,11 @@ def main():
                     "Optimizer_State" : Optimizer.state_dict()},
                     Save_File_Path);
 
-    # Plot final results (if we should)
+
+
+    ############################################################################
+    # Plot final results
+
     if(Setup_Data.Plot_Final_Results == True):
         fig, Axes = Setup_Axes();
         Update_Axes(fig                 = fig,

@@ -62,7 +62,7 @@ Plot Final Result [bool] :                       True
 # derivatives.
 
 Discovery or PINNs mode [str] :                  Discovery
-Periodic BCs highest order [int] :               1
+Periodic BCs highest order [int] :               0
 
 
 

@@ -6,7 +6,10 @@ from Network import Neural_Network;
 
 
 # Loss from the initial condition.
-def IC_Loss(u_NN : Neural_Network, IC_Coords : torch.Tensor, IC_Data : torch.Tensor) -> torch.Tensor:
+def IC_Loss(
+        u_NN : Neural_Network,
+        IC_Coords : torch.Tensor,
+        IC_Data : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well u_NN satisifies the initial condition.
     Specifically, for each point in IC_Coords, we evaluate u_NN. We then
     calculate the square of the difference between this and the corresponding
@@ -73,7 +76,10 @@ def Periodic_BC_Loss(
 
 
 # Evaluates du/dt - N(u, du/dx, d^u/dx^2,... ) at a specific point.
-def PDE_Residual(u_NN : Neural_Network, N_NN : Neural_Network, xt : torch.Tensor) -> torch.Tensor:
+def PDE_Residual(
+        u_NN : Neural_Network,
+        N_NN : Neural_Network,
+        xt : torch.Tensor) -> torch.Tensor:
     """ This function evaluates the "residual" of the PDE at a given point.
     For brevtiy, let u = u_NN, and N = N_NN. This function computes
             du/dt - N(u, du/dx, d^2u/dx^2,... )
@@ -136,7 +142,10 @@ def PDE_Residual(u_NN : Neural_Network, N_NN : Neural_Network, xt : torch.Tensor
 
 
 # Loss from enforcing the PDE at the collocation points.
-def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_Coords : torch.Tensor) -> torch.Tensor:
+def Collocation_Loss(
+        u_NN : Neural_Network,
+        N_NN : Neural_Network,
+        Collocation_Coords : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well u_NN satisifies the learned PDE at the
     collocation points. For brevity, let u = u_NN and N = N_NN. At each
     collocation point, we compute the following:
@@ -178,7 +187,10 @@ def Collocation_Loss(u_NN : Neural_Network, N_NN : Neural_Network, Collocation_C
 
 
 # Loss from the training data.
-def Data_Loss(u_NN : Neural_Network, Data_Coords : torch.Tensor, Data_Values : torch.Tensor) -> torch.Tensor:
+def Data_Loss(
+        u_NN : Neural_Network,
+        Data_Coords : torch.Tensor,
+        Data_Values : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well the learned solution u satisifies the
     training data. Specifically, for each point ((x_i, t_i), u_i) in
     data, we compute the square of the difference between u_i (the true

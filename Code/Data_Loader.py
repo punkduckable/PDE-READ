@@ -1,5 +1,5 @@
-import torch;
 import numpy as np;
+import torch;
 import scipy.io;
 
 from typing import Tuple;
@@ -56,7 +56,11 @@ class Data_Container:
 
 
 
-def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Points : int) -> Data_Container:
+def Data_Loader(
+        Mode : str,
+        Data_File_Path : str,
+        Num_Training_Points : int,
+        Num_Testing_Points : int) -> Data_Container:
     """ This function loads data from file and returns it. We make a few
     assumptions about the format of the data. For one, we assume that the .mat
     file contains three fields: x, t, and usol.
@@ -78,6 +82,11 @@ def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Poi
 
     ----------------------------------------------------------------------------
     Arguments:
+    Mode : Either PINNs or Discovery. This controls what data the data loader
+    loads and returns. In particular, if we're in "Discovery" mode, then the
+    IC and BC members of the Data Container are set to none. If we're in "PINNs"
+    mode, then the Training and Testing data/value members are set to None.
+
     Data_File_Path : A relative path to the data file we want to load.
 
     Num_Training_Points : The number of training collocation and data points.
@@ -195,19 +204,43 @@ def Data_Loader(Data_File_Path : str, Num_Training_Points : int, Num_Testing_Poi
 
 
 
-    # Package everything into a Data Container object and return. Note that we
-    # convert some numpy arrays to tensors (this is almost free, because the
-    # tensors share storage with the array).
-    return Data_Container(  x_points            = x_points,
-                            t_points            = t_points,
-                            True_Sol_On_Grid    = True_Sol_in,
-                            IC_Coords           = torch.from_numpy(IC_Coords),
-                            IC_Data             = torch.from_numpy(IC_Data),
-                            Lower_Bound_Coords  = torch.from_numpy(Lower_Bound_Coords),
-                            Upper_Bound_Coords  = torch.from_numpy(Upper_Bound_Coords),
-                            Train_Data_Coords   = Train_Data_Coords,
-                            Train_Data_Values   = Train_Data_Values,
-                            Train_Coloc_Coords  = Train_Coloc_Coords,
-                            Test_Data_Coords    = Test_Data_Coords,
-                            Test_Data_Values    = Test_Data_Values,
-                            Test_Coloc_Coords   = Test_Coloc_Coords);
+    # Package everything into a Data Container object and return. Which objects
+    # we return vs which we set to none depends on which Mode we're in.
+    # Note that we convert some numpy arrays to tensors (this is almost free,
+    # because the tensors share storage with the array).
+    if(Mode == "Discovery"):
+        # ICs, BCs aren't used in Discovery mode.
+        return Data_Container(
+                    x_points            = x_points,
+                    t_points            = t_points,
+                    True_Sol_On_Grid    = True_Sol_in,
+                    IC_Coords           = None,
+                    IC_Data             = None,
+                    Lower_Bound_Coords  = None,
+                    Upper_Bound_Coords  = None,
+                    Train_Data_Coords   = Train_Data_Coords,
+                    Train_Data_Values   = Train_Data_Values,
+                    Train_Coloc_Coords  = Train_Coloc_Coords,
+                    Test_Data_Coords    = Test_Data_Coords,
+                    Test_Data_Values    = Test_Data_Values,
+                    Test_Coloc_Coords   = Test_Coloc_Coords);
+    elif(Mode == "PINNs"):
+        # Testing, Training Coords and Data aren't used in PINNs mode.
+        return Data_Container(
+                    x_points            = x_points,
+                    t_points            = t_points,
+                    True_Sol_On_Grid    = True_Sol_in,
+                    IC_Coords           = torch.from_numpy(IC_Coords),
+                                IC_Data             = torch.from_numpy(IC_Data),
+                    Lower_Bound_Coords  = torch.from_numpy(Lower_Bound_Coords),
+                    Upper_Bound_Coords  = torch.from_numpy(Upper_Bound_Coords),
+                    Train_Data_Coords   = None,
+                    Train_Data_Values   = None,
+                    Train_Coloc_Coords  = Train_Coloc_Coords,
+                    Test_Data_Coords    = None,
+                    Test_Data_Values    = None,
+                    Test_Coloc_Coords   = Test_Coloc_Coords);
+    else:
+        print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
+        print("Something went wrong. Aborting. Thrown by Data_Loader");
+        exit();

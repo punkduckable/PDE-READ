@@ -1,5 +1,6 @@
 import numpy as np;
 import torch;
+from typing import Tuple;
 
 from Network import Neural_Network;
 from Loss_Functions import IC_Loss, Periodic_BC_Loss, Data_Loss, Collocation_Loss;
@@ -129,8 +130,6 @@ def PINNs_Training(
         Upper_Bound_Coords          : torch.Tensor,
         Periodic_BCs_Highest_Order  : int,
         Collocation_Coords          : torch.Tensor,
-        Data_Coords                 : torch.Tensor,
-        Data_Values                 : torch.Tensor,
         Optimizer                   : torch.optim.Optimizer) -> None:
     """ This function runs one epoch of training when in "PINNs" mode. In
     this mode, we enforce the leaned PDE at the Collocation_Points, impose
@@ -165,16 +164,7 @@ def PINNs_Training(
     PDE. This should be a 2 column tensor of floats whose ith holds the x,t
     coordinates of the ith collocation point.
 
-    Data_Coords : A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. This should be a 2 column
-    tensor whose ith row holds the x,t coordinates of the ith data point.
-
-    Data_Values : A tensor holding the value of the true solution at the data
-    points. If Data_Coords has N rows, then this should be an N element tensor
-    of floats whose ith element holds the value of the true solution at the ith
-    data point.
-
-    optimizer : the optimizer we use to train u_NN.
+    Optimizer : the optimizer we use to train u_NN.
 
     ----------------------------------------------------------------------------
     returns:
@@ -214,7 +204,7 @@ def PINNs_Training(
 
 
 
-def PINNs_Training(
+def PINNs_Testing(
         u_NN                        : Neural_Network,
         N_NN                        : Neural_Network,
         IC_Coords                   : torch.Tensor,
@@ -222,9 +212,7 @@ def PINNs_Training(
         Lower_Bound_Coords          : torch.Tensor,
         Upper_Bound_Coords          : torch.Tensor,
         Periodic_BCs_Highest_Order  : int,
-        Collocation_Coords          : torch.Tensor,
-        Data_Coords                 : torch.Tensor,
-        Data_Values                 : torch.Tensor) -> Tuple[float, float, float]:
+        Collocation_Coords          : torch.Tensor) -> Tuple[float, float, float]:
     """ This function runs one epoch of testing when in "PINNs" mode. In
     this mode, we enforce the leaned PDE at the Collocation_Points, impose
     Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
@@ -257,15 +245,6 @@ def PINNs_Training(
     Collocation_Coords : the collocation points at which we enforce the learned
     PDE. This should be a 2 column tensor of floats whose ith holds the x,t
     coordinates of the ith collocation point.
-
-    Data_Coords : A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. This should be a 2 column
-    tensor whose ith row holds the x,t coordinates of the ith data point.
-
-    Data_Values : A tensor holding the value of the true solution at the data
-    points. If Data_Coords has N rows, then this should be an N element tensor
-    of floats whose ith element holds the value of the true solution at the ith
-    data point.
 
     ----------------------------------------------------------------------------
     returns:

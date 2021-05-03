@@ -1,5 +1,5 @@
-import torch;
 import numpy as np;
+import torch;
 
 
 
@@ -63,6 +63,8 @@ class Neural_Network(torch.nn.Module):
 
         # Finally, set the Network's activation function.
         self.Activation_Function = torch.nn.Tanh();
+
+
 
     def forward(self, x : torch.Tensor) -> torch.Tensor:
         # Note: the input must be an Input_Dim dimensional (1d) tensor.
