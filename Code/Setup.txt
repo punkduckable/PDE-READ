@@ -24,19 +24,17 @@
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
 # The Data File Name should include the file's file extension.
 #
-# You CAN NOT load the optimizer state if you change whether or not the N
-# Network learns. If you plan to load the optimizer state from file and
-# the N network had learning enabled when you saved, then you must have learning
-# enabled for the N Network here too (otherwise the code WILL break).
-
+# You CAN NOT load the optimizer state if you change modes (Discovery vs PINNs).
+# If you plan to load the optimizer state from file and you were in Discovery
+# mode when you saved, then you must be in discovery mode now.
 
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
-Load Optimizer State [bool] :                    True
+Load Optimizer State [bool] :                    False
   Load File Name [str] :                         Burgers_Save
 
-Save State [Bool] :                              False
-  Save File Name [str] :                         Burgers_Save
+Save State [Bool] :                              True
+  Save File Name [str] :                         PINNs_Test
 
 Plot Final Result [bool] :                       True
 
@@ -61,8 +59,8 @@ Plot Final Result [bool] :                       True
 # then we will enforce periodic BCs on the solution and its first N-1
 # derivatives.
 
-Discovery or PINNs mode [str] :                  Discovery
-Periodic BCs highest order [int] :               0
+Discovery or PINNs mode [str] :                  PINNs
+Periodic BCs highest order [int] :               1
 
 
 
@@ -82,7 +80,7 @@ N Network - Learning Enabled [bool] :            True
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         10
+Number of Epochs [int] :                         200
 Learning Rate [float] :                          .0015
 
 

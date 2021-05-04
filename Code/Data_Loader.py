@@ -103,9 +103,11 @@ def Data_Loader(
     # Note that since we enforce periodic BCs, only one of the spatial bounds
     # is x_points. Because of how Raissi's data saved, this is the lower bound.
     # Thus, x_points will NOT include the upper domain bound.
-    x_points = data_in['x'].flatten()[:];
-    t_points = data_in['t'].flatten()[:];
-    True_Sol_in = np.real(data_in['usol']);
+    # We cast these to 32 bit floating point numbers since that's what the rest
+    # of the code uses.
+    x_points = data_in['x'].flatten()[:].astype(np.float32);
+    t_points = data_in['t'].flatten()[:].astype(np.float32);
+    True_Sol_in = (np.real(data_in['usol'])).astype(np.float32);
 
     # Get number of spatial, temporal coordinates.
     n_x = len(x_points);
@@ -139,7 +141,7 @@ def Data_Loader(
 
     # There is an IC coordinate for each possible x value. The corresponding
     # time value for that coordinate is 0.
-    IC_Coords = np.zeros((n_x, 2), dtype = np.float);
+    IC_Coords = np.zeros((n_x, 2), dtype = np.float32);
     IC_Coords[:, 0] = x_points;
 
     # Since each column of True_Sol_in corresponds to a specific time, the
@@ -169,8 +171,8 @@ def Data_Loader(
     # We then set the 1 column of this array (the t coordinates) to the
     # set of possible t coordinates (t_points). We do something analagous for
     # Upper_Bound_Coords.
-    Lower_Bound_Coords = np.full((n_t, 2), x_lower, dtype = float);
-    Upper_Bound_Coords = np.full((n_t, 2), x_upper, dtype = float);
+    Lower_Bound_Coords = np.full((n_t, 2), x_lower, dtype = np.float32);
+    Upper_Bound_Coords = np.full((n_t, 2), x_upper, dtype = np.float32);
     Lower_Bound_Coords[:, 1] = t_points;
     Upper_Bound_Coords[:, 1] = t_points;
 
@@ -185,8 +187,8 @@ def Data_Loader(
     # Select the corresponding collocation points, data points, and data values.
     # Currently, the Coloc and Data coords are the same, though this may change
     # in the future.
-    Train_Data_Coords  = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).float();
-    Train_Data_Values  = torch.from_numpy(All_Data_Values[Train_Indicies]).float();
+    Train_Data_Coords  = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);
+    Train_Data_Values  = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = torch.float32);
     Train_Coloc_Coords = Train_Data_Coords;
 
 
@@ -197,9 +199,10 @@ def Data_Loader(
     # Randomly select Num_Testing_Points coordinate indicies
     Test_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Testing_Points, replace = False);
 
-    # Note that everything must be of type float32.
-    Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).float();
-    Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).float();
+    # Note that everything should have must be of type float32 (this should
+    # already be the case, since we loaded everything as a float32 in numpy)
+    Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = torch.float32);
+    Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = torch.float32);
     Test_Coloc_Coords = Test_Data_Coords;
 
 
@@ -231,7 +234,7 @@ def Data_Loader(
                     t_points            = t_points,
                     True_Sol_On_Grid    = True_Sol_in,
                     IC_Coords           = torch.from_numpy(IC_Coords),
-                                IC_Data             = torch.from_numpy(IC_Data),
+                    IC_Data             = torch.from_numpy(IC_Data),
                     Lower_Bound_Coords  = torch.from_numpy(Lower_Bound_Coords),
                     Upper_Bound_Coords  = torch.from_numpy(Upper_Bound_Coords),
                     Train_Data_Coords   = None,

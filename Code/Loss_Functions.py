@@ -28,14 +28,14 @@ def IC_Loss(
 
     Num_IC_Points : int = IC_Coords.shape[0];
 
-    Loss = torch.tensor(0, dtype = torch.float);
+    Loss = torch.tensor(0, dtype = torch.float32);
     for i in range(Num_IC_Points):
         # Evaluate the Neural Network at the ith point.
         xt = IC_Coords[i];
         u_approx = u_NN(xt)[0];
 
         # Evaluate the square difference between the true and approx solution.
-        u_true = Data_Values[i];
+        u_true = IC_Data[i];
         Loss += (u_true - u_approx)**2;
 
     # Divide the accumulated loss by the number of IC points to get the mean
@@ -56,18 +56,53 @@ def Periodic_BC_Loss(
 
     Num_BC_Points = Lower_Bound_Coords.shape[0];
 
-    Loss = torch.Tensor(0, dtype = torch.float);
+    Loss = torch.tensor(0, dtype = torch.float32);
     for i in range(Num_BC_Points):
         # evaluate the NN at the upper and lower bounds at the ith time
-        # coordinate.
+        # coordinate. We enable gradients because we will need gradients of u
+        # with respect to xt_low and xt_high.
         xt_low = Lower_Bound_Coords[i];
+        xt_low.requires_grad_(True);
         u_low = u_NN(xt_low);
 
         xt_high = Upper_Bound_Coords[i];
+        xt_high.requires_grad_(True);
         u_high = u_NN(xt_high);
 
-        # Evaluat the square of their difference.
-        Loss += (u_high - u_low)**2;
+        # Set up tensors to hold the various derivatives of u at this
+        # boundary point. The 0 element (corresponding to the zeroth order
+        # derivative) is just the value of the function.
+        u_low_derivatives  = torch.empty((Highest_Order+1), dtype = torch.float32);
+        u_low_derivatives[0] = u_low;
+
+        u_high_derivatives = torch.empty((Highest_Order+1), dtype = torch.float32);
+        u_high_derivatives[0] = u_high;
+
+        # Cycle through the higher order derivatives. For each derivative,
+        # we compute d^ju/dx^j at the two boundaries. To do this, we first
+        # compute the gradient of d^ju/dx^j with respect to xt. The 0
+        # element of this result should hold the d^ju/dx^j.
+        for j in range(1, Highest_Order + 1):
+            grad_dju_dxj_low = torch.autograd.grad(
+                                        u_low_derivatives[j-1],
+                                        xt_low,
+                                        retain_graph = True,
+                                        create_graph = True)[0];
+            u_low_derivatives[j] = grad_dju_dxj_low[0];
+
+            grad_dju_dxj_high = torch.autograd.grad(
+                                        u_high_derivatives[j-1],
+                                        xt_high,
+                                        retain_graph = True,
+                                        create_graph = True)[0];
+            u_high_derivatives[j] = grad_dju_dxj_high[0];
+
+        # Now, accumulate the Periodic BC Loss at this point. For each j, we add
+        # the square of the difference beteen the jth derivative at xt_low and
+        # xt_high (which we want to be the same). That is,
+        #           |d^ju/dx^j(xt_low) - d^ju/dx^j(xt_high)|^2
+        for j in range(0, Highest_Order+1):
+            Loss += (u_high_derivatives[j] - u_low_derivatives[j])**2;
 
     # Divide the accumulated loss by the number of BC points to get the mean
     # square error.
@@ -98,7 +133,7 @@ def PDE_Residual(
     Returns :
     A single element tensor containing the residual. """
 
-    # We need to compute the gradeint of u with respect to the x t
+    # We need to compute the gradeint of u with respect to the x,t
     # coordinates.
     xt.requires_grad_(True);
 
@@ -106,7 +141,7 @@ def PDE_Residual(
     # Remember that N is a function of u, du/dx, d^2u/dx^2, d^(n-1)u/dx^(n-1),
     # where n is the number of inputs that N_NN accepts.
     n = N_NN.Input_Dim;
-    u_derivatives = torch.empty((n), dtype = torch.float);
+    u_derivatives = torch.empty((n), dtype = torch.float32);
 
     # Calculate approximate solution at this collocation point.
     u_derivatives[0] = u_NN(xt)[0];
@@ -172,7 +207,7 @@ def Collocation_Loss(
     num_Collocation_Points : int = Collocation_Coords.shape[0];
 
     # Now, initialize the loss and loop through the collocation points!
-    Loss = torch.tensor(0, dtype = torch.float);
+    Loss = torch.tensor(0, dtype = torch.float32);
     for i in range(num_Collocation_Points):
         # Get the coordinates of the ith collocation point.
         xt = Collocation_Coords[i];
@@ -220,7 +255,7 @@ def Data_Loss(
     num_Data_Points : int = Data_Coords.shape[0];
 
     # Now, initialize the Loss and loop through the Boundary Points.
-    Loss = torch.tensor(0, dtype = torch.float);
+    Loss = torch.tensor(0, dtype = torch.float32);
     for i in range(num_Data_Points):
         xt = Data_Coords[i];
 

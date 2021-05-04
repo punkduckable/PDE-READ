@@ -176,7 +176,6 @@ def PINNs_Training(
     # Evaluate the Loss (Note, we enforce a BC of 0)
     Loss = (IC_Loss(
                 u_NN = u_NN,
-                N_NN = N_NN,
                 IC_Coords = IC_Coords,
                 IC_Data = IC_Data)
 
@@ -184,7 +183,6 @@ def PINNs_Training(
 
             Periodic_BC_Loss(
                 u_NN = u_NN,
-                N_NN = N_NN,
                 Lower_Bound_Coords = Lower_Bound_Coords,
                 Upper_Bound_Coords = Upper_Bound_Coords,
                 Highest_Order = Periodic_BCs_Highest_Order)
@@ -248,27 +246,26 @@ def PINNs_Testing(
 
     ----------------------------------------------------------------------------
     returns:
-    A tuple of three floats. The 0 element holds the IC loss, the 1 element
-    holds the BC loss, the 2 element holds the Collocation loss. """
+    A tuple of three floats. The 0 element holds the Iniitial Condition loss,
+    the 1 element holds the Boundary Condition loss, the 2 element holds the
+    Collocation loss. """
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
-    IC_Loss : float    = IC_Loss(
-                            u_NN = u_NN,
-                            N_NN = N_NN,
-                            IC_Coords = IC_Coords,
-                            IC_Data = IC_Data);
+    IC_Loss_Var : float     = IC_Loss(
+                                u_NN = u_NN,
+                                IC_Coords = IC_Coords,
+                                IC_Data = IC_Data);
 
-    BC_Loss : float    = Periodic_BC_Loss(
-                            u_NN = u_NN,
-                            N_NN = N_NN,
-                            Lower_Bound_Coords = Lower_Bound_Coords,
-                            Upper_Bound_Coords = Upper_Bound_Coords,
-                            Highest_Order = Periodic_BCs_Highest_Order).item();
+    BC_Loss_Var : float     = Periodic_BC_Loss(
+                                u_NN = u_NN,
+                                Lower_Bound_Coords = Lower_Bound_Coords,
+                                Upper_Bound_Coords = Upper_Bound_Coords,
+                                Highest_Order = Periodic_BCs_Highest_Order).item();
 
-    Coloc_Loss : float = Collocation_Loss(
-                            u_NN = u_NN,
-                            N_NN = N_NN,
-                            Collocation_Coords = Collocation_Coords).item();
+    Col_Loss_Var : float    = Collocation_Loss(
+                                u_NN = u_NN,
+                                N_NN = N_NN,
+                                Collocation_Coords = Collocation_Coords).item();
 
     # Return the losses.
-    return (IC_Loss, BC_Loss, Coloc_Loss);
+    return (IC_Loss_Var, BC_Loss_Var, Col_Loss_Var);

@@ -35,7 +35,7 @@ def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Point_Coord
 
     # First, determine the number of points and intiailize the residual array.
     num_points : int = Point_Coords.shape[0];
-    Residual = np.empty((num_points), dtype = np.float);
+    Residual = np.empty((num_points), dtype = np.float32);
 
     for i in range(num_points):
         # Get the xy coordinate of the ith collocation point.
@@ -70,7 +70,7 @@ def Evaluate_Approx_Sol(u_NN : Neural_Network, Point_Coords : torch.Tensor) -> n
 
     # Get number of points, initialize the u array.
     num_Points : int = Point_Coords.shape[0];
-    u_NN_at_Points = np.empty((num_Points), dtype = np.float);
+    u_NN_at_Points = np.empty((num_Points), dtype = np.float32);
 
     # Loop through the points, evaluate the network at each one.
     for i in range(num_Points):
