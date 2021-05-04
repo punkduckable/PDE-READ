@@ -216,7 +216,7 @@ def main():
                     N_NN                = N_NN,
                     x_points            = Data_Container.x_points,
                     t_points            = Data_Container.t_points,
-                    True_Sol_On_Grid    = Data_Container.True_Sol_On_Grid);
+                    True_Sol_On_Grid    = Data_Container.True_Sol);
         plt.show();
 
 

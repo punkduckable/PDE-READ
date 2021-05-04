@@ -10,7 +10,7 @@ def IC_Loss(
         u_NN : Neural_Network,
         IC_Coords : torch.Tensor,
         IC_Data : torch.Tensor) -> torch.Tensor:
-    """ This function evaluates how well u_NN satisifies the initial condition.
+    """ This function evaluates how well u_NN satisfies the initial condition.
     Specifically, for each point in IC_Coords, we evaluate u_NN. We then
     calculate the square of the difference between this and the corresponding
     true solution in IC_Data. We return the mean of these squared differences.
@@ -20,11 +20,10 @@ def IC_Loss(
     u_NN : the Neural Network that approximates the solution.
 
     IC_Coords : The coordinates where we know the true initial condition. This
-    should be a Nx2 tensor whose ith row holds the x, t coodinates of the ith
-    point.
+    should be a two column tensors, each row of which holds an x,t coordinate.
 
-    IC_Data : The value of the initial condition at each point in IC_Coords.
-    This should be an N element tensor. """
+    IC_Data : The value of the initial condition at each point in IC_Coords. If
+    IC_Coords has N rows, then this should be an N element tensor. """
 
     Num_IC_Points : int = IC_Coords.shape[0];
 
@@ -50,9 +49,30 @@ def Periodic_BC_Loss(
         Lower_Bound_Coords : torch.Tensor,
         Upper_Bound_Coords : torch.Tensor,
         Highest_Order : int) -> torch.Tensor:
-    """ I need a description!!!!
+    """ This function evaluates how well the learned solution satisfies periodic
+    Boundary conditions. Let N = Highest_Order. We require that the solution
+    and it's first N derivatives satisify periodic boundary conditions (they
+    match at the ends of the spatial domain).
 
-    ENABLE MULTIPLE DERIVATIVES!!!!!! """
+    ----------------------------------------------------------------------------
+    Arguments:
+    u_NN : The network that approximates the solution to the PDE.
+
+    Lower_Bound_Coords : The x,t coordinates of each point on the lower bound of
+    the spatial domain (the x coordinate is always the same, t varies). This
+    should be a two column tensors, each row of which holds an x,t coordinate.
+
+    Upper_Bound_Coords : The x,t coordinates of each point on the upper bound of
+    the spatial domain (the x coordinate is always the same, t varies). This
+    should be a two column tensors, each row of which holds an x,t coordinate.
+
+    Highest_Order : The highest order spatial derivative of the solution that
+    we want to impose periodic boundary conditions on. If this is 0, then we
+    only apply periodic BCs to the solution itself (not any of its derivatives).
+
+    ----------------------------------------------------------------------------
+    Returns :
+    A scalar tensor containing the mean square BC error. """
 
     Num_BC_Points = Lower_Bound_Coords.shape[0];
 
@@ -181,7 +201,7 @@ def Collocation_Loss(
         u_NN : Neural_Network,
         N_NN : Neural_Network,
         Collocation_Coords : torch.Tensor) -> torch.Tensor:
-    """ This function evaluates how well u_NN satisifies the learned PDE at the
+    """ This function evaluates how well u_NN satisfies the learned PDE at the
     collocation points. For brevity, let u = u_NN and N = N_NN. At each
     collocation point, we compute the following:
                                 du/dt + N(u, du/dx, d^2u/dx^2)
@@ -226,7 +246,7 @@ def Data_Loss(
         u_NN : Neural_Network,
         Data_Coords : torch.Tensor,
         Data_Values : torch.Tensor) -> torch.Tensor:
-    """ This function evaluates how well the learned solution u satisifies the
+    """ This function evaluates how well the learned solution u satisfies the
     training data. Specifically, for each point ((x_i, t_i), u_i) in
     data, we compute the square of the difference between u_i (the true
     solution at the point (x_i, t_i)) and u(x_i, t_i), where u denotes the

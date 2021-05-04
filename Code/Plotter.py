@@ -9,7 +9,10 @@ from Loss_Functions import PDE_Residual;
 
 
 # Determine how well the network satisifies the PDE at a set of point.
-def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Point_Coords : torch.Tensor) -> np.array:
+def Evaluate_Residuals(
+        u_NN : Neural_Network,
+        N_NN : Neural_Network,
+        Point_Coords : torch.Tensor) -> np.array:
     """ For brevity, let u = u_NN and N = N_NN. At each coordinate, this
     function computes
                     du/dt - N(u, du_dx,... )
@@ -49,7 +52,9 @@ def Evaluate_Residuals(u_NN : Neural_Network, N_NN : Neural_Network, Point_Coord
 
 
 # Evaluate solution at a set of points.
-def Evaluate_Approx_Sol(u_NN : Neural_Network, Point_Coords : torch.Tensor) -> np.array:
+def Evaluate_Approx_Sol(
+        u_NN : Neural_Network,
+        Point_Coords : torch.Tensor) -> np.array:
     """ This function evaluates the approximate solution at each element of
     Point_Coords.
 

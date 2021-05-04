@@ -254,9 +254,9 @@ def Setup_File_Reader() -> Setup_Data_Container:
     # Data
 
     Setup_Data.Data_File_Name = Read_Line_After(File, "Data File Name [str] :").strip();
+
     Setup_Data.Num_Training_Points = int(Read_Line_After(File, "Number of Training Points [int] :").strip());
     Setup_Data.Num_Testing_Points = int(Read_Line_After(File, "Number of Testing Points [int] :").strip());
-
 
     # All done! Return the setup data.
     return Setup_Data;

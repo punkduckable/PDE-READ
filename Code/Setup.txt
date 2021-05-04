@@ -30,13 +30,13 @@
 
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
-Load Optimizer State [bool] :                    False
+Load Optimizer State [bool] :                    True
   Load File Name [str] :                         Burgers_Save
 
-Save State [Bool] :                              True
-  Save File Name [str] :                         PINNs_Test
+Save State [Bool] :                              False
+  Save File Name [str] :                         Burgers_Save
 
-Plot Final Result [bool] :                       True
+Plot Final Result [bool] :                       False
 
 
 
@@ -59,7 +59,9 @@ Plot Final Result [bool] :                       True
 # then we will enforce periodic BCs on the solution and its first N-1
 # derivatives.
 
-Discovery or PINNs mode [str] :                  PINNs
+Discovery or PINNs mode [str] :                  Discovery
+
+# PINNs settings.
 Periodic BCs highest order [int] :               1
 
 
@@ -73,14 +75,13 @@ u Network - Nodes per Hidden Layer [int] :       50
 N Network - Number u derivatives [int] :         2
 N Network - Number of Hidden Layers [int] :      2
 N Network - Nodes per Hidden Layer [int] :       100
-N Network - Learning Enabled [bool] :            True
 
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         200
+Number of Epochs [int] :                         10
 Learning Rate [float] :                          .0015
 
 

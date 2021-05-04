@@ -7,52 +7,7 @@ from typing import Tuple;
 
 
 class Data_Container:
-    """ This class is a container for the data read in by the data loader.
-    This data is used in various parts of the program.
-
-    All "Coords" members should be two dimensional tensors/arrays with
-    two columns (and an arbitrary number of rows). The 0 column should
-    hold x-coordinates, while the 1 column should hold t-coordinates.
-
-    All "Data" members should be one dimensional tensors/arrays. """
-
-    def __init__(   self,
-                    x_points            : np.array,
-                    t_points            : np.array,
-                    True_Sol_On_Grid    : np.array,
-                    IC_Coords           : torch.Tensor,
-                    IC_Data             : torch.Tensor,
-                    Lower_Bound_Coords  : torch.Tensor,
-                    Upper_Bound_Coords  : torch.Tensor,
-                    Train_Data_Coords   : torch.Tensor,
-                    Train_Data_Values   : torch.Tensor,
-                    Train_Coloc_Coords  : torch.Tensor,
-                    Test_Coloc_Coords   : torch.Tensor,
-                    Test_Data_Values    : torch.Tensor,
-                    Test_Data_Coords    : torch.Tensor ):
-
-        # Plotting.
-        self.x_points           = x_points;
-        self.t_points           = t_points;
-        self.True_Sol_On_Grid   = True_Sol_On_Grid;
-
-        # Initial Conditions
-        self.IC_Coords = IC_Coords;
-        self.IC_Data   = IC_Data;
-
-        # Periodic BCs
-        self.Lower_Bound_Coords = Lower_Bound_Coords;
-        self.Upper_Bound_Coords = Upper_Bound_Coords;
-
-        # Training.
-        self.Train_Data_Coords  = Train_Data_Coords;
-        self.Train_Data_Values  = Train_Data_Values;
-        self.Train_Coloc_Coords = Train_Coloc_Coords;
-
-        # Testing.
-        self.Test_Data_Coords   = Test_Data_Coords;
-        self.Test_Data_Values   = Test_Data_Values;
-        self.Test_Coloc_Coords  = Test_Coloc_Coords;
+    pass;
 
 
 
@@ -131,119 +86,93 @@ def Data_Loader(
 
     All_Data_Values = True_Sol_in.flatten();
 
+    # Initialze data contianer object. We'll fill this container with diffeent
+    # items depending on what mode we're in. For now, fill the container with
+    # with everything that's ready to ship.
+    Container = Data_Container();
+    Container.x_points = x_points;
+    Container.t_points = t_points;
+    Container.True_Sol = True_Sol_in;
+
+    if(Mode == "PINNs"):
+        # If we're in PINN's mode, then we need IC, BC data.
+
+        ############################################################################
+        # Initial Conditions
+        # Since each column of True_Sol_in corresponds to a specific time, the
+        # initial condition is just the 0 column of True_Sol_in. We also need the
+        # corresponding coordinates.
+
+        # There is an IC coordinate for each possible x value. The corresponding
+        # time value for that coordinate is 0.
+        IC_Coords = np.zeros((n_x, 2), dtype = np.float32);
+        IC_Coords[:, 0] = x_points;
+
+        # Since each column of True_Sol_in corresponds to a specific time, the
+        # 0 column of True_sol_in holds the initial condition.
+        IC_Data = True_Sol_in[:, 0];
+
+
+
+        ############################################################################
+        # Periodic BC
+        # To enforce periodic BCs, for each time, we need the solution to match at
+        # the upper and lower spatial bounds. Thus, we need the coordinates of the
+        # upper and lower spatial bounds of the domain.
+
+        # x_points only includes the lower spatial bound of the domain. The last
+        # element of x_points holds the x value just before the upper bound. Thus,
+        # the lower spatial bound is just x_points[0]. The upper spatial bound is
+        # x_points[-1] plus the grid spacing (we assume the x values are uniformly
+        # spaced).
+        x_lower = x_points[0];
+        x_upper = x_points[-1] + (x_points[-1] - x_points[-2]);
+        x_upper = -x_lower;
+
+        # Now, set up the upper and lower bound coordinates. Let's consider
+        # Lower_Bound_Coords. Every coordinate in this array will have the same
+        # x coordinate, x_lower. Thus, we initialize an array full of x_lower.
+        # We then set the 1 column of this array (the t coordinates) to the
+        # set of possible t coordinates (t_points). We do something analagous for
+        # Upper_Bound_Coords.
+        Lower_Bound_Coords = np.full((n_t, 2), x_lower, dtype = np.float32);
+        Upper_Bound_Coords = np.full((n_t, 2), x_upper, dtype = np.float32);
+        Lower_Bound_Coords[:, 1] = t_points;
+        Upper_Bound_Coords[:, 1] = t_points;
+
+        # Add these items (or, rather, their tensor equivalents) to the
+        # container. Note that everything should be of type float32. We use
+        # the to method as a backup.
+        Container.IC_Coords             = torch.from_numpy(IC_Coords).to(dtype = torch.float32);
+        Container.IC_Data               = torch.from_numpy(IC_Data).to(dtype = torch.float32);
+        Container.Lower_Bound_Coords    = torch.from_numpy(Lower_Bound_Coords).to(dtype = torch.float32);
+        Container.Upper_Bound_Coords    = torch.from_numpy(Upper_Bound_Coords).to(dtype = torch.float32);
 
 
     ############################################################################
-    # Initial Conditions
-    # Since each column of True_Sol_in corresponds to a specific time, the
-    # initial condition is just the 0 column of True_Sol_in. We also need the
-    # corresponding coordinates.
+    # Training, Testing points, values.
 
-    # There is an IC coordinate for each possible x value. The corresponding
-    # time value for that coordinate is 0.
-    IC_Coords = np.zeros((n_x, 2), dtype = np.float32);
-    IC_Coords[:, 0] = x_points;
-
-    # Since each column of True_Sol_in corresponds to a specific time, the
-    # 0 column of True_sol_in holds the initial condition.
-    IC_Data = True_Sol_in[:, 0];
-
-
-
-    ############################################################################
-    # Periodic BC
-    # To enforce periodic BCs, for each time, we need the solution to match at
-    # the upper and lower spatial bounds. Thus, we need the coordinates of the
-    # upper and lower spatial bounds of the domain.
-
-    # x_points only includes the lower spatial bound of the domain. The last
-    # element of x_points holds the x value just before the upper bound. Thus,
-    # the lower spatial bound is just x_points[0]. The upper spatial bound is
-    # x_points[-1] plus the grid spacing (we assume the x values are uniformly
-    # spaced).
-    x_lower = x_points[0];
-    x_upper = x_points[-1] + (x_points[-1] - x_points[-2]);
-    x_upper = -x_lower;
-
-    # Now, set up the upper and lower bound coordinates. Let's consider
-    # Lower_Bound_Coords. Every coordinate in this array will have the same
-    # x coordinate, x_lower. Thus, we initialize an array full of x_lower.
-    # We then set the 1 column of this array (the t coordinates) to the
-    # set of possible t coordinates (t_points). We do something analagous for
-    # Upper_Bound_Coords.
-    Lower_Bound_Coords = np.full((n_t, 2), x_lower, dtype = np.float32);
-    Upper_Bound_Coords = np.full((n_t, 2), x_upper, dtype = np.float32);
-    Lower_Bound_Coords[:, 1] = t_points;
-    Upper_Bound_Coords[:, 1] = t_points;
-
-
-
-    ############################################################################
-    # Training points, values.
-
-    # Randomly select Num_Training_Points coordinate indicies.
+    # Randomly select Num_Training_Points, Num_Testing_Points coordinate indicies.
     Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Training_Points, replace = False);
-
-    # Select the corresponding collocation points, data points, and data values.
-    # Currently, the Coloc and Data coords are the same, though this may change
-    # in the future.
-    Train_Data_Coords  = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);
-    Train_Data_Values  = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = torch.float32);
-    Train_Coloc_Coords = Train_Data_Coords;
-
-
-
-    ############################################################################
-    # Testing points, values
-
-    # Randomly select Num_Testing_Points coordinate indicies
     Test_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Testing_Points, replace = False);
 
-    # Note that everything should have must be of type float32 (this should
-    # already be the case, since we loaded everything as a float32 in numpy)
-    Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = torch.float32);
-    Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = torch.float32);
-    Test_Coloc_Coords = Test_Data_Coords;
 
+    # Select the corresponding coordinates for testing, taining collocation
+    # points. Note that everything must be of type float32 (this should hold since
+    # we loaded everything as a float32). The to method is just a backup.
+    Container.Train_Coloc_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);
+    Container.Test_Coloc_Coords = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = torch.float32);
 
-
-    # Package everything into a Data Container object and return. Which objects
-    # we return vs which we set to none depends on which Mode we're in.
-    # Note that we convert some numpy arrays to tensors (this is almost free,
-    # because the tensors share storage with the array).
+    # We need data coordinates, values if we're in Discovery mode.
     if(Mode == "Discovery"):
-        # ICs, BCs aren't used in Discovery mode.
-        return Data_Container(
-                    x_points            = x_points,
-                    t_points            = t_points,
-                    True_Sol_On_Grid    = True_Sol_in,
-                    IC_Coords           = None,
-                    IC_Data             = None,
-                    Lower_Bound_Coords  = None,
-                    Upper_Bound_Coords  = None,
-                    Train_Data_Coords   = Train_Data_Coords,
-                    Train_Data_Values   = Train_Data_Values,
-                    Train_Coloc_Coords  = Train_Coloc_Coords,
-                    Test_Data_Coords    = Test_Data_Coords,
-                    Test_Data_Values    = Test_Data_Values,
-                    Test_Coloc_Coords   = Test_Coloc_Coords);
-    elif(Mode == "PINNs"):
-        # Testing, Training Coords and Data aren't used in PINNs mode.
-        return Data_Container(
-                    x_points            = x_points,
-                    t_points            = t_points,
-                    True_Sol_On_Grid    = True_Sol_in,
-                    IC_Coords           = torch.from_numpy(IC_Coords),
-                    IC_Data             = torch.from_numpy(IC_Data),
-                    Lower_Bound_Coords  = torch.from_numpy(Lower_Bound_Coords),
-                    Upper_Bound_Coords  = torch.from_numpy(Upper_Bound_Coords),
-                    Train_Data_Coords   = None,
-                    Train_Data_Values   = None,
-                    Train_Coloc_Coords  = Train_Coloc_Coords,
-                    Test_Data_Coords    = None,
-                    Test_Data_Values    = None,
-                    Test_Coloc_Coords   = Test_Coloc_Coords);
-    else:
-        print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
-        print("Something went wrong. Aborting. Thrown by Data_Loader");
-        exit();
+        # Currently, the Coloc and Data coords are the same, though this may
+        # change in the future.
+        Container.Train_Data_Coords  = Container.Train_Coloc_Coords;
+        Container.Train_Data_Values  = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = torch.float32);
+
+        Container.Test_Data_Coords  = Container.Test_Coloc_Coords;
+        Container.Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = torch.float32);
+
+
+    # The containers should be full. Return!
+    return Container;
