@@ -7,6 +7,7 @@ from Test_Train import Discovery_Testing, Discovery_Training, PINNs_Testing, PIN
 from Plotter import Update_Axes, Setup_Axes;
 from Setup_File_Reader import Setup_File_Reader, Setup_Data_Container;
 from Data_Loader import Data_Loader, Data_Container;
+from Timing import Timer;
 
 
 
@@ -68,19 +69,23 @@ def main():
     ############################################################################
     # Set up everything.
 
+    # Start a timer for the setup.
+    Setup_Timer = Timer();
+    Setup_Timer.Start();
+
     # Initialize Network hyperparameters.
     Epochs        : int   = Setup_Data.Epochs;
     Learning_Rate : float = Setup_Data.Learning_Rate;
 
     # Set up the neural network to approximate the PDE solution.
     u_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.u_Num_Hidden_Layers,
-                            Nodes_Per_Layer     = Setup_Data.u_Nodes_Per_Layer,
+                            Neurons_Per_Layer   = Setup_Data.u_Neurons_Per_Layer,
                             Input_Dim           = 2,
                             Output_Dim          = 1);
 
     # Set up the neural network to approximate the PDE operator N.
     N_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.N_Num_Hidden_Layers,
-                            Nodes_Per_Layer     = Setup_Data.N_Nodes_Per_Layer,
+                            Neurons_Per_Layer   = Setup_Data.N_Neurons_Per_Layer,
                             Input_Dim           = Setup_Data.N_Num_u_derivatives + 1,
                             Output_Dim          = 1);
 
@@ -120,10 +125,18 @@ def main():
                         Num_Training_Points = Setup_Data.Num_Training_Points,
                         Num_Testing_Points = Setup_Data.Num_Testing_Points);
 
+    # Setup is done! Figure out how long it took.
+    Setup_Time : float = Setup_Timer.Stop();
+    print("Setup took %fs." % Setup_Time);
+
 
 
     ############################################################################
     # Loop through the epochs.
+
+    # Start a timer for the Epochs.
+    Epoch_Timer = Timer();
+    Epoch_Timer.Start();
 
     if(Setup_Data.Mode == "Discovery"):
         # Set up array for the different kinds of losses.
@@ -190,6 +203,11 @@ def main():
         print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
         print("Something went wrong. Aborting. Thrown by main");
         exit();
+
+    # Epochs are done. Figure out how long they took!
+    Epoch_Time = Epoch_Timer.Stop();
+    print("Running %d epochs took %fs." % (Epochs, Epoch_Time));
+    print("Average runtime per epoch = %fs" % (Epoch_Time/Epochs));
 
 
 

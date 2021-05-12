@@ -233,12 +233,12 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
     # Load u's network Architecture
     Setup_Data.u_Num_Hidden_Layers = int(Read_Line_After(File, "u Network - Number of Hidden Layers [int] :").strip());
-    Setup_Data.u_Nodes_Per_Layer = int(Read_Line_After(File, "u Network - Nodes per Hidden Layer [int] :").strip());
+    Setup_Data.u_Neurons_Per_Layer = int(Read_Line_After(File, "u Network - Neurons per Hidden Layer [int] :").strip());
 
     # Load N's network Architecture
     Setup_Data.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - Number u derivatives [int] :").strip());
     Setup_Data.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
-    Setup_Data.N_Nodes_Per_Layer = int(Read_Line_After(File, "N Network - Nodes per Hidden Layer [int] :").strip());
+    Setup_Data.N_Neurons_Per_Layer = int(Read_Line_After(File, "N Network - Neurons per Hidden Layer [int] :").strip());
 
 
 

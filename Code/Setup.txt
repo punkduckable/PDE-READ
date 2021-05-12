@@ -17,7 +17,7 @@
 # General Settings
 # If you plan to load the state of either network, then the network
 # Architecture settings must match those of the saved network. (same number of
-# layers and nodes per layer). Further, if we Load the Optimizer state, then
+# layers and neurons per layer). Further, if we Load the Optimizer state, then
 # Learning Rate hyper-parameters will be ignored.
 #
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
@@ -69,18 +69,18 @@ Periodic BCs highest order [int] :               1
 # Network Architecture
 
 u Network - Number of Hidden Layers [int] :      5
-u Network - Nodes per Hidden Layer [int] :       50
+u Network - Neurons per Hidden Layer [int] :     50
 
 N Network - Number u derivatives [int] :         2
 N Network - Number of Hidden Layers [int] :      2
-N Network - Nodes per Hidden Layer [int] :       100
+N Network - Neurons per Hidden Layer [int] :     100
 
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         100
+Number of Epochs [int] :                         10
 Learning Rate [float] :                          .0015
 
 
