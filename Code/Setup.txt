@@ -1,4 +1,3 @@
-# Instructions:
 # This file controls the setup of the program. The file consists of comment
 # (lines that begin with '#') and setting lines. Each setting line consists of
 # a setting name, a data type, and a value. They use the following format:
@@ -28,9 +27,9 @@
 # If you plan to load the optimizer state from file and you were in Discovery
 # mode when you saved, then you must be in discovery mode now.
 
-Load u Network State [bool] :                    True
-Load N Network State [bool] :                    True
-Load Optimizer State [bool] :                    True
+Load u Network State [bool] :                    False
+Load N Network State [bool] :                    False
+Load Optimizer State [bool] :                    False
   Load File Name [str] :                         Burgers_Save
 
 Save State [Bool] :                              False

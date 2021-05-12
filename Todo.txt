@@ -9,7 +9,9 @@ activation functions actually expect (check online).
 for each layer's activation function to the optimizer). Initialize them to the
 best approximation to RELU.
 
+- Extraction mode. 
+
 - Try randomizing the collocation points every few Epochs (or maybe even every
 Epoch).
 
-- Write a readme. 
+- Write a readme.
