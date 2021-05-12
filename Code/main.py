@@ -182,8 +182,8 @@ def main():
 
             # Print losses.
             print(("Epoch #%-4d: "              % t)                    , end = '');
-            print(("\tIC Loss = %7f"             % IC_Losses[t])         , end = '');
-            print(("\tBC Loss = %7f"             % BC_Losses[t])         , end = '');
+            print(("\tIC Loss = %7f"            % IC_Losses[t])         , end = '');
+            print(("\tBC Loss = %7f"            % BC_Losses[t])         , end = '');
             print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
             print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
     else:

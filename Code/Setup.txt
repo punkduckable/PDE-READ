@@ -36,7 +36,7 @@ Load Optimizer State [bool] :                    True
 Save State [Bool] :                              False
   Save File Name [str] :                         Burgers_Save
 
-Plot Final Result [bool] :                       False
+Plot Final Result [bool] :                       True
 
 
 
@@ -81,7 +81,7 @@ N Network - Nodes per Hidden Layer [int] :       100
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         10
+Number of Epochs [int] :                         100
 Learning Rate [float] :                          .0015
 
 

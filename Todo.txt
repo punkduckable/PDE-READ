@@ -1,0 +1,15 @@
+- Pass arrays of points through NN all at once. This is what the linear and
+activation functions actually expect (check online).
+
+- Review comments in NN class.
+
+- Add optimizer, activation function options to setup file
+
+- Implement rational functions as an option (I'll need to pass the parameters
+for each layer's activation function to the optimizer). Initialize them to the
+best approximation to RELU.
+
+- Try randomizing the collocation points every few Epochs (or maybe even every
+Epoch).
+
+- Write a readme. 
