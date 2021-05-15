@@ -8,49 +8,6 @@ from Loss_Functions import PDE_Residual;
 
 
 
-# Determine how well the network satisifies the PDE at a set of point.
-def Evaluate_Residuals(
-        u_NN : Neural_Network,
-        N_NN : Neural_Network,
-        Point_Coords : torch.Tensor) -> np.array:
-    """ For brevity, let u = u_NN and N = N_NN. At each coordinate, this
-    function computes
-                    du/dt - N(u, du_dx,... )
-    which we call the residual. If the NN perfectly satisified the PDE, then the
-    residual would be zero everywhere. However, since the NN only approximates
-    the PDE solution, we get non-zero residuals.
-
-    ----------------------------------------------------------------------------
-    Arguments:
-    u_NN : the Neural Network that approximates solution to the learned PDE.
-
-    N_NN : The Neural Network that approximates the PDE.
-
-    Point_Coords : a tensor of coordinates of points where we want to evaluate
-    the residual This must be a N by 2 tensor, where N is the number of points.
-    The ith row of this tensor should contain the x,t coordinates of the ith
-    point where we want to evaluate the residual.
-
-    ----------------------------------------------------------------------------
-    Returns:
-    a numpy array. The ith element of this array gives the residual at the ith
-    element of points. """
-
-    # First, determine the number of points and intiailize the residual array.
-    num_points : int = Point_Coords.shape[0];
-    Residual = np.empty((num_points), dtype = np.float32);
-
-    for i in range(num_points):
-        # Get the xy coordinate of the ith collocation point.
-        xt = Point_Coords[i];
-
-        # Evaluate the Residual from the learned PDE at this point.
-        Residual[i] = PDE_Residual(u_NN, N_NN, xt).item();
-
-    return Residual;
-
-
-
 # Evaluate solution at a set of points.
 def Evaluate_Approx_Sol(
         u_NN : Neural_Network,
@@ -199,7 +156,7 @@ def Update_Axes(
     # that's what matplotlib's contour function wants.
     u_NN_on_Grid      = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
     Error_On_Grid     = np.abs(u_NN_on_Grid - True_Sol_On_Grid);
-    Residual_on_Grid  = Evaluate_Residuals(u_NN, N_NN, Grid_Point_Coords).reshape(n_x, n_t);
+    Residual_on_Grid  = PDE_Residual(u_NN, N_NN, Grid_Point_Coords).detach().numpy().reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
     ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, u_NN_on_Grid, levels = 50, cmap = plt.cm.jet);

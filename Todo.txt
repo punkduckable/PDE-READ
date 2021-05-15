@@ -1,7 +1,7 @@
-- Pass arrays of points through NN all at once. This is what the linear and
-activation functions actually expect (check online).
+- Pass arrays of points through NN all at once in loss functions. This is what
+the linear and activation functions actually expect (check online).
 
-- Review comments in NN class.
+- Move Setup file outside of Code directory.
 
 - Add optimizer, activation function options to setup file
 
@@ -9,7 +9,10 @@ activation functions actually expect (check online).
 for each layer's activation function to the optimizer). Initialize them to the
 best approximation to RELU.
 
-- Extraction mode. 
+- Extraction mode.
+
+- Look into eliminating the computation of du/dt for higher derivatives in
+PDE residual. This may slightly improve runtime.
 
 - Try randomizing the collocation points every few Epochs (or maybe even every
 Epoch).

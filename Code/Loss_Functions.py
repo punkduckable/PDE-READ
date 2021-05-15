@@ -132,13 +132,14 @@ def Periodic_BC_Loss(
 
 # Evaluates du/dt - N(u, du/dx, d^u/dx^2,... ) at a specific point.
 def PDE_Residual(
-        u_NN : Neural_Network,
-        N_NN : Neural_Network,
-        xt : torch.Tensor) -> torch.Tensor:
-    """ This function evaluates the "residual" of the PDE at a given point.
-    For brevtiy, let u = u_NN, and N = N_NN. This function computes
+        u_NN    : Neural_Network,
+        N_NN    : Neural_Network,
+        Coords  : torch.Tensor) -> torch.Tensor:
+    """ This function evaluates the "residual" of the PDE at a set of
+    coordinates. For brevtiy, let u = u_NN, and N = N_NN. At each coordinate,
+    this function computes
             du/dt - N(u, du/dx, d^2u/dx^2,... )
-    (which we call the residual) at the specified coodinate (x, t).
+    which we call the residual.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -146,53 +147,99 @@ def PDE_Residual(
 
     N_NN : The neural network that approximates the PDE.
 
-    xt : A 2 element tensor containing coordinates. The first element should be
-    the x coordinate and the second should be the t coodinate.
+    Coords : A M by 2 tensor of coordinates. The ith row of this tensor should
+    contain the ith x, t coordinates.
 
     ----------------------------------------------------------------------------
     Returns :
-    A single element tensor containing the residual. """
+    A M element tensor (where M is the number of collocation points) whose ith
+    entry holds the residual at the ith coordinate.  """
 
-    # We need to compute the gradeint of u with respect to the x,t
-    # coordinates.
-    xt.requires_grad_(True);
+    # We need to evaluate derivatives, so set Requires Grad to true.
+    Coords.requires_grad_(True);
 
     # Determine how many derivatives of u we'll need to evaluate the PDE.
     # Remember that N is a function of u, du/dx, d^2u/dx^2, d^(n-1)u/dx^(n-1),
-    # where n is the number of inputs that N_NN accepts.
+    # where n is the number of inputs that N_NN accepts. Once we know this,
+    # and the Number of Collocation points, we initialize a tensor to hold the
+    # value of u and its first n-1 derivatives at each collocation point.
+    # The ith row of this tensor holds the value of u and its first n-1
+    # derivatives at the ith collocation point. Its jth column holds the jth
+    # spatial derivative of u at each collocation point.
     n = N_NN.Input_Dim;
-    u_derivatives = torch.empty((n), dtype = torch.float32);
+    num_Collocation_Points : int = Coords.shape[0];
+    diu_xdi = torch.empty((num_Collocation_Points, n), dtype = torch.float32);
 
     # Calculate approximate solution at this collocation point.
-    u_derivatives[0] = u_NN(xt)[0];
+    diu_xdi[:, 0] = u_NN(Coords).squeeze();
 
-    # Compute gradient of u with respect to xt. We have to create the graph
-    # used to compute grad_u so that we can evaluate second derivatives.
-    # We also need to set retain_graph to True (which is implicitly set by
-    # setting create_graph = True, though I keep it to make the code more
-    # explicit) so that torch keeps the computational graph for u, which we
-    # will need when we do backpropigation.
-    grad_u = torch.autograd.grad(u_derivatives[0], xt, retain_graph = True, create_graph = True)[0];
+    # Compute the derivative of the NN output with respect to x, t at each
+    # collocation point. To speed up computations, we batch this computation.
+    # It's important, however, to take a close look at what this is doing
+    # (because it's not terribly obvious). Let N denote the number of
+    # collocation points. Let's focus on how torch computes the derivative of
+    # u with respect to x. Let the Jacobian matrix J be defined as follows:
+    #       | (d/dx_0)u(x_0, t_0),  (d/dx_0)u(x_1, t_1),... (d/dx_0)u(x_N, t_N) |
+    #       | (d/dx_1)u(x_0, t_0),  (d/dx_1)u(x_1, t_1),... (d/dx_1)u(x_N, t_N) |
+    #   J = |  ....                  ....                    ....               |
+    #       | (d/dx_N)u(x_0, t_0),  (d/dx_N)u(x_1, t_1),... (d/dx_N)u(x_N, t_N) |
+    # Let's focus on the jth column. Here we compute the derivative of
+    # u(x_j, t_j) with respect to x_0, x_1,.... x_N. Since u(x_j, t_j) only
+    # depends on x_j (because of how its computational graph was constructed),
+    # all of these derivatives will be zero except for the jth one. More
+    # broadly, this means that J will be a diagonal matrix. When we compute
+    # torch.autograd.grad with a non-scalar outputs variable, we need to pass a
+    # grad_outputs tensor which has the same shape. Let v denote the vector we
+    # pass as grad outputs. In our case, v is a vector of ones. Torch then
+    # computes Jv. Since J is diagonal (by the argument above), the ith
+    # component of this product is (d/dx_i)u(x_i, t_i), precisely what we want.
+    # Torch does the same thing for derivatives with respect to t. The end
+    # result is a 2 column tensor. The ith entry of the 0 column holds
+    # (d/dx_i)u(x_i, t_i), while the ith entry of the 1 column holds
+    # (d/dt_i)u(x_i, t_i).
+    grad_u = torch.autograd.grad(
+                outputs = diu_xdi[:, 0],
+                inputs = Coords,
+                grad_outputs = torch.ones_like(diu_xdi[:, 0]),
+                retain_graph = True,
+                create_graph = True)[0];
+    # So.... why do we do this rather than compute the
+    # derivatives point-by-point? Performance! This batched approach is
+    # much faster because it can take advantage of memory locality.
 
-    # compute du/dx and du/dt. grad_u is a two element tensor. It's 0 element
-    # holds du/dx, and its 1 element holds du/dt.
-    u_derivatives[1] = grad_u[0];
-    du_dt = grad_u[1];
+    # extract du/dx and du/dt (at each collocation point) from grad_u.
+    diu_xdi[:, 1] = grad_u[:, 0];
+    du_dt_batch = grad_u[:, 1];
 
     # Compute higher order derivatives
     for i in range(2, n):
-        # Compute the gradient of d^(i-1)u/dx^(i-1) with respect to xt. We
-        # need to create graphs for this so that torch can track this operation
-        # when constructing the computational graph for the loss function
-        # (which it will use in backpropigation). We also need to retain
-        # grad_u's graph for when we do backpropigation.
-        # The 0 element of this gradient holds d^iu/dx^i.
-        grad_diu_dxi = torch.autograd.grad(u_derivatives[i-1], xt, retain_graph = True, create_graph = True)[0];
-        u_derivatives[i] = grad_diu_dxi[0];
+        # At each collocation point, compute d^(i-1)u(x, t/dx^(i-1) with respect
+        # to x, t. This uses the same process as is described above for grad_u,
+        # but with (d^(i-1)/dx^(i-1))u in place of u.
+        # We need to create graphs for this so that torch can track this
+        # operation when constructing the computational graph for the loss
+        # function (which it will use in backpropigation). We also need to
+        # retain grad_u's graph for when we do backpropigation.
+        grad_diu_dxi = torch.autograd.grad(
+                        outputs = diu_xdi[:, i-1],
+                        inputs = Coords,
+                        grad_outputs = torch.ones_like(diu_xdi[:, i - 1]),
+                        retain_graph = True,
+                        create_graph = True)[0];
 
-    # Evaluate the learned operator N at this point, use it to compute
+        # Extract (d^i/dx^i)u, which is the 0 column of the above tensor.
+        diu_xdi[:, i] = grad_diu_dxi[:, 0];
+
+    # Evaluate N at each collocation point (ith row of diu_dxi). This results
+    # a N by 1 tensor (where N is the number of collocation points) whose ith
+    # row holds the value of N at (u(x_i, t_i), (d/dx)u(x_i, t_i),...
+    # (d^(n-1))/dx^(n-1))u(x_i, t_i)). We squeeze it to get rid of the extra
+    # (useless) dimension.
+    N_NN_batch = N_NN(diu_xdi).squeeze();
+
+    # At each Collocation point, evaluate the square of the residuals
     # du/dt - N(u, du/dx,... ).
-    return du_dt - N_NN(u_derivatives)[0];
+    return (du_dt_batch - N_NN_batch);
 
 
 
@@ -224,20 +271,15 @@ def Collocation_Loss(
     Returns:
     Mean Square Error of the learned PDE at the collocation points. """
 
-    num_Collocation_Points : int = Collocation_Coords.shape[0];
+    # At each Collocation point, evaluate the square of the residuals
+    # du/dt - N(u, du/dx,... ).
+    residual_batch = PDE_Residual(
+                        u_NN    = u_NN,
+                        N_NN    = N_NN,
+                        Coords  = Collocation_Coords);
 
-    # Now, initialize the loss and loop through the collocation points!
-    Loss = torch.tensor(0, dtype = torch.float32);
-    for i in range(num_Collocation_Points):
-        # Get the coordinates of the ith collocation point.
-        xt = Collocation_Coords[i];
-
-        # Evaluate the Residual from the learned PDE at this point.
-        Loss += PDE_Residual(u_NN, N_NN, xt) ** 2;
-
-    # Divide the accmulated loss by the number of collocation points to get
-    # the mean square collocation loss.
-    return (Loss / num_Collocation_Points);
+    # Return the mean square residual.
+    return (residual_batch ** 2).mean();
 
 
 
@@ -272,23 +314,15 @@ def Data_Loss(
     Mean Square Error between the learned solution and the true solution at
     the data points. """
 
-    num_Data_Points : int = Data_Coords.shape[0];
+    # Pass the batch of IC Coordinates through the Neural Network.
+    # Note that this will output a N by 1 tensor (where N is the number
+    # of coordinates). We need it to be a one dimensional tensor, so we squeeze
+    # out the last dimension.
+    u_approx_batch = u_NN(Data_Coords).squeeze();
 
-    # Now, initialize the Loss and loop through the Boundary Points.
-    Loss = torch.tensor(0, dtype = torch.float32);
-    for i in range(num_Data_Points):
-        xt = Data_Coords[i];
+    # Compute Square Error at each coordinate.
+    u_true_batch        = Data_Values;
+    Square_Error_Batch  = (u_approx_batch - u_true_batch)**2;
 
-        # Compute learned solution at this Data point.
-        u_approx = u_NN(xt)[0];
-
-        # Get exact solution at this data point.
-        u_true = Data_Values[i];
-
-        # Aggregate square of difference between the required BC and the learned
-        # solution at this data point.
-        Loss += (u_approx - u_true)**2;
-
-    # Divide the accmulated loss by the number of boundary points to get
-    # the mean square boundary loss.
-    return (Loss / num_Data_Points);
+    # Return the mean square error.
+    return Square_Error_Batch.mean();
