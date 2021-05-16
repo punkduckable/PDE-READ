@@ -25,21 +25,17 @@ def IC_Loss(
     IC_Data : The value of the initial condition at each point in IC_Coords. If
     IC_Coords has N rows, then this should be an N element tensor. """
 
-    Num_IC_Points : int = IC_Coords.shape[0];
+    # Pass each IC coordinate through u_NN. This yields a N by 1 tensor whose
+    # ith element of this stores the value of the approximate solution at the
+    # ith IC Coord. We squeeze out the extra dimension.
+    u_approx_batch = u_NN(IC_Coords).squeeze();
 
-    Loss = torch.tensor(0, dtype = torch.float32);
-    for i in range(Num_IC_Points):
-        # Evaluate the Neural Network at the ith point.
-        xt = IC_Coords[i];
-        u_approx = u_NN(xt)[0];
+    # IC_Data holds the true solution at each point.
+    u_true_batch = IC_Data;
 
-        # Evaluate the square difference between the true and approx solution.
-        u_true = IC_Data[i];
-        Loss += (u_true - u_approx)**2;
-
-    # Divide the accumulated loss by the number of IC points to get the mean
-    # square error.
-    return (Loss / Num_IC_Points);
+    # Calculuate Mean square error.
+    Loss =  ((u_true_batch - u_approx_batch)**2).mean();
+    return Loss;
 
 
 
@@ -74,59 +70,56 @@ def Periodic_BC_Loss(
     Returns :
     A scalar tensor containing the mean square BC error. """
 
-    Num_BC_Points = Lower_Bound_Coords.shape[0];
+    # Allocate tensors to hold u and its derivatives at each coordinate.
+    Num_BC_Points : int = Lower_Bound_Coords.shape[0];
+    diu_dxi_upper_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = torch.float32);
+    diu_dxi_lower_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = torch.float32);
 
-    Loss = torch.tensor(0, dtype = torch.float32);
-    for i in range(Num_BC_Points):
-        # evaluate the NN at the upper and lower bounds at the ith time
-        # coordinate. We enable gradients because we will need gradients of u
-        # with respect to xt_low and xt_high.
-        xt_low = Lower_Bound_Coords[i];
-        xt_low.requires_grad_(True);
-        u_low = u_NN(xt_low);
+    # Evaluate the NN at the upper and lower bound coords. This returns an N by
+    # 1 tensor whose ith row holds the value of u at the ith upper or lower
+    # coordinate. We squeeze them to get ride of the extra dimension. We also
+    # enable gradients because we'll need to evaluate the spatial derivatives of
+    # u at each coordinate.
+    Upper_Bound_Coords.requires_grad_(True);
+    Lower_Bound_Coords.requires_grad_(True);
+    diu_dxi_upper_batch[:, 0] = u_NN(Upper_Bound_Coords).squeeze();
+    diu_dxi_lower_batch[:, 0] = u_NN(Lower_Bound_Coords).squeeze();
 
-        xt_high = Upper_Bound_Coords[i];
-        xt_high.requires_grad_(True);
-        u_high = u_NN(xt_high);
+    # Cycle through the derivaitves. For each one, we compute d^ju/dx^j at the
+    # two boundaries. To do this, we first compute the gradient of d^ju/dx^j
+    # with respect to x, t. The exact way that this works is rather involved
+    # read my extensive comment in the PDE_Residual function (which basically
+    # does the same thing for a different loss function).
+    # We create a graph for the new derivative, and retain the graph for the
+    # old one because we need to be able to differentiate the loss function!
+    for i in range(1, Highest_Order + 1):
+        grad_diu_dxi_upper = torch.autograd.grad(
+                                outputs         = diu_dxi_upper_batch[:, i-1],
+                                inputs          = Upper_Bound_Coords,
+                                grad_outputs    = torch.ones_like(diu_dxi_upper_batch[:, i-1]),
+                                create_graph    = True,
+                                retain_graph    = True)[0];
+        diu_dxi_upper_batch[:, i] = grad_diu_dxi_upper[:, 0];
 
-        # Set up tensors to hold the various derivatives of u at this
-        # boundary point. The 0 element (corresponding to the zeroth order
-        # derivative) is just the value of the function.
-        u_low_derivatives  = torch.empty((Highest_Order+1), dtype = torch.float32);
-        u_low_derivatives[0] = u_low;
+        grad_diu_dxi_lower = torch.autograd.grad(
+                                outputs         = diu_dxi_lower_batch[:, i-1],
+                                inputs          = Lower_Bound_Coords,
+                                grad_outputs    = torch.ones_like(diu_dxi_lower_batch[:, i-1]),
+                                create_graph    = True,
+                                retain_graph    = True)[0];
+        diu_dxi_lower_batch[:, i] = grad_diu_dxi_lower[:, 0];
 
-        u_high_derivatives = torch.empty((Highest_Order+1), dtype = torch.float32);
-        u_high_derivatives[0] = u_high;
+    # Now let's compute the BC error at each BC coordinate. There's a lot going
+    # on here. First, we compute the element-wise difference of
+    # grad_diu_dxi_upper and grad_diu_dxi_lower. Next, we compute the pointwise
+    # square of this tensor and sum along the rows. Let xt_H_i denote
+    # Upper_Bound_Coords[i] and xt_L_i denote Lower_Bound_Coords[i]. The
+    # ith component of the resulting tensor holds
+    #   sum_{i = 0}^{Highest Order} |d^iu/dx^i(xt_H_i) - d^iu/dx^i(xt_L_i)|^2
+    Square_BC_Errors_batch = ((diu_dxi_upper_batch - diu_dxi_lower_batch)**2).sum(dim = 1);
 
-        # Cycle through the higher order derivatives. For each derivative,
-        # we compute d^ju/dx^j at the two boundaries. To do this, we first
-        # compute the gradient of d^ju/dx^j with respect to xt. The 0
-        # element of this result should hold the d^ju/dx^j.
-        for j in range(1, Highest_Order + 1):
-            grad_dju_dxj_low = torch.autograd.grad(
-                                        u_low_derivatives[j-1],
-                                        xt_low,
-                                        retain_graph = True,
-                                        create_graph = True)[0];
-            u_low_derivatives[j] = grad_dju_dxj_low[0];
-
-            grad_dju_dxj_high = torch.autograd.grad(
-                                        u_high_derivatives[j-1],
-                                        xt_high,
-                                        retain_graph = True,
-                                        create_graph = True)[0];
-            u_high_derivatives[j] = grad_dju_dxj_high[0];
-
-        # Now, accumulate the Periodic BC Loss at this point. For each j, we add
-        # the square of the difference beteen the jth derivative at xt_low and
-        # xt_high (which we want to be the same). That is,
-        #           |d^ju/dx^j(xt_low) - d^ju/dx^j(xt_high)|^2
-        for j in range(0, Highest_Order+1):
-            Loss += (u_high_derivatives[j] - u_low_derivatives[j])**2;
-
-    # Divide the accumulated loss by the number of BC points to get the mean
-    # square error.
-    return (Loss / Num_BC_Points);
+    # The loss is then the mean of the Square BC Errors.
+    return Square_BC_Errors_batch.mean();
 
 
 
