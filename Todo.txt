@@ -1,4 +1,4 @@
-- Move Setup file outside of Code directory.
+- Extraction mode.
 
 - Profile, optimize plotter (it's a big runtime bottleneck now)
 
@@ -7,8 +7,6 @@
 - Implement rational functions as an option (I'll need to pass the parameters
 for each layer's activation function to the optimizer). Initialize them to the
 best approximation to RELU.
-
-- Extraction mode.
 
 - Look into eliminating the computation of du/dt for higher derivatives in
 PDE residual. This may slightly improve runtime.

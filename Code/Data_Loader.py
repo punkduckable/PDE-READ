@@ -2,8 +2,6 @@ import numpy as np;
 import torch;
 import scipy.io;
 
-from typing import Tuple;
-
 
 
 class Data_Container:
