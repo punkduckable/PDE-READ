@@ -141,7 +141,7 @@ def Setup_File_Reader() -> Setup_Data_Container:
     from Setup.txt. The main function uses these to set up the program. """
 
     # Open file, initialze a Setup_Data object.
-    File = open("./Setup.txt", "r");
+    File = open("../Setup.txt", "r");
     Setup_Data = Setup_Data_Container();
 
 

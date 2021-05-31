@@ -61,8 +61,8 @@ def main():
 
     # Test that we got the correct input.
     print("Loaded the following settings:");
-    for item in Setup_Data.__dict__.items():
-        print(item);
+    for (setting, value) in Setup_Data.__dict__.items():
+        print(("%-25s = " % setting) + str(value));
 
 
 
