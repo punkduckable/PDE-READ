@@ -10,10 +10,10 @@ class Data_Container:
 
 
 def Data_Loader(
-        Mode : str,
-        Data_File_Path : str,
+        Mode                : str,
+        Data_File_Path      : str,
         Num_Training_Points : int,
-        Num_Testing_Points : int) -> Data_Container:
+        Num_Testing_Points  : int) -> Data_Container:
     """ This function loads data from file and returns it. We make a few
     assumptions about the format of the data. For one, we assume that the .mat
     file contains three fields: x, t, and usol.

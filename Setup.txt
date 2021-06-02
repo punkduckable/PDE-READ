@@ -40,28 +40,39 @@ Plot Final Result [bool] :                       True
 
 
 ################################################################################
-# PINNS or PDE Discovery mode
-# The "Discovery or PINNs" setting if the code attempts to learn the PDE or
-# learn a solution from a learned PDE. The allowed values for this setting are
-# "PINNs" and "Discovery". Actually, the parser will interpret any word that
-# begins with "p" or "P" as "PINNs", and any word that begins with "d" or "D"
-# as "Discovery".
+# Mode
+# The "PINNs, Discovery, or Extraction mode" controls what the code does. The
+allowed values for this setting are "PINNs", "Discovery", and "Extraction".
+# Actually, the parser will interpret any word that begins with "p" or "P" as
+# "PINNs", any word that begins with "d" or "D" as "Discovery", and any word
+# that begins with "e" or "E" as "Extraction"... PDE's, get it? ;)
 #
-# If we are in Discovery mode, then the N Network will have learning enabled.
-# The loss will come from the data and collocation losses. In this case, you can
-# ignore the "Periodic BCs Highest Order setting", as the parser will ignore it.
+# In Discovery mode, we learn both the N and u networks. The loss comes from the
+# data and collocation losses. In this mode, you can ignore the PINNs and
+# Extraction settings, as the parser will ignore them.
 #
-# If we are in PINNs mode, then the N Network will not learn (which probably
-# means that you should be loading a network from file). The loss will
-# come from the collocation points, the IC, and the periodic BCs. In this case,
-# you MUST set the "Periodic BCs highest order". If this setting is set to N,
-# then we will enforce periodic BCs on the solution and its first N-1
-# derivatives.
+# In PINNs mode, we only learn u (not the N network, which means that you
+# should probably load N_NN from file). The loss comes from the collocation
+# points, the IC, and the periodic BCs. In this mode, you MUST set the "Periodic
+# BCs highest order". If this setting is set to N, then we will enforce periodic
+# BCs on the solution and its first N-1 derivatives.
+#
+# In Extraction mode, we learn neither u nor N. Instead, we attempt to
+# extract a PDE from u (which probably means that u should be loaded from
+# a trained network). In this mode, you must set the "Extracted PDE Order" and
+# "Number of Extraction Points" settings. The former controls what order PDE
+# we attempt to extract. The latter controls the number of points (in the PDE
+# domain) at which we attempt to extract the PDE.
 
-Discovery or PINNs mode [str] :                  Discovery
+
+PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs settings.
 Periodic BCs highest order [int] :               1
+
+# Extraction mode settings.
+Extracted PDE order [int] :                      3
+Number of Extraction Points [int] :              5000
 
 
 

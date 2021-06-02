@@ -2,12 +2,13 @@ import numpy as np;
 import torch;
 import matplotlib.pyplot as plt;
 
-from Network import Neural_Network;
-from Test_Train import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Plotter import Update_Axes, Setup_Axes;
-from Setup_File_Reader import Setup_File_Reader, Setup_Data_Container;
-from Data_Loader import Data_Loader, Data_Container;
-from Timing import Timer;
+from Network            import Neural_Network;
+from Test_Train         import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
+from Multi_Index_Test   import Generate_Library;
+from Plotter            import Update_Axes, Setup_Axes;
+from Setup_File_Reader  import Setup_File_Reader, Setup_Data_Container;
+from Data_Loader        import Data_Loader, Data_Container;
+from Timing             import Timer;
 
 
 
@@ -27,9 +28,10 @@ def Setup_Optimizer(
 
     N_NN : The neural network that approximates the PDE.
 
-    Mode : Controls which mode the code is running in. Either "Discovery" or
-    "PINNs". If "Discovery", then both u_NN and N_NN are learned. Otherwise,
-    N_NN is fixed and u_NN is learned.
+    Mode : Controls which mode the code is running in. You should only call
+    this function if mode is either "PINNs" or "Discovery". If "Discovery",
+    then we learn both u_NN and N_NN. If "PINNs", then we only learn u_NN
+    (and assume that N_NN is trained).
 
     Learning_Rate : the desired learning rate.
 
@@ -90,10 +92,11 @@ def main():
                             Output_Dim          = 1);
 
     # Select the optimizer based on mode.
-    Optimizer = Setup_Optimizer(u_NN = u_NN,
-                                N_NN = N_NN,
-                                Mode = Setup_Data.Mode,
-                                Learning_Rate = Learning_Rate );
+    if(Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
+        Optimizer = Setup_Optimizer(u_NN            = u_NN,
+                                    N_NN            = N_NN,
+                                    Mode            = Setup_Data.Mode,
+                                    Learning_Rate   = Learning_Rate );
 
     # Check if we're loading anything from file.
     if(     Setup_Data.Load_u_Network_State == True or
@@ -120,10 +123,10 @@ def main():
 
     # Set up training and training collocation/boundary points.
     Data_Container = Data_Loader(
-                        Mode = Setup_Data.Mode,
-                        Data_File_Path = "../Data/" + Setup_Data.Data_File_Name,
+                        Mode                = Setup_Data.Mode,
+                        Data_File_Path      = "../Data/" + Setup_Data.Data_File_Name,
                         Num_Training_Points = Setup_Data.Num_Training_Points,
-                        Num_Testing_Points = Setup_Data.Num_Testing_Points);
+                        Num_Testing_Points  = Setup_Data.Num_Testing_Points);
 
     # Setup is done! Figure out how long it took.
     Setup_Time : float = Setup_Timer.Stop();
@@ -199,8 +202,16 @@ def main():
             print(("\tBC Loss = %7f"            % BC_Losses[t])         , end = '');
             print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
             print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
+
+    elif (Setup_Data.Mode == "Extraction"):
+        Generate_Library(
+            u_NN            = u_NN,
+            Coords          = Data_Container.Train_Coloc_Coords,
+            num_derivatives = Setup_Data.N_Num_u_derivatives,
+            order           = 5);
+
     else:
-        print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
+        print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Mode));
         print("Something went wrong. Aborting. Thrown by main");
         exit();
 

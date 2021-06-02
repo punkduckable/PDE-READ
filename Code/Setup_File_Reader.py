@@ -210,21 +210,27 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
 
     ############################################################################
-    # PINNS or PDE Discovery mode
+    # Mode
 
-    # PDE Discovery or PINNs mode?
-    Buffer = Read_Line_After(File, "Discovery or PINNs mode [str] :").strip();
+    # PINNS, PDE Discovery, or PDE Extraction mode?
+    Buffer = Read_Line_After(File, "PINNs, Discovery, or Extraction mode [str] :").strip();
     if  (Buffer[0] == 'P' or Buffer[0] == 'p'):
         Setup_Data.Mode = "PINNs";
     elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
         Setup_Data.Mode = "Discovery";
+    elif(Buffer[0] == 'E' or Buffer[0] == 'e'):
+        Setup_Data.Mode = "Extraction";
     else:
-        raise Read_Error("\"Discovery or PINNs mode\" should be \"PINNs\" or \"Discovery\". Got " + Buffer);
+        raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be \"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
 
-    # If we'e in PINNs mode, then we need to know how many Periodic BCs to
-    # impose.
+    # PINNs mode settings
     if(Setup_Data.Mode == "PINNs"):
         Setup_Data.Periodic_BCs_Highest_Order = int(Read_Line_After(File, "Periodic BCs highest order [int] :").strip());
+
+    # Extraction mode settings.
+    if (Setup_Data.Mode == "Extraction"):
+        Setup_Data.Extraced_PDE_Order    = int(Read_Line_After(File, "Extracted PDE order [int] :").strip());
+        Setup_Data.Num_Extraction_Points = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
 
 
 

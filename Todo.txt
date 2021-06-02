@@ -1,6 +1,14 @@
+- Ability to control number of testing, training collocation points (also set
+random coordinates for these).
+
 - Extraction mode.
 
 - Profile, optimize plotter (it's a big runtime bottleneck now)
+
+- Variable number of spatial variables for the domain (and hardcode the data
+loader for the particular problem.... I guess?). I think I should hardcode cases
+for 1, 2, and 3 spatial dimensions (dealing with mixed partials in extraction
+mode would be tricky otherwise)
 
 - Add optimizer, activation function options to setup file
 
