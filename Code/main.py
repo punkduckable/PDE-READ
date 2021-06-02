@@ -175,8 +175,8 @@ def main():
     # Loop through the epochs.
 
     # Start a timer for the Epochs.
-    Epoch_Timer = Timer();
-    Epoch_Timer.Start();
+    Main_Timer = Timer();
+    Main_Timer.Start();
 
     if  (Setup_Data.Mode == "PINNs"):
         # Setup arrays for the different kinds of losses.
@@ -241,21 +241,29 @@ def main():
             print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
 
     elif(Setup_Data.Mode == "Extraction"):
-        Generate_Library(
-            u_NN            = u_NN,
-            Coords          = Data_Container.Extraction_Coords,
-            num_derivatives = Setup_Data.N_Num_u_derivatives,
-            order           = Setup_Data.Extracted_PDE_Order);
+        Library = Generate_Library(
+                    u_NN            = u_NN,
+                    Coords          = Data_Container.Extraction_Coords,
+                    num_derivatives = Setup_Data.N_Num_u_derivatives,
+                    PDE_order       = Setup_Data.Extracted_PDE_Order);
+
+        print(Library.shape);
 
     else:
         print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Mode));
         print("Something went wrong. Aborting. Thrown by main");
         exit();
 
+
     # Epochs are done. Figure out how long they took!
-    Epoch_Time = Epoch_Timer.Stop();
-    print("Running %d epochs took %fs." % (Epochs, Epoch_Time));
-    print("Average runtime per epoch = %fs" % (Epoch_Time/Epochs));
+    Main_Time = Main_Timer.Stop();
+
+    if (Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
+        print("Running %d epochs took %fs." % (Epochs, Main_Time));
+        print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
+
+    elif(Setup_Data.Mode == "Extraction"):
+        print("Extraction took %fs." % Main_Time);
 
 
 

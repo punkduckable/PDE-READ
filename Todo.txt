@@ -1,6 +1,3 @@
-- Ability to control number of testing, training collocation points (also set
-random coordinates for these).
-
 - Extraction mode.
 
 - Profile, optimize plotter (it's a big runtime bottleneck now)

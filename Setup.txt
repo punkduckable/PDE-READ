@@ -64,7 +64,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # we attempt to extract. The latter controls the number of points (in the PDE
 # domain) at which we attempt to extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Extraction
+PINNs, Discovery, or Extraction mode [str] :     Discovery
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -79,7 +79,7 @@ Number of Testing Collocation Points [int] :     500
 
 # Extraction mode specific settings.
 Extracted PDE order [int] :                      3
-Number of Extraction Points [int] :              5000
+Number of Extraction Points [int] :              100
 
 
 

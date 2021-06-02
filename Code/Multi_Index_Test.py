@@ -2,6 +2,7 @@ import numpy as np;
 import torch;
 
 from Network import Neural_Network;
+from PDE_Residual import Evaluate_u_derivatives;
 
 
 
@@ -49,9 +50,17 @@ def Recursive_Counter(
     specified order such that each sub-index takes values in 0, 1...
     n_sub_index_values - 1. """
 
+    # Assertions.
+    assert (order > 0), \
+        ("Order must be a POSITIVE integer. Got %d." % order);
+    assert (n_sub_index_values > 0), \
+        ("n_sub_index_values must be a POSITIVE integer. Got %d." % n_sub_index_values);
+
+    # Base case
     if (sub_index == order - 1):
         return counter + (n_sub_index_values - sub_index_value);
 
+    # Recursive case.
     else : # if (sub_index < order - 1):
         for j in range(sub_index_value, n_sub_index_values):
             counter = Recursive_Counter(
@@ -65,7 +74,7 @@ def Recursive_Counter(
 
 
 
-def Recursive_Multi_indices(
+def Recursive_Multi_Indices(
         multi_indices       : np.array,
         n_sub_index_values  : int,
         order               : int,
@@ -125,16 +134,23 @@ def Recursive_Multi_indices(
 
     an interger used for recursive purposes. You probably want to discard it. """
 
+    # Assertions.
+    assert (order > 0), \
+        ("Order must be a POSITIVE integer. Got %d." % order);
+    assert (n_sub_index_values > 0), \
+        ("n_sub_index_values must be a POSITIVE integer. Got %d." % n_sub_index_values);
 
+    # Base case
     if (sub_index == order - 1):
         for j in range(sub_index_value, n_sub_index_values):
             multi_indices[position + (j - sub_index_value), sub_index] = j;
 
         return position + (n_sub_index_values - sub_index_value);
 
+    # Recursive case.
     else : # if (sub_index < order - 1):
         for j in range(sub_index_value, n_sub_index_values):
-            new_position = Recursive_Multi_indices(
+            new_position = Recursive_Multi_Indices(
                             multi_indices       = multi_indices,
                             n_sub_index_values  = n_sub_index_values,
                             order               = order,
@@ -155,7 +171,7 @@ def Generate_Library(
         u_NN            : Neural_Network,
         Coords          : torch.Tensor,
         num_derivatives : int,
-        order           : int) -> np.array:
+        PDE_order       : int) -> np.array:
 
     """ This function populates the library matrix in the SINDY algorithm. How
     this works (and why it works the way that it does) is a tad involved.... so
@@ -196,15 +212,53 @@ def Generate_Library(
 
     # Determine how many multi-indicies with k sub-indicies exist for each
     # k in {0, 1,... order}.
-    num_multi_indicies = np.empty(order + 1, dtype = np.int);
+    num_multi_indicies = np.empty(PDE_order + 1, dtype = np.int);
     num_multi_indicies[0] = 1;
-    for i in range(1, order + 1):
+    for i in range(1, PDE_order + 1):
         num_multi_indicies[i] = Recursive_Counter(
                                     n_sub_index_values  = n_sub_index_values,
                                     order               = i);
 
-    print(num_multi_indicies);
-    exit();
+    # Use this information to initialize the Library as a tensor of ones.
+    # We need everything to be ones because of how we populate this matrix (see
+    # below).
+    num_rows : int = Coords.shape[0];
+    num_cols : int = num_multi_indicies.sum();
+    Library : torch.Tensor = np.ones((num_rows, num_cols), dtype = np.float32);
+
+    # Evaluate u, du/dx,... at each point.
+    (du_dt, diu_dxi) = Evaluate_u_derivatives(
+                            u_NN            = u_NN,
+                            num_derivatives = num_derivatives,
+                            Coords          = Coords);
+
+    # Now populate the library the multi-index approach described above. Note
+    # that the first column corresponds to a constant and should, therefore,
+    # be filled with 1's (which it already is).
+    position = 1;
+    for order in range(1, PDE_order):
+        # Create a buffer to hold the multi-indicies.
+        multi_indices = np.empty((num_multi_indicies[order], order), dtype = np.int);
+
+        # Find the set of multi indicies!
+        Recursive_Multi_Indices(
+            multi_indices       = multi_indices,
+            n_sub_index_values  = n_sub_index_values,
+            order               = order);
+
+        # Cycle through the multi-indicies of this order
+        for i in range(num_multi_indicies[order]):
+
+            # Cycle through the sub-indicies of this multi-index.
+            for j in range(order):
+                Library[:, position] = (Library[:, position]*
+                                        diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy());
+
+            # Increment position
+            position += 1;
+
+    # All done, the library is now populated!
+    return Library;
 
 
 
@@ -221,8 +275,8 @@ def main():
     # allocate space for x.
     multi_indices = np.empty((counter, order), dtype = np.int);
 
-    # Populate x using Recursive_Multi_indices
-    Recursive_Multi_indices(
+    # Populate x using Recursive_Multi_Indices
+    Recursive_Multi_Indices(
         multi_indices       = multi_indices,
         n_sub_index_values  = n_sub_index_values,
         order               = order);

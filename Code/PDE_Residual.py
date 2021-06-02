@@ -17,8 +17,8 @@ def Evaluate_u_derivatives(
     Arguments:
     u_NN : The neural network that approximates the solution.
 
-    num_derivative : The number of spatial derivatives of u_NN we need to
-    evaluate. num_derivative - 1 is the highest order derivative we will
+    num_derivatives : The number of spatial derivatives of u_NN we need to
+    evaluate. num_derivatives - 1 is the highest order derivative we will
     evaluate.
 
     Coords : A M by 2 tensor of coordinates. The ith row of this tensor should
@@ -38,13 +38,13 @@ def Evaluate_u_derivatives(
     # Determine how many derivatives of u we'll need to evaluate the PDE.
     # Remember that N is a function of u, du/dx, d^2u/dx^2, d^(n-1)u/dx^(n-1),
     # where n is the number of inputs that N_NN accepts. Once we know this,
-    # and the Number of Collocation points, we initialize a tensor to hold the
+    # and the number of Collocation points, we initialize a tensor to hold the
     # value of u and its first n-1 derivatives at each collocation point.
     # The ith row of this tensor holds the value of u and its first n-1
     # derivatives at the ith collocation point. Its jth column holds the jth
     # spatial derivative of u at each collocation point.
     num_Collocation_Points : int = Coords.shape[0];
-    diu_dxi_batch                = torch.empty((num_Collocation_Points, num_derivatives), dtype = torch.float32);
+    diu_dxi_batch                = torch.empty((num_Collocation_Points, num_derivatives + 1), dtype = torch.float32);
 
     # Calculate approximate solution at this collocation point.
     diu_dxi_batch[:, 0] = u_NN(Coords).squeeze();
@@ -88,7 +88,7 @@ def Evaluate_u_derivatives(
     du_dt_batch         = grad_u[:, 1];
 
     # Compute higher order derivatives
-    for i in range(2, num_derivatives):
+    for i in range(2, num_derivatives + 1):
         # At each collocation point, compute d^(i-1)u(x, t/dx^(i-1) with respect
         # to x, t. This uses the same process as is described above for grad_u,
         # but with (d^(i-1)/dx^(i-1))u in place of u.
@@ -137,10 +137,11 @@ def PDE_Residual(
 
     # Determine how many derivatives of u we'll need to evaluate the PDE.
     # Remember that N is a function of u, du/dx, d^2u/dx^2, d^(n-1)u/dx^(n-1),
-    # where n is the number of inputs that N_NN accepts. Once we know this,
-    # evaluate du/dt, u, and the first n-1 spatial derivatives of u at each
-    # collocation point.
-    num_derivatives             = N_NN.Input_Dim;
+    # where n is the number of inputs that N_NN accepts. Thus, the number of
+    # derivatives is simply the number of inputs for N_NN minus 1. Once we know
+    # this, we evaluate du/dt, u, and the first n-1 spatial derivatives of u at
+    # each collocation point.
+    num_derivatives             = N_NN.Input_Dim - 1;
     du_dt_batch, diu_dxi_batch  = Evaluate_u_derivatives(
                                     u_NN            = u_NN,
                                     num_derivatives = num_derivatives,
