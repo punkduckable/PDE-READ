@@ -1,11 +1,13 @@
-- Extraction mode.
+- Finish and implement Extraction mode.
 
-- Profile, optimize plotter (it's a big runtime bottleneck now)
+- Unit testing galore!
 
 - Variable number of spatial variables for the domain (and hardcode the data
 loader for the particular problem.... I guess?). I think I should hardcode cases
 for 1, 2, and 3 spatial dimensions (dealing with mixed partials in extraction
 mode would be tricky otherwise)
+
+- Profile, optimize plotter (it's a big runtime bottleneck now)
 
 - Add optimizer, activation function options to setup file
 

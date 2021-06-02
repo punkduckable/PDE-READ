@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt;
 
 from Network            import Neural_Network;
 from Test_Train         import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Multi_Index_Test   import Generate_Library;
+from Extraction         import Generate_Library;
 from Plotter            import Update_Axes, Setup_Axes;
 from Setup_File_Reader  import Setup_File_Reader, Setup_Data_Container;
 from Data_Setup         import Data_Loader, Data_Container, Generate_Random_Coords;
