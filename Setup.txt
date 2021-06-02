@@ -28,7 +28,7 @@
 # mode when you saved, then you must be in discovery mode now.
 
 Load u Network State [bool] :                    False
-Load N Network State [bool] :                    False
+Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
   Load File Name [str] :                         Burgers_Save
 
@@ -64,15 +64,23 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # we attempt to extract. The latter controls the number of points (in the PDE
 # domain) at which we attempt to extract the PDE.
 
-
 PINNs, Discovery, or Extraction mode [str] :     Extraction
 
-# PINNs settings.
+# PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
+Number of Training Collocation Points [int] :    1000
+Number of Testing Collocation Points [int] :     2000
 
-# Extraction mode settings.
+# Discovery mode specific settings.
+Number of Data Training Points [int] :           2500
+Number of Data Testing Points [int] :            500
+Number of Training Collocation Points [int] :    2500
+Number of Testing Collocation Points [int] :     500
+
+# Extraction mode specific settings.
 Extracted PDE order [int] :                      3
 Number of Extraction Points [int] :              5000
+
 
 
 
@@ -100,6 +108,3 @@ Learning Rate [float] :                          .0015
 # Data
 
 Data File Name [str] :                           burgers_sine.mat
-
-Number of Training Points [int] :                1000
-Number of Testing Points [int] :                 2000

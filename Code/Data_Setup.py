@@ -1,7 +1,9 @@
 import numpy as np;
 import torch;
+import random;
 import scipy.io;
 
+from Setup_File_Reader import Setup_Data_Container;
 
 
 class Data_Container:
@@ -9,11 +11,7 @@ class Data_Container:
 
 
 
-def Data_Loader(
-        Mode                : str,
-        Data_File_Path      : str,
-        Num_Training_Points : int,
-        Num_Testing_Points  : int) -> Data_Container:
+def Data_Loader(Setup_Data : Setup_Data_Container):
     """ This function loads data from file and returns it. We make a few
     assumptions about the format of the data. For one, we assume that the .mat
     file contains three fields: x, t, and usol.
@@ -35,21 +33,17 @@ def Data_Loader(
 
     ----------------------------------------------------------------------------
     Arguments:
-    Mode : Either PINNs or Discovery. This controls what data the data loader
-    loads and returns. In particular, if we're in "Discovery" mode, then the
-    IC and BC members of the Data Container are set to none. If we're in "PINNs"
-    mode, then the Training and Testing data/value members are set to None.
 
-    Data_File_Path : A relative path to the data file we want to load.
-
-    Num_Training_Points : The number of training collocation and data points.
-
-    Num_Testing_Points : The number of testing collocation and data points.
+    Setup_Data : What gets returned by the Setup_File_Reader. This should
+    contain the Mode, Data_File_Path, and (if we're in Discovery mode), the
+    number of testing and training data points.
 
     ----------------------------------------------------------------------------
     Returns:
     A Data Container object. See class definition above. """
 
+    # Load data file.
+    Data_File_Path = "../Data/" + Setup_Data.Data_File_Name
     data_in = scipy.io.loadmat(Data_File_Path);
 
     # Fetch spatial, temporal coordinates and the true solution.
@@ -92,7 +86,7 @@ def Data_Loader(
     Container.t_points = t_points;
     Container.True_Sol = True_Sol_in;
 
-    if(Mode == "PINNs"):
+    if  (Setup_Data.Mode == "PINNs"):
         # If we're in PINN's mode, then we need IC, BC data.
 
         ############################################################################
@@ -146,31 +140,59 @@ def Data_Loader(
         Container.Lower_Bound_Coords    = torch.from_numpy(Lower_Bound_Coords).to(dtype = torch.float32);
         Container.Upper_Bound_Coords    = torch.from_numpy(Upper_Bound_Coords).to(dtype = torch.float32);
 
+    elif(Setup_Data.Mode == "Discovery"):
+        # If we're in Discovery mode, then we need Testing/Training Data
+        # coordinates and values.
 
-    ############################################################################
-    # Training, Testing points, values.
+        # Randomly select Num_Training_Points, Num_Testing_Points coordinate indicies.
+        Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Setup_Data.Num_Train_Data_Points, replace = False);
+        Test_Indicies  = np.random.choice(All_Data_Coords.shape[0], Setup_Data.Num_Test_Data_Points, replace = False);
 
-    # Randomly select Num_Training_Points, Num_Testing_Points coordinate indicies.
-    Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Training_Points, replace = False);
-    Test_Indicies = np.random.choice(All_Data_Coords.shape[0], Num_Testing_Points, replace = False);
+        # Now select the corresponding testing, training data points, values.
+        Container.Train_Data_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);
+        Container.Train_Data_Values = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = torch.float32);
 
-
-    # Select the corresponding coordinates for testing, taining collocation
-    # points. Note that everything must be of type float32 (this should hold since
-    # we loaded everything as a float32). The to method is just a backup.
-    Container.Train_Coloc_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);
-    Container.Test_Coloc_Coords = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = torch.float32);
-
-    # We need data coordinates, values if we're in Discovery mode.
-    if(Mode == "Discovery"):
-        # Currently, the Coloc and Data coords are the same, though this may
-        # change in the future.
-        Container.Train_Data_Coords  = Container.Train_Coloc_Coords;
-        Container.Train_Data_Values  = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = torch.float32);
-
-        Container.Test_Data_Coords  = Container.Test_Coloc_Coords;
+        Container.Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = torch.float32);
         Container.Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = torch.float32);
-
 
     # The containers should be full. Return!
     return Container;
+
+
+
+def Generate_Random_Coords(
+        n_vars              : int,
+        Dim_Lower_Bounds    : np.array,
+        Dim_Upper_Bounds    : np.array,
+        Num_Points          : int) -> torch.Tensor:
+    """ This function generates a collection of random points within a specified
+    box.
+
+    ----------------------------------------------------------------------------
+    Arguments :
+
+    n_vars : the total number of variables (spatial and temporal) that u depends
+    on. If u is a function of x, y, z, and t, then this is 4.
+
+    dim_lower_bounds : a n_var element array whose kth element stores the lower
+    bound for the kth variable.
+
+    dim_upper_bounds : same as dim_lower_bounds but for upper bounds.
+
+    num_Points : The number of points we want togenerate.
+
+    ----------------------------------------------------------------------------
+    Returns :
+
+    A num_Points by n_vars array whose ith row contains the
+    coordinates of the ith point. """
+
+    # Declare coords array
+    Coords = torch.empty((Num_Points, n_vars), dtype = torch.float32);
+
+    # Populate the coordinates with random values.
+    for i in range(Num_Points):
+        for k in range(n_vars):
+            Coords[i, k] = random.uniform(Dim_Lower_Bounds[k], Dim_Upper_Bounds[k]);
+
+    return Coords;

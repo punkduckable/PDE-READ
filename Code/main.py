@@ -7,7 +7,7 @@ from Test_Train         import Discovery_Testing, Discovery_Training, PINNs_Test
 from Multi_Index_Test   import Generate_Library;
 from Plotter            import Update_Axes, Setup_Axes;
 from Setup_File_Reader  import Setup_File_Reader, Setup_Data_Container;
-from Data_Loader        import Data_Loader, Data_Container;
+from Data_Setup         import Data_Loader, Data_Container, Generate_Random_Coords;
 from Timing             import Timer;
 
 
@@ -69,7 +69,7 @@ def main():
 
 
     ############################################################################
-    # Set up everything.
+    # Set up neural networks, optimizer.
 
     # Start a timer for the setup.
     Setup_Timer = Timer();
@@ -121,12 +121,49 @@ def main():
         if(Setup_Data.Load_Optimize_State  == True):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
-    # Set up training and training collocation/boundary points.
-    Data_Container = Data_Loader(
-                        Mode                = Setup_Data.Mode,
-                        Data_File_Path      = "../Data/" + Setup_Data.Data_File_Name,
-                        Num_Training_Points = Setup_Data.Num_Training_Points,
-                        Num_Testing_Points  = Setup_Data.Num_Testing_Points);
+
+
+    ############################################################################
+    # Set up points (Data, IC, BC, Collocation, Extraction).
+
+    # If we're in Discovery mode, this will set up the testing and training
+    # data points and values. If we're in PINNs mode, this will set up IC and
+    # BC points.
+    Data_Container = Data_Loader(Setup_Data);
+
+    # Determine time, spatial lower coordinates. This is hard coded for 1
+    # spatial dimension.... I'll have to change this next time. Do the same
+    # for upper bounds.
+    Dim_Lower_Bounds = np.array((Data_Container.x_points[0], Data_Container.t_points[0]), dtype = np.float);
+    Dim_Upper_Bounds = np.array((Data_Container.x_points[-1], Data_Container.t_points[-1]), dtype = np.float);
+
+    # Set up mode specific points.
+    if  (Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
+        # In these modes, we need to set up the Collocation points.
+
+        # Generate Collocation points.
+        Data_Container.Train_Colloc_Coords = Generate_Random_Coords(
+                n_vars              = 2, # t, x
+                Dim_Lower_Bounds    = Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Dim_Upper_Bounds,
+                Num_Points          = Setup_Data.Num_Train_Colloc_Points);
+
+        Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
+                n_vars              = 2, # t, x
+                Dim_Lower_Bounds    = Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Dim_Upper_Bounds,
+                Num_Points          = Setup_Data.Num_Test_Colloc_Points);
+
+    elif(Setup_Data.Mode == "Extraction"):
+        # In this mode we need to set up the Extraction points.
+
+        # Generate Collocation points.
+        Data_Container.Extraction_Coords = Generate_Random_Coords(
+                n_vars              = 2, # t, x
+                Dim_Lower_Bounds    = Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Dim_Upper_Bounds,
+                Num_Points          = Setup_Data.Num_Extraction_Points);
+
 
     # Setup is done! Figure out how long it took.
     Setup_Time : float = Setup_Timer.Stop();
@@ -141,35 +178,8 @@ def main():
     Epoch_Timer = Timer();
     Epoch_Timer.Start();
 
-    if(Setup_Data.Mode == "Discovery"):
-        # Set up array for the different kinds of losses.
-        Collocation_Losses = np.empty((Epochs), dtype = np.float);
-        Data_Losses        = np.empty((Epochs), dtype = np.float);
-
-        for t in range(Epochs):
-            Discovery_Training(
-                u_NN                = u_NN,
-                N_NN                = N_NN,
-                Collocation_Coords  = Data_Container.Train_Coloc_Coords,
-                Data_Coords         = Data_Container.Train_Data_Coords,
-                Data_Values         = Data_Container.Train_Data_Values,
-                Optimizer           = Optimizer);
-
-            (Collocation_Losses[t], Data_Losses[t]) = Discovery_Testing(
-                u_NN                = u_NN,
-                N_NN                = N_NN,
-                Collocation_Coords  = Data_Container.Test_Coloc_Coords,
-                Data_Coords         = Data_Container.Test_Data_Coords,
-                Data_Values         = Data_Container.Test_Data_Values );
-
-            # Print losses.
-            print(("Epoch #%-4d: "              % t)                    , end = '');
-            print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
-            print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
-            print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
-
-    elif(Setup_Data.Mode == "PINNs"):
-        # Setup arrays for the diffeent kinds of losses.
+    if  (Setup_Data.Mode == "PINNs"):
+        # Setup arrays for the different kinds of losses.
         IC_Losses          = np.empty((Epochs), dtype = np.float);
         BC_Losses          = np.empty((Epochs), dtype = np.float);
         Collocation_Losses = np.empty((Epochs), dtype = np.float);
@@ -183,7 +193,7 @@ def main():
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
-                Collocation_Coords          = Data_Container.Train_Coloc_Coords,
+                Collocation_Coords          = Data_Container.Train_Colloc_Coords,
                 Optimizer                   = Optimizer);
 
             (IC_Losses[t], BC_Losses[t], Collocation_Losses[t]) = PINNs_Testing(
@@ -194,7 +204,7 @@ def main():
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
-                Collocation_Coords          = Data_Container.Test_Coloc_Coords);
+                Collocation_Coords          = Data_Container.Test_Colloc_Coords);
 
             # Print losses.
             print(("Epoch #%-4d: "              % t)                    , end = '');
@@ -203,12 +213,39 @@ def main():
             print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
             print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
 
-    elif (Setup_Data.Mode == "Extraction"):
+    elif(Setup_Data.Mode == "Discovery"):
+        # Set up array for the different kinds of losses.
+        Collocation_Losses = np.empty((Epochs), dtype = np.float);
+        Data_Losses        = np.empty((Epochs), dtype = np.float);
+
+        for t in range(Epochs):
+            Discovery_Training(
+                u_NN                = u_NN,
+                N_NN                = N_NN,
+                Collocation_Coords  = Data_Container.Train_Colloc_Coords,
+                Data_Coords         = Data_Container.Train_Data_Coords,
+                Data_Values         = Data_Container.Train_Data_Values,
+                Optimizer           = Optimizer);
+
+            (Collocation_Losses[t], Data_Losses[t]) = Discovery_Testing(
+                u_NN                = u_NN,
+                N_NN                = N_NN,
+                Collocation_Coords  = Data_Container.Test_Colloc_Coords,
+                Data_Coords         = Data_Container.Test_Data_Coords,
+                Data_Values         = Data_Container.Test_Data_Values );
+
+            # Print losses.
+            print(("Epoch #%-4d: "              % t)                    , end = '');
+            print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
+            print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
+            print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
+
+    elif(Setup_Data.Mode == "Extraction"):
         Generate_Library(
             u_NN            = u_NN,
-            Coords          = Data_Container.Train_Coloc_Coords,
+            Coords          = Data_Container.Extraction_Coords,
             num_derivatives = Setup_Data.N_Num_u_derivatives,
-            order           = 5);
+            order           = Setup_Data.Extracted_PDE_Order);
 
     else:
         print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Mode));

@@ -223,13 +223,22 @@ def Setup_File_Reader() -> Setup_Data_Container:
     else:
         raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be \"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
 
-    # PINNs mode settings
+    # PINNs mode specific settings
     if(Setup_Data.Mode == "PINNs"):
-        Setup_Data.Periodic_BCs_Highest_Order = int(Read_Line_After(File, "Periodic BCs highest order [int] :").strip());
+        Setup_Data.Periodic_BCs_Highest_Order   = int(Read_Line_After(File, "Periodic BCs highest order [int] :").strip());
+        Setup_Data.Num_Train_Colloc_Points = int(Read_Line_After(File, "Number of Training Collocation Points [int] :").strip());
+        Setup_Data.Num_Test_Colloc_Points  = int(Read_Line_After(File, "Number of Testing Collocation Points [int] :").strip());
 
-    # Extraction mode settings.
+    # Discovery mode specific settings
+    if(Setup_Data.Mode == "Discovery"):
+        Setup_Data.Num_Train_Data_Points   = int(Read_Line_After(File, "Number of Data Training Points [int] :").strip());
+        Setup_Data.Num_Test_Data_Points    = int(Read_Line_After(File, "Number of Data Testing Points [int] :").strip());
+        Setup_Data.Num_Train_Colloc_Points = int(Read_Line_After(File, "Number of Training Collocation Points [int] :").strip());
+        Setup_Data.Num_Test_Colloc_Points  = int(Read_Line_After(File, "Number of Testing Collocation Points [int] :").strip());
+
+    # Extraction mode specific settings.
     if (Setup_Data.Mode == "Extraction"):
-        Setup_Data.Extraced_PDE_Order    = int(Read_Line_After(File, "Extracted PDE order [int] :").strip());
+        Setup_Data.Extracted_PDE_Order   = int(Read_Line_After(File, "Extracted PDE order [int] :").strip());
         Setup_Data.Num_Extraction_Points = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
 
 
@@ -260,9 +269,6 @@ def Setup_File_Reader() -> Setup_Data_Container:
     # Data
 
     Setup_Data.Data_File_Name = Read_Line_After(File, "Data File Name [str] :").strip();
-
-    Setup_Data.Num_Training_Points = int(Read_Line_After(File, "Number of Training Points [int] :").strip());
-    Setup_Data.Num_Testing_Points = int(Read_Line_After(File, "Number of Testing Points [int] :").strip());
 
     # All done! Return the setup data.
     return Setup_Data;
