@@ -356,11 +356,29 @@ def Thresholded_Least_Squares(
 
 
 def Print_Extracted_PDE(
-        Extracted_PDE       : np.array,
+        Extracted_PDE      : np.array,
         num_multi_indices  : np.array,
         multi_indices_list : Tuple) -> None:
-    """ This function takes in the output of the Thresholded_Least_Squares function
-    and turns it into a PDE in a human readable format. """
+    """ This function takes in the output of the Thresholded_Least_Squares
+    function and turns it into a PDE in a human readable format.
+
+    Note: this function only works if u (the solution) is a function of 1
+    spatial variable.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    Extracted_PDE: This should be the thresholded least squares solution (
+    returned by Thresholded_Least_Squares).
+
+    num_multi_indices, multi_indices_list: the corresponding variables returned
+    by Generate_Library.
+
+    ----------------------------------------------------------------------------
+    Returns:
+
+    Nothing! """
+
 
     # Start the printout.
     print("Extracted the following PDE:");
@@ -390,34 +408,3 @@ def Print_Extracted_PDE(
 
     # Finish printing (this just pints a new line character).
     print();
-
-
-def main():
-    # Initialize parameters.
-    n_sub_index_values  = 4;
-    degree               = 3;
-
-    # Run Recursive_Counter to determine how big x must be.
-    counter = Recursive_Counter(
-                n_sub_index_values  = n_sub_index_values,
-                degree              = degree);
-
-    # allocate space for x.
-    multi_indices = np.empty((counter, degree), dtype = np.int);
-
-    # Populate x using Recursive_Multi_Indices
-    Recursive_Multi_Indices(
-        multi_indices       = multi_indices,
-        n_sub_index_values  = n_sub_index_values,
-        degree              = degree);
-
-
-
-    # Print results.
-    print(counter);
-    print(multi_indices);
-
-
-
-if(__name__ == "__main__"):
-    main();
