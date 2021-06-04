@@ -29,17 +29,17 @@ def Recursive_Counter(
     ----------------------------------------------------------------------------
     Arguments:
 
-    n_sub_index_values : The number of distinct values that any one of the
+    n_sub_index_values: The number of distinct values that any one of the
     sub-indicies can take on. If n_sub_index_values = k, then each sub index
     can take on values 0, 1,... k-1.
 
-    order : The number of sub-indicies in the multi-index.
+    order: The number of sub-indicies in the multi-index.
 
-    sub_index : keeps track of which sub-index we're working on.
+    sub_index: keeps track of which sub-index we're working on.
 
-    sub_index_value : specifies which value we put in a particular sub-index.
+    sub_index_value: specifies which value we put in a particular sub-index.
 
-    counter : the variable that actually stores the total number of
+    counter: the variable that actually stores the total number of
     multi-indices of specified oder whose sub-indices take values in 0, 1...
     n_sub_index_values - 1. This is what's eventually returned.
 
@@ -115,19 +115,19 @@ def Recursive_Multi_Indices(
     ----------------------------------------------------------------------------
     Arguments:
 
-    multi_indices : An "sufficiently large" array which will hold all distinct
+    multi_indices: An "sufficiently large" array which will hold all distinct
     multi-indices of specified order whose sub-indices take values in 0, 1,...
     n_sub_index_values - 1.
 
-    n_sub_index_values : The number of distinct values that any sub-index can
+    n_sub_index_values: The number of distinct values that any sub-index can
     take on. If n_sub_index_values = k, then each sub_index can take values
     0, 1,... n_sub_index_values - 1.
 
-    order : The number of sub-indicies in the multi-index.
+    order: The number of sub-indicies in the multi-index.
 
-    sub_index : keeps track of which sub-index we're working on.
+    sub_index: keeps track of which sub-index we're working on.
 
-    sub_index_value : specifies which value we put in a particular sub-index.
+    sub_index_value: specifies which value we put in a particular sub-index.
 
     ----------------------------------------------------------------------------
     Returns:

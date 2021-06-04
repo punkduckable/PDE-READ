@@ -21,22 +21,25 @@ def Setup_Optimizer(
     learning enabled or not. It also disables gradients for all network
     parameters that are not being learned.
 
+    Note: This function works regardless of how many spatial variables u accepts.
+
     ----------------------------------------------------------------------------
-    Arguments :
+    Arguments:
 
-    u_NN : The neural network that approximates the solution.
+    u_NN: The network that approximates the PDE solution.
 
-    N_NN : The neural network that approximates the PDE.
+    N_NN: The network that approximates the PDE.
 
-    Mode : Controls which mode the code is running in. You should only call
+    Mode: Controls which mode the code is running in. You should only call
     this function if mode is either "PINNs" or "Discovery". If "Discovery",
     then we learn both u_NN and N_NN. If "PINNs", then we only learn u_NN
     (and assume that N_NN is trained).
 
-    Learning_Rate : the desired learning rate.
+    Learning_Rate: the desired learning rate.
 
     ----------------------------------------------------------------------------
     Returns:
+
     The optimizer! """
 
     if(Mode == "Discovery"):
@@ -127,15 +130,10 @@ def main():
     # Set up points (Data, IC, BC, Collocation, Extraction).
 
     # If we're in Discovery mode, this will set up the testing and training
-    # data points and values. If we're in PINNs mode, this will set up IC and
-    # BC points.
+    # data points and values. If we're in PINNs mode, this will also set up IC
+    # and BC points. This should also give us the upper and lower bounds for the
+    # domain.
     Data_Container = Data_Loader(Setup_Data);
-
-    # Determine time, spatial lower coordinates. This is hard coded for 1
-    # spatial dimension.... I'll have to change this next time. Do the same
-    # for upper bounds.
-    Dim_Lower_Bounds = np.array((Data_Container.x_points[0], Data_Container.t_points[0]), dtype = np.float);
-    Dim_Upper_Bounds = np.array((Data_Container.x_points[-1], Data_Container.t_points[-1]), dtype = np.float);
 
     # Set up mode specific points.
     if  (Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
@@ -143,15 +141,13 @@ def main():
 
         # Generate Collocation points.
         Data_Container.Train_Colloc_Coords = Generate_Random_Coords(
-                n_vars              = 2, # t, x
-                Dim_Lower_Bounds    = Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Dim_Upper_Bounds,
+                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Setup_Data.Num_Train_Colloc_Points);
 
         Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
-                n_vars              = 2, # t, x
-                Dim_Lower_Bounds    = Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Dim_Upper_Bounds,
+                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Setup_Data.Num_Test_Colloc_Points);
 
     elif(Setup_Data.Mode == "Extraction"):
@@ -159,9 +155,8 @@ def main():
 
         # Generate Collocation points.
         Data_Container.Extraction_Coords = Generate_Random_Coords(
-                n_vars              = 2, # t, x
-                Dim_Lower_Bounds    = Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Dim_Upper_Bounds,
+                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Setup_Data.Num_Extraction_Points);
 
 
@@ -251,7 +246,7 @@ def main():
 
     else:
         print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Mode));
-        print("Something went wrong. Aborting. Thrown by main");
+        print("Something went wrong. Aborting. Thrown by main.");
         exit();
 
 

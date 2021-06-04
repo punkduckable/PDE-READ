@@ -13,19 +13,23 @@ def Evaluate_u_derivatives(
     """ This function evaluates u, du/dt, and d^i u/dx^i (for i = 1,2... ) at each
     coordinate in Coords.
 
+    Note: this function only works if u accepts 1 spatial variable.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : The neural network that approximates the solution.
 
-    num_derivatives : The number of spatial derivatives of u_NN we need to
+    u_NN: The network that approximates the PDE solution.
+
+    num_derivatives: The number of spatial derivatives of u_NN we need to
     evaluate. num_derivatives - 1 is the highest order derivative we will
     evaluate.
 
-    Coords : A M by 2 tensor of coordinates. The ith row of this tensor should
-    contain the ith x, t coordinates.
+    Coords: A two column tensor whose ith row holds the t, x coordinates of the
+    ith point we'll evaluate u and its derivatives at.
 
     ----------------------------------------------------------------------------
     Returns:
+
     This returns a two element Tuple! If Coords is a M by 2 tensor, then thie
     first returned argument is a M element tensor whose ith element holds the
     value of du/dt at the ith coordinate. If N_NN accepts N argumetns, then
@@ -49,18 +53,18 @@ def Evaluate_u_derivatives(
     # Calculate approximate solution at this collocation point.
     diu_dxi_batch[:, 0] = u_NN(Coords).squeeze();
 
-    # Compute the derivative of the NN output with respect to x, t at each
+    # Compute the derivative of the NN output with respect to t, x at each
     # collocation point. To speed up computations, we batch this computation.
     # It's important, however, to take a close look at what this is doing
     # (because it's not terribly obvious). Let N denote the number of
     # collocation points. Let's focus on how torch computes the derivative of
     # u with respect to x. Let the Jacobian matrix J be defined as follows:
-    #       | (d/dx_0)u(x_0, t_0),  (d/dx_0)u(x_1, t_1),... (d/dx_0)u(x_N, t_N) |
-    #       | (d/dx_1)u(x_0, t_0),  (d/dx_1)u(x_1, t_1),... (d/dx_1)u(x_N, t_N) |
+    #       | (d/dx_0)u(t_0, x_0),  (d/dx_0)u(t_1, x_1),... (d/dx_0)u(t_N, x_N) |
+    #       | (d/dx_1)u(t_0, x_0),  (d/dx_1)u(t_1, x_1),... (d/dx_1)u(t_N, x_N) |
     #   J = |  ....                  ....                    ....               |
-    #       | (d/dx_N)u(x_0, t_0),  (d/dx_N)u(x_1, t_1),... (d/dx_N)u(x_N, t_N) |
+    #       | (d/dx_N)u(t_0, x_0),  (d/dx_N)u(t_1, x_1),... (d/dx_N)u(t_N, x_N) |
     # Let's focus on the jth column. Here we compute the derivative of
-    # u(x_j, t_j) with respect to x_0, x_1,.... x_N. Since u(x_j, t_j) only
+    # u(t_j, x_j) with respect to x_0, x_1,.... x_N. Since u(t_j, x_j) only
     # depends on x_j (because of how its computational graph was constructed),
     # all of these derivatives will be zero except for the jth one. More
     # broadly, this means that J will be a diagonal matrix. When we compute
@@ -68,11 +72,10 @@ def Evaluate_u_derivatives(
     # grad_outputs tensor which has the same shape. Let v denote the vector we
     # pass as grad outputs. In our case, v is a vector of ones. Torch then
     # computes Jv. Since J is diagonal (by the argument above), the ith
-    # component of this product is (d/dx_i)u(x_i, t_i), precisely what we want.
+    # component of this product is (d/dx_i)u(t_i, x_i), precisely what we want.
     # Torch does the same thing for derivatives with respect to t. The end
-    # result is a 2 column tensor. The ith entry of the 0 column holds
-    # (d/dx_i)u(x_i, t_i), while the ith entry of the 1 column holds
-    # (d/dt_i)u(x_i, t_i).
+    # result is a 2 column tensor. whose (i, 0) entry holds (d/dt_i)u(t_i, x_i),
+    # and whose (i, 1) entry holds (d/dx_i)u(t_i, x_i).
     grad_u = torch.autograd.grad(
                 outputs         = diu_dxi_batch[:, 0],
                 inputs          = Coords,
@@ -84,13 +87,13 @@ def Evaluate_u_derivatives(
     # much faster because it can take advantage of memory locality.
 
     # extract du/dx and du/dt (at each collocation point) from grad_u.
-    diu_dxi_batch[:, 1] = grad_u[:, 0];
-    du_dt_batch         = grad_u[:, 1];
+    du_dt_batch         = grad_u[:, 0];
+    diu_dxi_batch[:, 1] = grad_u[:, 1];
 
     # Compute higher order derivatives
     for i in range(2, num_derivatives + 1):
         # At each collocation point, compute d^(i-1)u(x, t/dx^(i-1) with respect
-        # to x, t. This uses the same process as is described above for grad_u,
+        # to t, x. This uses the same process as is described above for grad_u,
         # but with (d^(i-1)/dx^(i-1))u in place of u.
         # We need to create graphs for this so that torch can track this
         # operation when constructing the computational graph for the loss
@@ -103,8 +106,8 @@ def Evaluate_u_derivatives(
                         retain_graph    = True,
                         create_graph    = True)[0];
 
-        # Extract (d^i/dx^i)u, which is the 0 column of the above tensor.
-        diu_dxi_batch[:, i] = grad_diu_dxi[:, 0];
+        # Extract (d^i/dx^i)u, which is the 1 column of the above tensor.
+        diu_dxi_batch[:, i] = grad_diu_dxi[:, 1];
 
     return (du_dt_batch, diu_dxi_batch);
 
@@ -114,25 +117,28 @@ def PDE_Residual(
         u_NN    : Neural_Network,
         N_NN    : Neural_Network,
         Coords  : torch.Tensor) -> torch.Tensor:
-    """ This function evaluates the "residual" of the PDE at a set of
-    coordinates. For brevtiy, let u = u_NN, and N = N_NN. At each coordinate,
-    this function computes
+    """ This function evaluates the "PDE residual" at a set of coordinates. For
+    brevtiy, let u = u_NN, and N = N_NN. At each coordinate, we compute
             du/dt - N(u, du/dx, d^2u/dx^2,... )
     which we call the residual.
 
+    Note: this funciton only works if u accpets 1 spatial variable.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : The neural network that approximates the solution.
 
-    N_NN : The neural network that approximates the PDE.
+    u_NN: The network that approximates the PDE solution.
 
-    Coords : A M by 2 tensor of coordinates. The ith row of this tensor should
-    contain the ith x, t coordinates.
+    N_NN: The neural network that approximates the PDE.
+
+    Coords: A two column tensor whose ith row holds the t, x coordinates of the
+    ith point where we want to evaluate the PDE resitual.
 
     ----------------------------------------------------------------------------
     Returns:
-    A M element tensor (where M is the number of collocation points) whose ith
-    entry holds the residual at the ith coordinate.  """
+
+    A M element tensor (where M is the number of Coords) whose ith entry holds
+    the residual at the ith coordinate.  """
 
 
     # Determine how many derivatives of u we'll need to evaluate the PDE.
@@ -143,15 +149,14 @@ def PDE_Residual(
     # each collocation point.
     num_derivatives             = N_NN.Input_Dim - 1;
     du_dt_batch, diu_dxi_batch  = Evaluate_u_derivatives(
-                                    u_NN            = u_NN,
-                                    num_derivatives = num_derivatives,
-                                    Coords          = Coords);
+                                        u_NN            = u_NN,
+                                        num_derivatives = num_derivatives,
+                                        Coords          = Coords);
 
-    # Evaluate N at each collocation point (ith row of diu_dxi). This results
-    # a N by 1 tensor (where N is the number of collocation points) whose ith
-    # row holds the value of N at (u(x_i, t_i), (d/dx)u(x_i, t_i),...
-    # (d^(n-1))/dx^(n-1))u(x_i, t_i)). We squeeze it to get rid of the extra
-    # (useless) dimension.
+    # Evaluate N at each row of diu_dxi. This yields a N by 1 tensor (where N is
+    # the number of Coords) whose ith row holds the value of N at (u(t_i, x_i),
+    # (d/dx)u(t_i, x_i),... (d^(n-1))/dx^(n-1))u(t_i, x_i)). Squeeze to
+    # eliminate the extra useless dimension.
     N_NN_batch = N_NN(diu_dxi_batch).squeeze();
 
     # At each Collocation point, evaluate the square of the residuals

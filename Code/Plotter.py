@@ -15,20 +15,23 @@ def Evaluate_Approx_Sol(
     """ This function evaluates the approximate solution at each element of
     Point_Coords.
 
+    Note: This function works regardless of how many spatial variables u accepts.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : the Neural Network that approximates solution to the learned PDE.
 
-    Point_Coords : The set of points where we want to evaluate the approximate
-    solution. This should be a Nx2 tensor of floats whose ith row holds the x,t
-    coordinates of the ith point where we want to evaluate the approximate
-    solution.
+    u_NN: The network that approximates the PDE solution.
+
+    Point_Coords: The set of points where we want to evaluate the approximate
+    solution. If u accepts d spatial vaiables, then this should be a d+1 column
+    tensor whose ith column holds the t, x_1,... x_d coordinates of the ith
+    point where we want to evaluate the approximate solution.
 
     ----------------------------------------------------------------------------
     Returns:
-    A numpy array whose ith element is the value of u_NN at the ith element of
-    Point_Coords. If Point_Coords is a Nx2 tensor, then this is a N element
-    numpy array. """
+
+    A numpy array whose ith element holds the value of u_NN at the ith point.
+    """
 
     # Get number of points, initialize the u array.
     num_Points : int = Point_Coords.shape[0];
@@ -50,10 +53,12 @@ def Setup_Axes() -> Tuple[plt.figure, np.array]:
 
     ----------------------------------------------------------------------------
     Arguments:
+
     None!
 
     ----------------------------------------------------------------------------
     Returns:
+
     A tuple. The first element contains the figure object, the second contains
     a numpy array of axes objects (to be passed to Update_Axes). """
 
@@ -107,26 +112,30 @@ def Update_Axes(
     """ This function plots the approximate solution and residual at the
     specified points.
 
+    Note: this function only works if u accepts one spatial variable.
+
     ----------------------------------------------------------------------------
     Arguments:
-    fig : The figure object to which the Axes belong. We need this to set up
+
+    fig: The figure object to which the Axes belong. We need this to set up
     the color bars.
 
-    Axes : The array of Axes object that we will plot on. Note that this
+    Axes: The array of Axes object that we will plot on. Note that this
     function will overwrite these axes.
 
-    u_NN : the Neural Network that approximates solution to the learned PDE.
+    u_NN: The network that approximates the PDE solution.
 
-    N_NN : The Neural Network that approximates the PDE.
+    N_NN: The Neural Network that approximates the PDE.
 
-    x_points, t_points : The set of possible x and t values, respectively. We
+    x_points, t_points: The set of possible x and t values, respectively. We
     use this to construct the grid of points.
 
-    True_Sol_at_Points : A numpy array containing the true solution at each
+    True_Sol_at_Points: A numpy array containing the true solution at each
     possible x, t coordinate.
 
     ----------------------------------------------------------------------------
     Returns:
+
     Nothing! """
 
     # First, construct the set of possible coordinates.
@@ -144,7 +153,7 @@ def Update_Axes(
     # Flatten t_coods, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
     flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
-    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_x_coords, flattened_grid_t_coords))).float();
+    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).float();
 
     # Get number of possible x and t values, respectively.
     n_x = len(x_points);

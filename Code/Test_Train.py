@@ -17,38 +17,54 @@ def Discovery_Training(
     this mode, we enforce the leaned PDE at the Collocation_Points, and the
     Data_Values at the Data_Points.
 
+    Note: This function works regardless of how many spatial variables u accepts
+    so long as Collocation_Loss does too.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : Neural network that approximates the solution to the learned PDE.
 
-    N_NN : Neural network that approximates the PDE.
+    u_NN: The network that approximates the PDE solution.
 
-    Collocation_Coords : the collocation points at which we enforce the learned
-    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
-    coordinates of the ith collocation point.
+    N_NN: Neural network that approximates the PDE.
 
-    Data_Coords : A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. This should be a 2 column
-    tensor whose ith row holds the x,t coordinates of the ith data point.
+    Collocation_Coords: the collocation points at which we enforce the learned
+    PDE. If u accepts d spatial coordinates, then this should be a d+1 column
+    tensor whose ith row holds the t, x_1,... x_d coordinates of the ith
+    Collocation point.
 
-    Data_Values : A tensor holding the value of the true solution at the data
+    Data_Coords: A tensor holding the coordinates of the points at which we
+    compare the approximate solution to the true one. If u accepts d spatial
+    coordinates, then this should be a d+1 column tensor whose ith row holds the
+    t, x_1,... x_d coordinates of the ith Data point.
+
+    Data_Values: A tensor holding the value of the true solution at the data
     points. If Data_Coords has N rows, then this should be an N element tensor
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    optimizer : the optimizer we use to train u_NN and N_NN. It should be
+    optimizer: the optimizer we use to train u_NN and N_NN. It should be
     loaded with the gradients of both networks.
 
     ----------------------------------------------------------------------------
-    returns:
+    Returns:
+
     Nothing! """
 
     # Zero out the gradients.
     Optimizer.zero_grad();
 
     # Evaluate the Loss (Note, we enforce a BC of 0)
-    Loss = (Collocation_Loss(u_NN = u_NN, N_NN = N_NN, Collocation_Coords = Collocation_Coords) +
-            Data_Loss(u_NN = u_NN, Data_Coords = Data_Coords, Data_Values = Data_Values));
+    Loss = (Collocation_Loss(
+                u_NN = u_NN,
+                N_NN = N_NN,
+                Collocation_Coords = Collocation_Coords)
+
+            +
+
+            Data_Loss(
+                u_NN = u_NN,
+                Data_Coords = Data_Coords,
+                Data_Values = Data_Values));
 
     # Back-propigate to compute gradients of Loss with respect to network
     # parameters.
@@ -68,29 +84,36 @@ def Discovery_Testing(
     """ This function runs testing when in "Discovery" mode. You CAN NOT run this
     function with no_grad set True. Why? Because we need to evaluate derivatives
     of the solution with respect to the inputs! Thus, we need torch to build a
-    cmputational graph.
+    computational graph.
+
+    Note: This function works regardless of how many spatial variables u accepts
+    so long as Collocation_Loss does too.
 
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : Neural network that approximates the solution to the learned PDE.
 
-    N_NN : Neural network that approximates the learned PDE.
+    u_NN: The network that approximates the PDE solution.
 
-    Collocation_Coords : the collocation points at which we enforce the learned
-    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
-    coordinates of the ith collocation point.
+    N_NN: Neural network that approximates the learned PDE.
 
-    Data_Coords : A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. This should be a 2 column
-    tensor whose ith row holds the x,t coordinates of the ith data point.
+    Collocation_Coords: the collocation points at which we enforce the learned
+    PDE. If u accepts d spatial coordinates, then this should be a d+1 column
+    tensor whose ith row holds the t, x_1,... x_d coordinates of the ith
+    Collocation point.
 
-    Data_Values : A tensor holding the value of the true solution at the data
+    Data_Coords: A tensor holding the coordinates of the points at which we
+    compare the approximate solution to the true one. If u accepts d spatial
+    coordinates, then this should be a d+1 column tensor whose ith row holds the
+    t, x_1,... x_d coordinates of the ith Data point.
+
+    Data_Values: A tensor holding the value of the true solution at the data
     points. If Data_Coords has N rows, then this should be an N element tensor
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
     ----------------------------------------------------------------------------
     Returns:
+
     a tuple of floats. The first element holds the collocation loss, while
     the second holds the data loss. """
 
@@ -106,18 +129,6 @@ def Discovery_Testing(
 
     # Return the losses.
     return (Coloc_Loss, Data_loss);
-
-    # Should we worry about the computational graph that we build in this
-    # function? No. Here's why:
-    # Cmputing the losses requires propigating the inputs through the network,
-    # thereby building up a computational graph (we need to keep the graph
-    # building enabled b/c we have to evaluate derivatives to compute the
-    # collocation loss). Normally, these graphs are freed when we call backward.
-    # That's what happens in the training loop. Here, we don't use backward.
-    # The graphs will be freed, however. This function builds up graphs for
-    # Coloc_Loss and Data_loss. When this function returns, however, both
-    # variables are freed (along with their graphs!). These graphs do not get
-    # passed Coloc_Loss or Data_loss, since both are floats (not Tensors).
 
 
 
@@ -135,39 +146,45 @@ def PINNs_Training(
     this mode, we enforce the leaned PDE at the Collocation_Points, impose
     Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
 
+    Note: This function works regardless of how many spatial variables u accepts
+    so long as Collocation_Loss and Periodic_BC_Loss do too.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : Neural network that approximates the solution to the learned PDE.
 
-    N_NN : Neural network that approximates the PDE.
+    u_NN: Neural network that approximates the solution to the learned PDE.
 
-    IC_Coords : A tensor that holds the coordinates of each point that we
-    enforce the Initial Condition. This should be a 2 column tensor of floats
-    whose ith row holds the x,t coordinates of the ith point where we enforce
-    the IC.
+    N_NN: Neural network that approximates the PDE.
 
-    IC_Data : A tensor that holds the value of the initial condition at each
+    IC_Coords: A tensor that holds the coordinates of each point that we
+    enforce the Initial Condition. If u accepts d spatial coordinates, then this
+    should be a d+1 column tensor whose ith row holds the t, x_1,... x_d
+    coordinates of the ith point where we'll enforce the IC.
+
+    IC_Data: A tensor that holds the value of the initial condition at each
     point in IC_Coords. If IC_Coords has N rows, then this should be an N
     element tensor whose ith entry holds the value of the IC at the ith IC
     point.
 
-    Lower_Bound_Coords : A tensor that holds the coordinates of each grid point
-    on the lower spatial bound of the domain.
+    Lower_Bound_Coords: A tensor that holds the coordinates of each grid
+    point on the lower spatial bound of the domain.
 
-    Uppder_Bound_Coords : A tensor that holds the coordinates of each grid point
-    on the lower spatial bound of the domain.
+    Uppder_Bound_Coords: A tensor that holds the coordinates of each grid
+    point on the lower spatial bound of the domain.
 
-    Periodic_BCs_Highest_Order : If this is set to N, then we will enforce
+    Periodic_BCs_Highest_Order: If this is set to N, then we will enforce
     periodic BCs on the solution and its first N-1 derivatives.
 
-    Collocation_Coords : the collocation points at which we enforce the learned
-    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
-    coordinates of the ith collocation point.
+    Collocation_Coords: the collocation points at which we enforce the learned
+    PDE. If u accepts d spatial coordinates, then this should be a d+1 column
+    tensor whose ith row holds the t, x_1,... x_d coordinates the ith
+    Collocation point.
 
-    Optimizer : the optimizer we use to train u_NN.
+    Optimizer: the optimizer we use to train u_NN.
 
     ----------------------------------------------------------------------------
-    returns:
+    Returns:
+
     Nothing! """
 
     # Zero out the gradients.
@@ -186,6 +203,7 @@ def PINNs_Training(
                 Lower_Bound_Coords = Lower_Bound_Coords,
                 Upper_Bound_Coords = Upper_Bound_Coords,
                 Highest_Order = Periodic_BCs_Highest_Order)
+
             +
 
             Collocation_Loss(
@@ -215,37 +233,43 @@ def PINNs_Testing(
     this mode, we enforce the leaned PDE at the Collocation_Points, impose
     Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
 
+    Note: This function works regardless of how many spatial variables u accepts
+    so long as Collocation_Loss and Periodic_BC_Loss do too.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : Neural network that approximates the solution to the learned PDE.
 
-    N_NN : Neural network that approximates the PDE.
+    u_NN: Neural network that approximates the solution to the learned PDE.
 
-    IC_Coords : A tensor that holds the coordinates of each point that we
-    enforce the Initial Condition. This should be a 2 column tensor of floats
-    whose ith row holds the x,t coordinates of the ith point where we enforce
-    the IC.
+    N_NN: Neural network that approximates the PDE.
 
-    IC_Data : A tensor that holds the value of the initial condition at each
+    IC_Coords: A tensor that holds the coordinates of each point that we
+    enforce the Initial Condition. If u accepts d spatial coordinates, then this
+    should be a d+1 column tensor whose ith row holds the t, x_1,... x_d
+    coordinates of the ith point where we'll enforce the IC.
+
+    IC_Data: A tensor that holds the value of the initial condition at each
     point in IC_Coords. If IC_Coords has N rows, then this should be an N
     element tensor whose ith entry holds the value of the IC at the ith IC
     point.
 
-    Lower_Bound_Coords : A tensor that holds the coordinates of each grid point
+    Lower_Bound_Coords: A tensor that holds the coordinates of each grid point
     on the lower spatial bound of the domain.
 
-    Uppder_Bound_Coords : A tensor that holds the coordinates of each grid point
+    Uppder_Bound_Coords: A tensor that holds the coordinates of each grid point
     on the lower spatial bound of the domain.
 
-    Periodic_BCs_Highest_Order : If this is set to N, then we will enforce
+    Periodic_BCs_Highest_Order: If this is set to N, then we will enforce
     periodic BCs on the solution and its first N-1 derivatives.
 
-    Collocation_Coords : the collocation points at which we enforce the learned
-    PDE. This should be a 2 column tensor of floats whose ith holds the x,t
-    coordinates of the ith collocation point.
+    Collocation_Coords: the collocation points at which we enforce the learned
+    PDE. If u accepts d spatial coordinates, then this should be a d+1 column
+    tensor whose ith row holds the t, x_1,... x_d coordinates the ith
+    Collocation point.
 
     ----------------------------------------------------------------------------
-    returns:
+    Returns:
+
     A tuple of three floats. The 0 element holds the Iniitial Condition loss,
     the 1 element holds the Boundary Condition loss, the 2 element holds the
     Collocation loss. """

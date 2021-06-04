@@ -18,15 +18,25 @@ def IC_Loss(
     calculate the square of the difference between this and the corresponding
     true solution in IC_Data. We return the mean of these squared differences.
 
+    Note: This function works regardless of how many spatial variables u accepts.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : the Neural Network that approximates the solution.
 
-    IC_Coords : The coordinates where we know the true initial condition. This
-    should be a two column tensors, each row of which holds an x,t coordinate.
+    u_NN: The network that approximates the PDE solution.
 
-    IC_Data : The value of the initial condition at each point in IC_Coords. If
-    IC_Coords has N rows, then this should be an N element tensor. """
+    IC_Coords: The coordinates where we know the true initial condition. If u
+    accepts d spatial variables, then this should be a d+1 column tensor, whose
+    ith row holds the t, x_1,... x_d coordinates of a Point we want to enforce
+    the initial condition.
+
+    IC_Data: The value of the initial condition at each point in IC_Coords. If
+    IC_Coords has N rows, then this should be an N element tensor.
+
+    ----------------------------------------------------------------------------
+    Returns:
+
+    A scalar tensor containing the mean square IC error. """
 
     # Pass each IC coordinate through u_NN. This yields a N by 1 tensor whose
     # ith element of this stores the value of the approximate solution at the
@@ -53,24 +63,28 @@ def Periodic_BC_Loss(
     and it's first N derivatives satisify periodic boundary conditions (they
     match at the ends of the spatial domain).
 
+    Note: this function only works if u accepts 1 spatial variable.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : The network that approximates the solution to the PDE.
 
-    Lower_Bound_Coords : The x,t coordinates of each point on the lower bound of
-    the spatial domain (the x coordinate is always the same, t varies). This
-    should be a two column tensors, each row of which holds an x,t coordinate.
+    u_NN: The network that approximates the PDE solution.
 
-    Upper_Bound_Coords : The x,t coordinates of each point on the upper bound of
-    the spatial domain (the x coordinate is always the same, t varies). This
-    should be a two column tensors, each row of which holds an x,t coordinate.
+    Lower_Bound_Coords: The t,x coordinates of each point on the lower bound of
+    the spatial domain. This should be a 2 column tensor whose ith row holds the
+    t,x coordinates of the ith point where we'll enforce the boundary condition.
 
-    Highest_Order : The highest order spatial derivative of the solution that
+    Upper_Bound_Coords: The t,X coordinates of each point on the upper bound of
+    the spatial domain. This should be a 2 column tensor whose ith row holds the
+    t,x coordinates of the ith point where we'll enforce the boundary condition.
+
+    Highest_Order: The highest order spatial derivative of the solution that
     we want to impose periodic boundary conditions on. If this is 0, then we
     only apply periodic BCs to the solution itself (not any of its derivatives).
 
     ----------------------------------------------------------------------------
-    Returns :
+    Returns:
+
     A scalar tensor containing the mean square BC error. """
 
     # Allocate tensors to hold u and its derivatives at each coordinate.
@@ -90,7 +104,7 @@ def Periodic_BC_Loss(
 
     # Cycle through the derivaitves. For each one, we compute d^ju/dx^j at the
     # two boundaries. To do this, we first compute the gradient of d^ju/dx^j
-    # with respect to x, t. The exact way that this works is rather involved
+    # with respect to t, x. The exact way that this works is rather involved
     # read my extensive comment in the PDE_Residual function (which basically
     # does the same thing for a different loss function).
     # We create a graph for the new derivative, and retain the graph for the
@@ -102,7 +116,7 @@ def Periodic_BC_Loss(
                                 grad_outputs    = torch.ones_like(diu_dxi_upper_batch[:, i-1]),
                                 create_graph    = True,
                                 retain_graph    = True)[0];
-        diu_dxi_upper_batch[:, i] = grad_diu_dxi_upper[:, 0];
+        diu_dxi_upper_batch[:, i] = grad_diu_dxi_upper[:, 1];
 
         grad_diu_dxi_lower = torch.autograd.grad(
                                 outputs         = diu_dxi_lower_batch[:, i-1],
@@ -110,7 +124,7 @@ def Periodic_BC_Loss(
                                 grad_outputs    = torch.ones_like(diu_dxi_lower_batch[:, i-1]),
                                 create_graph    = True,
                                 retain_graph    = True)[0];
-        diu_dxi_lower_batch[:, i] = grad_diu_dxi_lower[:, 0];
+        diu_dxi_lower_batch[:, i] = grad_diu_dxi_lower[:, 1];
 
     # Now let's compute the BC error at each BC coordinate. There's a lot going
     # on here. First, we compute the element-wise difference of
@@ -140,19 +154,23 @@ def Collocation_Loss(
     quantity above at each Collocation point. We return the mean of these squared
     errors.
 
+    Note: this function only works is u accepts 1 spatial variable.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : The neural network that approximates the solution.
 
-    N_NN : The neural network that approximates the PDE.
+    u_NN: The network that approximates the PDE solution.
 
-    Collocation_Coords : a tensor of coordinates of the collocation points. If
-    there are N collocation points, then this should be a N x 2 tensor, whose
-    ith row holds the x, t coordinate of the ith collocation point.
+    N_NN: The network that approximates the PDE.
+
+    Collocation_Coords: a tensor of coordinates of the collocation points. This
+    should be a 2 column tensor whose ith row holds the t, x coordinates of the
+    ith collocation point.
 
     ----------------------------------------------------------------------------
     Returns:
-    Mean Square Error of the learned PDE at the collocation points. """
+
+    A scalar tensor containing the mean square collocation error. """
 
     # At each Collocation point, evaluate the square of the residuals
     # du/dt - N(u, du/dx,... ).
@@ -172,30 +190,34 @@ def Data_Loss(
         Data_Coords : torch.Tensor,
         Data_Values : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well the learned solution u satisfies the
-    training data. Specifically, for each point ((x_i, t_i), u_i) in
+    training data. Specifically, for each point ((t_i, X_i), u_i) in
     data, we compute the square of the difference between u_i (the true
-    solution at the point (x_i, t_i)) and u(x_i, t_i), where u denotes the
+    solution at the point (t_i, X_i)) and u(t_i, X_i), where u denotes the
     learned solution. We return the mean of these squared errors. Here the
     phrase "data point" means "a point in the domain at which we know the value
     of the true solution"
 
+    Note: This function works regardless of how many spatial variables u accepts.
+
     ----------------------------------------------------------------------------
     Arguments:
-    u_NN : The neural network that approximates the solution.
 
-    Data_Coords : A tensor of coordinates of the data points. If there are
-    N data points, then this should be a N x 2 tensor, whose ith row holds the
-    x, t coordinates of the ith data point.
+    u_NN: The network that approximates the PDE solution.
 
-    Data_Values : A tensor containing the value of the true solution at each
+    Data_Coords: A tensor of coordinates of the data points. If u takes d
+    spatial variables, then this should be a d+1 column tensor whose ith row
+    holds the t, x_1,... x_d coordinates of the ith data point.
+
+    Data_Values: A tensor containing the value of the true solution at each
     data point. If there are N data points, then this should be an N element
     tesnor whose ith element holds the value of the true solution at the ith
     data point.
 
     ----------------------------------------------------------------------------
     Returns:
-    Mean Square Error between the learned solution and the true solution at
-    the data points. """
+
+    A scalar tensor containing the mean square error between the learned and
+    true solutions at the data points. """
 
     # Pass the batch of IC Coordinates through the Neural Network.
     # Note that this will output a N by 1 tensor (where N is the number
@@ -203,7 +225,7 @@ def Data_Loss(
     # out the last dimension.
     u_approx_batch = u_NN(Data_Coords).squeeze();
 
-    # Compute Square Error at each coordinate.
+    # Compute the square error at each coordinate.
     u_true_batch        = Data_Values;
     Square_Error_Batch  = (u_approx_batch - u_true_batch)**2;
 

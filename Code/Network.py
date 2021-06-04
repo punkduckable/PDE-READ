@@ -66,7 +66,7 @@ class Neural_Network(torch.nn.Module):
 
 
 
-    def forward(self, x : torch.Tensor) -> torch.Tensor:
+    def forward(self, X : torch.Tensor) -> torch.Tensor:
         """ Forward method for the NN class (to enable calling the network).
         Note that the user should not call this function directly. Rather,
         they should call it through the __call__ method (using the NN object
@@ -75,14 +75,19 @@ class Neural_Network(torch.nn.Module):
 
         ------------------------------------------------------------------------
         Arguments:
-        x : A batch of inputs. This should be a B by Input_Dim tensor, whose
+
+        x: A batch of inputs. This should be a B by Input_Dim tensor, whose
         ith row holds the ith input (this is how the Linear function works).
-        """
+
+        ------------------------------------------------------------------------
+        Returns:
+
+        A tensor containing the value of the network ealuated at X. """
 
         # Pass x through the network's layers!
         for i in range(self.Num_Layers - 1):
-            x = self.Activation_Function(self.Layers[i](x));
+            X = self.Activation_Function(self.Layers[i](X));
 
         # Pass through the last layer and return (there is no activation
         # function in the last layer)
-        return self.Layers[self.Num_Layers - 1](x);
+        return self.Layers[self.Num_Layers - 1](X);
