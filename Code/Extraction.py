@@ -224,7 +224,7 @@ def Generate_Library(
     # below).
     num_rows : int = Coords.shape[0];
     num_cols : int = num_multi_indicies.sum();
-    Library : torch.Tensor = np.ones((num_rows, num_cols), dtype = np.float32);
+    Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
 
     # Evaluate u, du/dx,... at each point.
     (du_dt, diu_dxi) = Evaluate_u_derivatives(
@@ -258,7 +258,60 @@ def Generate_Library(
             position += 1;
 
     # All done, the library is now populated!
-    return Library;
+    return (Library, du_dt.detach().squeeze().numpy());
+
+
+
+def Thresholded_Least_Squares(
+        A         : np.array,
+        b         : np.array,
+        threshold : float) -> np.array:
+    """ This problem solves a thresholded leat squares problem. That is, it
+    essentially finds arg_min(||Ax - b||_{2}). The big difference is that we try
+    to eliminate the component of x which are smaller than the threshold. In
+    particular, we first find x(1) = arg_min(||Ax - b||_{2}). We then find set
+    to zero all components of x(1) whose absolute value is less than the
+    threshold. We eliminate the corresponding columns of A to get A(1) (which
+    now only has those columns of A for which the corresponding component of x
+    is at least as big as the threshold). We then solve x(2) =
+    arg_min(||A(1)x - b||_{2}) and repeat.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    A, b: The matrix A and vector b in Ax = b.
+
+    threshold: the smallest value we allow components of x to take on. Any
+    component of x whose absolute value is less than the threshold will be
+    zeroed out.
+
+    ----------------------------------------------------------------------------
+    Returns:
+
+    A numpy array which is basically arg_min(Ax - b). See description above.
+    If A has m columns, then the returned vector should have m components. """
+
+    # Solve the initial least squares problem.
+    x : np.array = np.linalg.lstsq(A, b, rcond = None)[0];
+
+    # Perform the thresholding procedure.
+    for k in range(0, 10):
+        # Determine which components of x are smaller than the threshold. This
+        # yields a boolean vector, whose ith component of x is smaller than
+        # the threshold, and 0 otherwise.
+        small_indicies : np.array = (abs(x) < threshold);
+        x[small_indicies] = 0;
+        print("Eliminated %d components by step %d of thresholded least squares." % (small_indicies.sum(), k));
+
+        # Now determine which components of x are bigger than the threshold.
+        big_indicies : np.array   = np.logical_not(small_indicies);
+
+        # Resolve least squares problem but only using the columns of A
+        # corresponding to the big columns.
+        x[big_indicies] = np.linalg.lstsq(A[:, big_indicies], b, rcond = None)[0];
+
+    # All done, return x!
+    return x;
 
 
 
