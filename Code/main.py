@@ -21,7 +21,8 @@ def Setup_Optimizer(
     learning enabled or not. It also disables gradients for all network
     parameters that are not being learned.
 
-    Note: This function works regardless of how many spatial variables u accepts.
+    Note: This function works regardless of how many spatial variables u depends
+    on.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -236,11 +237,12 @@ def main():
             print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
 
     elif(Setup_Data.Mode == "Extraction"):
+        # Generate the library!
         (Library, du_dt) = Generate_Library(
                                 u_NN            = u_NN,
                                 Coords          = Data_Container.Extraction_Coords,
                                 num_derivatives = Setup_Data.N_Num_u_derivatives,
-                                PDE_order       = Setup_Data.Extracted_PDE_Order);
+                                Poly_Degree     = Setup_Data.Extracted_term_degree);
 
         x = Thresholded_Least_Squares(
                     A           = Library,

@@ -244,7 +244,7 @@ def Setup_File_Reader() -> Setup_Data_Container:
 
     # Extraction mode specific settings.
     if (Setup_Data.Mode == "Extraction"):
-        Setup_Data.Extracted_PDE_Order     = int(Read_Line_After(File, "Extracted PDE order [int] :").strip());
+        Setup_Data.Extracted_term_degree   = int(Read_Line_After(File, "Extracted PDE term degree [int] :").strip());
         Setup_Data.Num_Extraction_Points   = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
         Setup_Data.Least_Squares_Threshold = float(Read_Line_After(File, "Least Squares Threshold [float] :").strip());
 

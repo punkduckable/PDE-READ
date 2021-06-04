@@ -18,7 +18,8 @@ def IC_Loss(
     calculate the square of the difference between this and the corresponding
     true solution in IC_Data. We return the mean of these squared differences.
 
-    Note: This function works regardless of how many spatial variables u accepts.
+    Note: This function works regardless of how many spatial variables u depends
+    on.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -63,7 +64,7 @@ def Periodic_BC_Loss(
     and it's first N derivatives satisify periodic boundary conditions (they
     match at the ends of the spatial domain).
 
-    Note: this function only works if u accepts 1 spatial variable.
+    Note: this function only works is u is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -154,7 +155,7 @@ def Collocation_Loss(
     quantity above at each Collocation point. We return the mean of these squared
     errors.
 
-    Note: this function only works is u accepts 1 spatial variable.
+    Note: this function only works is u is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -197,7 +198,8 @@ def Data_Loss(
     phrase "data point" means "a point in the domain at which we know the value
     of the true solution"
 
-    Note: This function works regardless of how many spatial variables u accepts.
+    Note: This function works regardless of how many spatial variables u depends
+    on.
 
     ----------------------------------------------------------------------------
     Arguments:

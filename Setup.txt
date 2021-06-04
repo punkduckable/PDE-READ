@@ -30,10 +30,10 @@
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Save_PINNs
+  Load File Name [str] :                         Burgers_Save_Disc_1
 
 Save State [Bool] :                              False
-  Save File Name [str] :                         Burgers_Save_PINNs
+  Save File Name [str] :                         Burgers_Save_Disc_1
 
 Plot Final Result [bool] :                       False
 
@@ -59,27 +59,29 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 #
 # In Extraction mode, we learn neither u nor N. Instead, we attempt to
 # extract a PDE from u (which probably means that u should be loaded from
-# a trained network). In this mode, you must set the "Extracted PDE Order" and
-# "Number of Extraction Points" settings. The former controls what order PDE
-# we attempt to extract. The latter controls the number of points (in the PDE
-# domain) at which we attempt to extract the PDE.
+# a trained network). In this mode, you must set the "Extracted PDE term degree"
+# and "Number of Extraction Points" settings. The former controls the maximum
+# degree of the terms that we try to extract (the term du_dx has degree one,
+# u*du_dx has degree 2, u^2 (du_dx)^3 d^2u_dx^2 has order 6, etc.). The latter
+# controls the number of points (in the PDE domain) at which we attempt to
+# extract the PDE.
 
 PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
-Number of Training Collocation Points [int] :    1000
-Number of Testing Collocation Points [int] :     2000
+Number of Training Collocation Points [int] :    4500
+Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           2500
+Number of Data Training Points [int] :           4500
 Number of Data Testing Points [int] :            500
-Number of Training Collocation Points [int] :    2500
+Number of Training Collocation Points [int] :    4500
 Number of Testing Collocation Points [int] :     500
 
 # Extraction mode specific settings.
-Extracted PDE order [int] :                      3
-Number of Extraction Points [int] :              100
+Extracted PDE term degree [int] :                2
+Number of Extraction Points [int] :              1000
 Least Squares Threshold [float] :                .025
 
 

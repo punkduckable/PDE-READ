@@ -13,7 +13,7 @@ def Evaluate_u_derivatives(
     """ This function evaluates u, du/dt, and d^i u/dx^i (for i = 1,2... ) at each
     coordinate in Coords.
 
-    Note: this function only works if u accepts 1 spatial variable.
+    Note: this function only works is u is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -122,7 +122,7 @@ def PDE_Residual(
             du/dt - N(u, du/dx, d^2u/dx^2,... )
     which we call the residual.
 
-    Note: this funciton only works if u accpets 1 spatial variable.
+    Note: this funciton only works if u is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:

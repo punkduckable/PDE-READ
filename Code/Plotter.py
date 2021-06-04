@@ -15,7 +15,8 @@ def Evaluate_Approx_Sol(
     """ This function evaluates the approximate solution at each element of
     Point_Coords.
 
-    Note: This function works regardless of how many spatial variables u accepts.
+    Note: This function works regardless of how many spatial variables u depends
+    on.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -112,7 +113,7 @@ def Update_Axes(
     """ This function plots the approximate solution and residual at the
     specified points.
 
-    Note: this function only works if u accepts one spatial variable.
+    Note: this function only works is u is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:
