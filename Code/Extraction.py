@@ -1,5 +1,6 @@
 import numpy as np;
 import torch;
+from typing import Tuple;
 
 from Network import Neural_Network;
 from PDE_Residual import Evaluate_u_derivatives;
@@ -30,10 +31,10 @@ def Recursive_Counter(
     Arguments:
 
     n_sub_index_values: The number of distinct values that any one of the
-    sub-indicies can take on. If n_sub_index_values = k, then each sub index
+    sub-indices can take on. If n_sub_index_values = k, then each sub index
     can take on values 0, 1,... k-1.
 
-    degree: The number of sub-indicies in the multi-index.
+    degree: The number of sub-indices in the multi-index.
 
     sub_index: keeps track of which sub-index we're working on.
 
@@ -123,7 +124,7 @@ def Recursive_Multi_Indices(
     take on. If n_sub_index_values = k, then each sub_index can take values
     0, 1,... n_sub_index_values - 1.
 
-    degree: The number of sub-indicies in the multi-index.
+    degree: The number of sub-indices in the multi-index.
 
     sub_index: keeps track of which sub-index we're working on.
 
@@ -171,7 +172,7 @@ def Generate_Library(
         u_NN            : Neural_Network,
         Coords          : torch.Tensor,
         num_derivatives : int,
-        Poly_Degree      : int) -> np.array:
+        Poly_Degree     : int) -> np.array:
     """ This function populates the library matrix in the SINDY algorithm. How
     this works (and why it works the way that it does) is a tad involved.... so
     buckle up, here comes a (rather verbose) explanation:
@@ -227,27 +228,35 @@ def Generate_Library(
     ----------------------------------------------------------------------------
     Returns:
 
-    A tuple of numpy arrays. The first element of the tuple holds the Library
-    (with a row for each coordinate and a column for each term in the library)
-    and the second holds du_dt. """
+    A 4 element tuple. The first element holds du_dt. The second holds the
+    library (with a row for each coordinate and a column for each termin the
+    library). The third holds a Poly_Degree element array whose ith element
+    holds the number of multi_indices of degree k whose sub-indices take
+    values in {0, 1,... num_derivatives}. The 4th is a list of arrays, the ith
+    one of which holds the set of multi-indices of order i whose sub-indices
+    take values in {0, 1,... num_derivatives}. """
 
     # We need a sub-index value for each derivative, as well as u itself.
     n_sub_index_values = num_derivatives + 1;
 
-    # Determine how many multi-indicies with k sub-indicies exist for each
+    # Determine how many multi-indices with k sub-indices exist for each
     # k in {0, 1,... Poly_Degree}.
-    num_multi_indicies = np.empty(Poly_Degree + 1, dtype = np.int);
-    num_multi_indicies[0] = 1;
+    num_multi_indices    = np.empty(Poly_Degree + 1, dtype = np.int);
+    num_multi_indices[0] = 1;
     for i in range(1, Poly_Degree + 1):
-        num_multi_indicies[i] = Recursive_Counter(
+        num_multi_indices[i] = Recursive_Counter(
                                     n_sub_index_values  = n_sub_index_values,
                                     degree              = i);
+
+    # Set up a list to hold the multi-index arrays of each degree.
+    multi_indices_list   = [];
+    multi_indices_list.append(np.array(1, dtype = np.int));
 
     # Use this information to initialize the Library as a tensor of ones.
     # We need everything to be ones because of how we populate this matrix (see
     # below).
     num_rows : int = Coords.shape[0];
-    num_cols : int = num_multi_indicies.sum();
+    num_cols : int = num_multi_indices.sum();
     Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
 
     # Evaluate u, du/dx,... at each point.
@@ -261,19 +270,19 @@ def Generate_Library(
     # be filled with 1's (which it already is).
     position = 1;
     for degree in range(1, Poly_Degree + 1):
-        # Create a buffer to hold the multi-indicies.
-        multi_indices = np.empty((num_multi_indicies[degree], degree), dtype = np.int);
+        # Create a buffer to hold the multi-indices of this degree.
+        multi_indices = np.empty((num_multi_indices[degree], degree), dtype = np.int);
 
-        # Find the set of multi indicies!
+        # Find the set of multi indices for this degree!
         Recursive_Multi_Indices(
             multi_indices       = multi_indices,
             n_sub_index_values  = n_sub_index_values,
             degree              = degree);
 
-        # Cycle through the multi-indicies of this degree
-        for i in range(num_multi_indicies[degree]):
+        # Cycle through the multi-indices of this degree
+        for i in range(num_multi_indices[degree]):
 
-            # Cycle through the sub-indicies of this multi-index.
+            # Cycle through the sub-indices of this multi-index.
             for j in range(degree):
                 Library[:, position] = (Library[:, position]*
                                         diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy());
@@ -281,8 +290,15 @@ def Generate_Library(
             # Increment position
             position += 1;
 
-    # All done, the library is now populated!
-    return (Library, du_dt.detach().squeeze().numpy());
+        # Append this set of multi_indices for this degree to the list.
+        multi_indices_list.append(multi_indices);
+
+    # All done, the library is now populated! Package everything together and
+    # return.
+    return (du_dt.detach().squeeze().numpy(),
+            Library,
+            num_multi_indices,
+            multi_indices_list);
 
 
 
@@ -323,20 +339,57 @@ def Thresholded_Least_Squares(
         # Determine which components of x are smaller than the threshold. This
         # yields a boolean vector, whose ith component of x is smaller than
         # the threshold, and 0 otherwise.
-        small_indicies : np.array = (abs(x) < threshold);
-        x[small_indicies] = 0;
-        print("Eliminated %d components after step %d of thresholded least squares." % (small_indicies.sum(), k));
+        small_indices : np.array = (abs(x) < threshold);
+        x[small_indices] = 0;
+        print("Eliminated %d components after step %d of thresholded least squares." % (small_indices.sum(), k));
 
         # Now determine which components of x are bigger than the threshold.
-        big_indicies : np.array   = np.logical_not(small_indicies);
+        big_indices : np.array   = np.logical_not(small_indices);
 
         # Resolve least squares problem but only using the columns of A
         # corresponding to the big columns.
-        x[big_indicies] = np.linalg.lstsq(A[:, big_indicies], b, rcond = None)[0];
+        x[big_indices] = np.linalg.lstsq(A[:, big_indices], b, rcond = None)[0];
 
     # All done, return x!
     return x;
 
+
+
+def Print_Extracted_PDE(
+        Extracted_PDE       : np.array,
+        num_multi_indices  : np.array,
+        multi_indices_list : Tuple) -> None:
+    """ This function takes in the output of the Thresholded_Least_Squares function
+    and turns it into a PDE in a human readable format. """
+
+    # Start the printout.
+    print("Extracted the following PDE:");
+    print("du/dt =", end = '');
+
+    if (Extracted_PDE[0] != 0):
+        print("%f " % Extracted_PDE[0], end = '');
+
+    position : int    = 1;
+    for degree in range(1, num_multi_indices.shape[0]):
+        # Cycle through the multi-indices of this degree.
+        for i in range(num_multi_indices[degree]):
+
+            # If this term of the extracted PDE is non-zero, print out the
+            # corresponding term.
+            if(Extracted_PDE[position] != 0):
+                print(" + %f" % Extracted_PDE[position], end = '');
+                multi_index = multi_indices_list[degree][i];
+
+                # cycle through the sub-indices of this multi-index.
+                for j in range(degree):
+                    if(multi_index[j] == 0):
+                        print("(u)", end = '');
+                    else:
+                        print("(d^%d u/dx^%d)" % (multi_index[j], multi_index[j]), end = '');
+            position += 1;
+
+    # Finish printing (this just pints a new line character).
+    print();
 
 
 def main():

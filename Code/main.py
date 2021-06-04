@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt;
 
 from Network            import Neural_Network;
 from Test_Train         import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Extraction         import Generate_Library, Thresholded_Least_Squares;
+from Extraction         import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE;
 from Plotter            import Update_Axes, Setup_Axes;
 from Setup_File_Reader  import Setup_File_Reader, Setup_Data_Container;
 from Data_Setup         import Data_Loader, Data_Container, Generate_Random_Coords;
@@ -238,18 +238,24 @@ def main():
 
     elif(Setup_Data.Mode == "Extraction"):
         # Generate the library!
-        (Library, du_dt) = Generate_Library(
-                                u_NN            = u_NN,
-                                Coords          = Data_Container.Extraction_Coords,
-                                num_derivatives = Setup_Data.N_Num_u_derivatives,
-                                Poly_Degree     = Setup_Data.Extracted_term_degree);
+        (du_dt,
+         Library,
+         num_multi_indices,
+         multi_indices_list) = Generate_Library(
+                                    u_NN            = u_NN,
+                                    Coords          = Data_Container.Extraction_Coords,
+                                    num_derivatives = Setup_Data.N_Num_u_derivatives,
+                                    Poly_Degree     = Setup_Data.Extracted_term_degree);
 
-        x = Thresholded_Least_Squares(
-                    A           = Library,
-                    b           = du_dt,
-                    threshold   = Setup_Data.Least_Squares_Threshold);
+        Extracted_PDE = Thresholded_Least_Squares(
+                            A           = Library,
+                            b           = du_dt,
+                            threshold   = Setup_Data.Least_Squares_Threshold);
 
-        print(x);
+        Print_Extracted_PDE(
+            Extracted_PDE       = Extracted_PDE,
+            num_multi_indices  = num_multi_indices,
+            multi_indices_list = multi_indices_list);
 
     else:
         print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Mode));
