@@ -6,7 +6,7 @@ from Network            import Neural_Network;
 from Test_Train         import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
 from Extraction         import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE;
 from Plotter            import Update_Axes, Setup_Axes;
-from Setup_File_Reader  import Setup_File_Reader, Setup_Data_Container;
+from Settings_Reader    import Settings_Reader, Settings_Container;
 from Data_Setup         import Data_Loader, Data_Container, Generate_Random_Coords;
 from Timing             import Timer;
 
@@ -62,12 +62,12 @@ def Setup_Optimizer(
 
 def main():
     ############################################################################
-    # Load setup data from the setup file.
-    Setup_Data = Setup_File_Reader();
+    # Load settings from the settings file.
+    Settings = Settings_Reader();
 
     # Test that we got the correct input.
     print("Loaded the following settings:");
-    for (setting, value) in Setup_Data.__dict__.items():
+    for (setting, value) in Settings.__dict__.items():
         print(("%-25s = " % setting) + str(value));
 
 
@@ -75,54 +75,54 @@ def main():
     ############################################################################
     # Set up neural networks, optimizer.
 
-    # Start a timer for the setup.
+    # Start a timer for program setup.
     Setup_Timer = Timer();
     Setup_Timer.Start();
 
     # Initialize Network hyperparameters.
-    Epochs        : int   = Setup_Data.Epochs;
-    Learning_Rate : float = Setup_Data.Learning_Rate;
+    Epochs        : int   = Settings.Epochs;
+    Learning_Rate : float = Settings.Learning_Rate;
 
     # Set up the neural network to approximate the PDE solution.
-    u_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.u_Num_Hidden_Layers,
-                            Neurons_Per_Layer   = Setup_Data.u_Neurons_Per_Layer,
+    u_NN = Neural_Network(  Num_Hidden_Layers   = Settings.u_Num_Hidden_Layers,
+                            Neurons_Per_Layer   = Settings.u_Neurons_Per_Layer,
                             Input_Dim           = 2,
                             Output_Dim          = 1);
 
     # Set up the neural network to approximate the PDE operator N.
-    N_NN = Neural_Network(  Num_Hidden_Layers   = Setup_Data.N_Num_Hidden_Layers,
-                            Neurons_Per_Layer   = Setup_Data.N_Neurons_Per_Layer,
-                            Input_Dim           = Setup_Data.N_Num_u_derivatives + 1,
+    N_NN = Neural_Network(  Num_Hidden_Layers   = Settings.N_Num_Hidden_Layers,
+                            Neurons_Per_Layer   = Settings.N_Neurons_Per_Layer,
+                            Input_Dim           = Settings.N_Num_u_derivatives + 1,
                             Output_Dim          = 1);
 
     # Select the optimizer based on mode.
-    if(Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
+    if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         Optimizer = Setup_Optimizer(u_NN            = u_NN,
                                     N_NN            = N_NN,
-                                    Mode            = Setup_Data.Mode,
+                                    Mode            = Settings.Mode,
                                     Learning_Rate   = Learning_Rate );
 
     # Check if we're loading anything from file.
-    if(     Setup_Data.Load_u_Network_State == True or
-            Setup_Data.Load_N_Network_State == True or
-            Setup_Data.Load_Optimize_State  == True):
+    if(     Settings.Load_u_Network_State == True or
+            Settings.Load_N_Network_State == True or
+            Settings.Load_Optimize_State  == True):
 
         # Load the saved checkpoint.
-        Load_File_Path : str = "../Saves/" + Setup_Data.Load_File_Name;
+        Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
         Saved_State = torch.load(Load_File_Path);
 
-        if(Setup_Data.Load_u_Network_State == True):
+        if(Settings.Load_u_Network_State == True):
             u_NN.load_state_dict(Saved_State["u_Network_State"]);
             u_NN.train();
 
-        if(Setup_Data.Load_N_Network_State == True):
+        if(Settings.Load_N_Network_State == True):
             N_NN.load_state_dict(Saved_State["N_Network_State"]);
             N_NN.train();
 
         # Note that this will overwrite the Learning Rate using the
         # Learning rate in the saved state. Thus, if this is set to true, then
-        # we essentially ignore the learning rate in the setup file.
-        if(Setup_Data.Load_Optimize_State  == True):
+        # we essentially ignore the learning rate in the settings.
+        if(Settings.Load_Optimize_State  == True):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
 
@@ -134,31 +134,31 @@ def main():
     # data points and values. If we're in PINNs mode, this will also set up IC
     # and BC points. This should also give us the upper and lower bounds for the
     # domain.
-    Data_Container = Data_Loader(Setup_Data);
+    Data_Container = Data_Loader(Settings);
 
     # Set up mode specific points.
-    if  (Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
+    if  (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         # In these modes, we need to set up the Collocation points.
 
         # Generate Collocation points.
         Data_Container.Train_Colloc_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Setup_Data.Num_Train_Colloc_Points);
+                Num_Points          = Settings.Num_Train_Colloc_Points);
 
         Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Setup_Data.Num_Test_Colloc_Points);
+                Num_Points          = Settings.Num_Test_Colloc_Points);
 
-    elif(Setup_Data.Mode == "Extraction"):
+    elif(Settings.Mode == "Extraction"):
         # In this mode we need to set up the Extraction points.
 
         # Generate Collocation points.
         Data_Container.Extraction_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Setup_Data.Num_Extraction_Points);
+                Num_Points          = Settings.Num_Extraction_Points);
 
 
     # Setup is done! Figure out how long it took.
@@ -174,7 +174,7 @@ def main():
     Main_Timer = Timer();
     Main_Timer.Start();
 
-    if  (Setup_Data.Mode == "PINNs"):
+    if  (Settings.Mode == "PINNs"):
         # Setup arrays for the different kinds of losses.
         IC_Losses          = np.empty((Epochs), dtype = np.float);
         BC_Losses          = np.empty((Epochs), dtype = np.float);
@@ -188,7 +188,7 @@ def main():
                 IC_Data                     = Data_Container.IC_Data,
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
-                Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
+                Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
                 Collocation_Coords          = Data_Container.Train_Colloc_Coords,
                 Optimizer                   = Optimizer);
 
@@ -199,7 +199,7 @@ def main():
                 IC_Data                     = Data_Container.IC_Data,
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
-                Periodic_BCs_Highest_Order  = Setup_Data.Periodic_BCs_Highest_Order,
+                Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
                 Collocation_Coords          = Data_Container.Test_Colloc_Coords);
 
             # Print losses.
@@ -209,7 +209,7 @@ def main():
             print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
             print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
 
-    elif(Setup_Data.Mode == "Discovery"):
+    elif(Settings.Mode == "Discovery"):
         # Set up array for the different kinds of losses.
         Collocation_Losses = np.empty((Epochs), dtype = np.float);
         Data_Losses        = np.empty((Epochs), dtype = np.float);
@@ -236,7 +236,7 @@ def main():
             print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
             print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
 
-    elif(Setup_Data.Mode == "Extraction"):
+    elif(Settings.Mode == "Extraction"):
         # Generate the library!
         (du_dt,
          Library,
@@ -244,13 +244,13 @@ def main():
          multi_indices_list) = Generate_Library(
                                     u_NN            = u_NN,
                                     Coords          = Data_Container.Extraction_Coords,
-                                    num_derivatives = Setup_Data.N_Num_u_derivatives,
-                                    Poly_Degree     = Setup_Data.Extracted_term_degree);
+                                    num_derivatives = Settings.N_Num_u_derivatives,
+                                    Poly_Degree     = Settings.Extracted_term_degree);
 
         Extracted_PDE = Thresholded_Least_Squares(
                             A           = Library,
                             b           = du_dt,
-                            threshold   = Setup_Data.Least_Squares_Threshold);
+                            threshold   = Settings.Least_Squares_Threshold);
 
         Print_Extracted_PDE(
             Extracted_PDE       = Extracted_PDE,
@@ -266,11 +266,11 @@ def main():
     # Epochs are done. Figure out how long they took!
     Main_Time = Main_Timer.Stop();
 
-    if (Setup_Data.Mode == "PINNs" or Setup_Data.Mode == "Discovery"):
+    if (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         print("Running %d epochs took %fs." % (Epochs, Main_Time));
         print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
 
-    elif(Setup_Data.Mode == "Extraction"):
+    elif(Settings.Mode == "Extraction"):
         print("Extraction took %fs." % Main_Time);
 
 
@@ -278,8 +278,8 @@ def main():
     ############################################################################
     # Save the network and optimizer states!
 
-    if(Setup_Data.Save_To_File == True):
-        Save_File_Path : str = "../Saves/" + Setup_Data.Save_File_Name;
+    if(Settings.Save_To_File == True):
+        Save_File_Path : str = "../Saves/" + Settings.Save_File_Name;
         torch.save({"u_Network_State" : u_NN.state_dict(),
                     "N_Network_State" : N_NN.state_dict(),
                     "Optimizer_State" : Optimizer.state_dict()},
@@ -290,7 +290,7 @@ def main():
     ############################################################################
     # Plot final results
 
-    if(Setup_Data.Plot_Final_Results == True):
+    if(Settings.Plot_Final_Results == True):
         fig, Axes = Setup_Axes();
         Update_Axes(fig                 = fig,
                     Axes                = Axes,

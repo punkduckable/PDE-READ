@@ -3,7 +3,7 @@ import torch;
 import random;
 import scipy.io;
 
-from Setup_File_Reader import Setup_Data_Container;
+from Settings_Reader import Settings_Container;
 
 
 class Data_Container:
@@ -11,7 +11,7 @@ class Data_Container:
 
 
 
-def Data_Loader(Setup_Data : Setup_Data_Container):
+def Data_Loader(Settings : Settings_Container):
     """ This function loads data from file and returns it. We make a few
     assumptions about the format of the data. For one, we assume that the .mat
     file contains three fields: t, x, and usol.
@@ -37,7 +37,7 @@ def Data_Loader(Setup_Data : Setup_Data_Container):
     ----------------------------------------------------------------------------
     Arguments:
 
-    Setup_Data: What gets returned by the Setup_File_Reader. This should
+    Settings: What gets returned by the Settings_Reader. This should
     contain the Mode, Data_File_Path, and (if we're in Discovery mode), the
     number of testing and training data points.
 
@@ -47,7 +47,7 @@ def Data_Loader(Setup_Data : Setup_Data_Container):
     A Data Container object. """
 
     # Load data file.
-    Data_File_Path = "../Data/" + Setup_Data.Data_File_Name
+    Data_File_Path = "../Data/" + Settings.Data_File_Name
     data_in = scipy.io.loadmat(Data_File_Path);
 
     # Fetch spatial, temporal coordinates and the true solution.
@@ -104,7 +104,7 @@ def Data_Loader(Setup_Data : Setup_Data_Container):
     Container.Dim_Upper_Bounds  = np.array((t_upper, x_upper), dtype = np.float);
 
 
-    if  (Setup_Data.Mode == "PINNs"):
+    if  (Settings.Mode == "PINNs"):
         # If we're in PINN's mode, then we need IC, BC data.
 
         ############################################################################
@@ -149,13 +149,13 @@ def Data_Loader(Setup_Data : Setup_Data_Container):
         Container.Lower_Bound_Coords    = torch.from_numpy(Lower_Bound_Coords).to(dtype = torch.float32);
         Container.Upper_Bound_Coords    = torch.from_numpy(Upper_Bound_Coords).to(dtype = torch.float32);
 
-    elif(Setup_Data.Mode == "Discovery"):
+    elif(Settings.Mode == "Discovery"):
         # If we're in Discovery mode, then we need Testing/Training Data
         # coordinates and values.
 
         # Randomly select Num_Training_Points, Num_Testing_Points coordinate indicies.
-        Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Setup_Data.Num_Train_Data_Points, replace = False);
-        Test_Indicies  = np.random.choice(All_Data_Coords.shape[0], Setup_Data.Num_Test_Data_Points, replace = False);
+        Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Settings.Num_Train_Data_Points, replace = False);
+        Test_Indicies  = np.random.choice(All_Data_Coords.shape[0], Settings.Num_Test_Data_Points, replace = False);
 
         # Now select the corresponding testing, training data points, values.
         Container.Train_Data_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);

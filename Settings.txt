@@ -1,4 +1,4 @@
-# This file controls the setup of the program. The file consists of comment
+# This file controls the program settings. The file consists of comment
 # (lines that begin with '#') and setting lines. Each setting line consists of
 # a setting name, a data type, and a value. They use the following format:
 #         <Setting Name> [<data type>] : <value>
@@ -102,7 +102,7 @@ N Network - Neurons per Hidden Layer [int] :     100
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         2000
+Number of Epochs [int] :                         100
 Learning Rate [float] :                          .0015
 
 
