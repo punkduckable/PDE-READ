@@ -170,6 +170,7 @@ def Recursive_Multi_Indices(
 
 def Generate_Library(
         u_NN            : Neural_Network,
+        N_NN            : Neural_Network,
         Coords          : torch.Tensor,
         num_derivatives : int,
         Poly_Degree     : int) -> np.array:
@@ -214,6 +215,8 @@ def Generate_Library(
 
     u_NN: The network that approximates the PDE solution.
 
+    N_NN: Neural network that approximates the PDE.
+
     Coords: The coordinates of the extraction points (The library will contain
     a row for each element of Coords).
 
@@ -228,13 +231,15 @@ def Generate_Library(
     ----------------------------------------------------------------------------
     Returns:
 
-    A 4 element tuple. The first element holds du_dt. The second holds the
-    library (with a row for each coordinate and a column for each termin the
-    library). The third holds a Poly_Degree element array whose ith element
-    holds the number of multi_indices of degree k whose sub-indices take
-    values in {0, 1,... num_derivatives}. The 4th is a list of arrays, the ith
-    one of which holds the set of multi-indices of order i whose sub-indices
-    take values in {0, 1,... num_derivatives}. """
+    A 4 element tuple. For the first, we evaluate u, u_xx,... at each point in
+    Coords. We then evaluate N_NN at each of these collection of values. This
+    is the first element of the returned tuple. The second holds the library
+    (with a row for each coordinate and a column for each term in the library).
+    The third holds a Poly_Degree element array whose ith element holds the
+    number of multi_indices of degree k whose sub-indices take values in {0,
+    1,... num_derivatives}. The 4th is a list of arrays, the ith one of which
+    holds the set of multi-indices of order i whose sub-indices take values in
+    {0, 1,... num_derivatives}. """
 
     # We need a sub-index value for each derivative, as well as u itself.
     n_sub_index_values = num_derivatives + 1;
@@ -249,7 +254,7 @@ def Generate_Library(
                                     degree              = i);
 
     # Set up a list to hold the multi-index arrays of each degree.
-    multi_indices_list   = [];
+    multi_indices_list = [];
     multi_indices_list.append(np.array(1, dtype = np.int));
 
     # Use this information to initialize the Library as a tensor of ones.
@@ -264,6 +269,9 @@ def Generate_Library(
                             u_NN            = u_NN,
                             num_derivatives = num_derivatives,
                             Coords          = Coords);
+
+    # Evaluate n at the output given by diu_dxi.
+    N_NN_batch = N_NN(diu_dxi);
 
     # Now populate the library the multi-index approach described above. Note
     # that the first column corresponds to a constant and should, therefore,
@@ -295,7 +303,7 @@ def Generate_Library(
 
     # All done, the library is now populated! Package everything together and
     # return.
-    return (du_dt.detach().squeeze().numpy(),
+    return (N_NN_batch.detach().squeeze().numpy(),
             Library,
             num_multi_indices,
             multi_indices_list);

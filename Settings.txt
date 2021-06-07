@@ -30,10 +30,10 @@
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Save_PINNs
+  Load File Name [str] :                         Burgers_Save_Disc_4
 
 Save State [Bool] :                              False
-  Save File Name [str] :                         Burgers_Save_PINNs
+  Save File Name [str] :                         Burgers_Save_Disc_4
 
 Plot Final Result [bool] :                       False
 
@@ -74,16 +74,15 @@ Number of Training Collocation Points [int] :    7000
 Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           4500
+Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            500
-Number of Training Collocation Points [int] :    4500
+Number of Training Collocation Points [int] :    10000
 Number of Testing Collocation Points [int] :     500
 
 # Extraction mode specific settings.
 Extracted PDE term degree [int] :                2
-Number of Extraction Points [int] :              1000
+Number of Extraction Points [int] :              10000
 Least Squares Threshold [float] :                .025
-
 
 
 
@@ -94,16 +93,16 @@ u Network - Number of Hidden Layers [int] :      5
 u Network - Neurons per Hidden Layer [int] :     50
 
 N Network - Number u derivatives [int] :         2
-N Network - Number of Hidden Layers [int] :      2
-N Network - Neurons per Hidden Layer [int] :     100
+N Network - Number of Hidden Layers [int] :      5
+N Network - Neurons per Hidden Layer [int] :     50
 
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         2000
-Learning Rate [float] :                          .0015
+Number of Epochs [int] :                         2500
+Learning Rate [float] :                          .001
 
 
 

@@ -238,22 +238,23 @@ def main():
 
     elif(Settings.Mode == "Extraction"):
         # Generate the library!
-        (du_dt,
+        (N_NN_batch,
          Library,
          num_multi_indices,
          multi_indices_list) = Generate_Library(
                                     u_NN            = u_NN,
+                                    N_NN            = N_NN, 
                                     Coords          = Data_Container.Extraction_Coords,
                                     num_derivatives = Settings.N_Num_u_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree);
 
         Extracted_PDE = Thresholded_Least_Squares(
-                            A           = Library,
-                            b           = du_dt,
-                            threshold   = Settings.Least_Squares_Threshold);
+                            A         = Library,
+                            b         = N_NN_batch,
+                            threshold = Settings.Least_Squares_Threshold);
 
         Print_Extracted_PDE(
-            Extracted_PDE       = Extracted_PDE,
+            Extracted_PDE      = Extracted_PDE,
             num_multi_indices  = num_multi_indices,
             multi_indices_list = multi_indices_list);
 
@@ -277,8 +278,9 @@ def main():
 
     ############################################################################
     # Save the network and optimizer states!
+    # This only makes sense if we're in PINNs or Discovery modes.
 
-    if(Settings.Save_To_File == True):
+    if((Settings.Mode == "PINNs" or Settings.Mode == "Discovery") and Settings.Save_To_File == True):
         Save_File_Path : str = "../Saves/" + Settings.Save_File_Name;
         torch.save({"u_Network_State" : u_NN.state_dict(),
                     "N_Network_State" : N_NN.state_dict(),
