@@ -47,7 +47,7 @@ def Data_Loader(Settings : Settings_Container):
     A Data Container object. """
 
     # Load data file.
-    Data_File_Path = "../Data/" + Settings.Data_File_Name
+    Data_File_Path = "../Data/" + Settings.Data_File_Name;
     data_in = scipy.io.loadmat(Data_File_Path);
 
     # Fetch spatial, temporal coordinates and the true solution.
@@ -56,9 +56,28 @@ def Data_Loader(Settings : Settings_Container):
     # Thus, x_points will NOT include the upper domain bound.
     # We cast these to 32 bit floating point numbers since that's what the rest
     # of the code uses.
-    t_points = data_in['t'].flatten()[:].astype(np.float32);
-    x_points = data_in['x'].flatten()[:].astype(np.float32);
-    True_Sol_in = (np.real(data_in['usol'])).astype(np.float32);
+    t_points = data_in[Settings.Time_Series_Label] .flatten()[:].astype(np.float32);
+    x_points = data_in[Settings.Space_Series_Label].flatten()[:].astype(np.float32);
+    True_Sol_in = (np.real(data_in[Settings.Solution_Series_Label])).astype(np.float32);
+
+    # Generate the grid of (t, x) coordinates where we'll evaluate the solution.
+    # Each row of these arrays corresponds to a specific position. Each column
+    # corresponds to a specific time.
+    grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
+
+    # Flatten t_coods, x_coords.
+    flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
+    flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
+        # What's the purpose of [:, np.newaxis]? To make the x, y coordinates
+        # into (one column wide) 2d arrays. This is important because of how
+        # hstack works. If we feed hstack two 1d arrays, it concatenates them
+        # together. Instead, if we feed it two 2d arrays (with the same number
+        # of columns) then it concatenates the columns together, which is what
+        # we want here.
+
+    # Generate data coordinates, corresponding Data Values.
+    All_Data_Coords = np.hstack((flattened_grid_t_coords, flattened_grid_x_coords));
+    All_Data_Values = True_Sol_in.flatten();
 
     # Determine the upper and lower spatial, temporal bounds. t is easy, x is
     # not. x_points only includes the lower spatial bound of the domain. The
@@ -71,37 +90,15 @@ def Data_Loader(Settings : Settings_Container):
     t_lower = t_points[ 0];
     t_upper = t_points[-1];
 
-    # Get number of spatial, temporal coordinates.
-    n_x = len(x_points);
-    n_t = len(t_points);
-
-    # Generate the grid of (t, x) coordinates where we'll evaluate the solution.
-    # Each row of these arrays corresponds to a specific position. Each column
-    # corresponds to a specific time.
-    grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
-
-    # Flatten t_coods, x_coords. use them to generate the test data coodinates.
-    flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
-    flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
-    All_Data_Coords = np.hstack((flattened_grid_t_coords, flattened_grid_x_coords));
-        # What's the purpose of [:, np.newaxis]? To make the x, y coordinates
-        # into (one column wide) 2d arrays. This is important because of how
-        # hstack works. If we feed hstack two 1d arrays, it concatenates them
-        # together. Instead, if we feed it two 2d arrays (with the same number
-        # of columns) then it concatenates the columns together, which is what
-        # we want here.
-
-    All_Data_Values = True_Sol_in.flatten();
-
     # Initialze data contianer object. We'll fill this container with different
     # items depending on what mode we're in. For now, fill the container with
     # with everything that's ready to ship.
     Container = Data_Container();
-    Container.t_points          = t_points;
-    Container.x_points          = x_points;
-    Container.True_Sol          = True_Sol_in;
-    Container.Dim_Lower_Bounds  = np.array((t_lower, x_lower), dtype = np.float);
-    Container.Dim_Upper_Bounds  = np.array((t_upper, x_upper), dtype = np.float);
+    Container.t_points         = t_points;
+    Container.x_points         = x_points;
+    Container.True_Sol         = True_Sol_in;
+    Container.Dim_Lower_Bounds = np.array((t_lower, x_lower), dtype = np.float);
+    Container.Dim_Upper_Bounds = np.array((t_upper, x_upper), dtype = np.float);
 
 
     if  (Settings.Mode == "PINNs"):
@@ -112,6 +109,10 @@ def Data_Loader(Settings : Settings_Container):
         # Since each column of True_Sol_in corresponds to a specific time, the
         # initial condition is just the 0 column of True_Sol_in. We also need the
         # corresponding coordinates.
+
+        # Get number of spatial, temporal coordinates.
+        n_x = len(x_points);
+        n_t = len(t_points);
 
         # There is an IC coordinate for each possible x value. The corresponding
         # time value for that coordinate is 0.

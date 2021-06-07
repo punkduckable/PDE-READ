@@ -30,10 +30,10 @@
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Save_Disc_1
+  Load File Name [str] :                         Burgers_Save_PINNs
 
 Save State [Bool] :                              False
-  Save File Name [str] :                         Burgers_Save_Disc_1
+  Save File Name [str] :                         Burgers_Save_PINNs
 
 Plot Final Result [bool] :                       False
 
@@ -70,7 +70,7 @@ PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
-Number of Training Collocation Points [int] :    4500
+Number of Training Collocation Points [int] :    7000
 Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
@@ -102,7 +102,7 @@ N Network - Neurons per Hidden Layer [int] :     100
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         100
+Number of Epochs [int] :                         2000
 Learning Rate [float] :                          .0015
 
 
@@ -110,4 +110,7 @@ Learning Rate [float] :                          .0015
 ################################################################################
 # Data
 
-Data File Name [str] :                           burgers_sine.mat
+Data File [str] :                           burgers_sine.mat
+Time Variable Series Label [str] :          t
+Space Variable Series Label [str] :         x
+Solution Series Label [str] :               usol

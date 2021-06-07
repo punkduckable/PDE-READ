@@ -335,7 +335,7 @@ def Thresholded_Least_Squares(
     x : np.array = np.linalg.lstsq(A, b, rcond = None)[0];
 
     # Perform the thresholding procedure.
-    for k in range(0, 10):
+    for k in range(0, 5):
         # Determine which components of x are smaller than the threshold. This
         # yields a boolean vector, whose ith component of x is smaller than
         # the threshold, and 0 otherwise.

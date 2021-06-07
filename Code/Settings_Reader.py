@@ -275,7 +275,12 @@ def Settings_Reader() -> Settings_Container:
     ############################################################################
     # Data
 
-    Settings.Data_File_Name = Read_Line_After(File, "Data File Name [str] :").strip();
+    Settings.Data_File_Name       =  Read_Line_After(File, "Data File [str] :").strip();
+    Settings.Time_Series_Label     = Read_Line_After(File, "Time Variable Series Label [str] :").strip();
+    Settings.Space_Series_Label    = Read_Line_After(File, "Space Variable Series Label [str] :").strip();
+    Settings.Solution_Series_Label = Read_Line_After(File, "Solution Series Label [str] :").strip();
+
+
 
     # All done! Return the settings!
     return Settings;
