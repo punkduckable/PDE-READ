@@ -114,9 +114,9 @@ def Evaluate_u_derivatives(
 
 
 def PDE_Residual(
-        u_NN    : Neural_Network,
-        N_NN    : Neural_Network,
-        Coords  : torch.Tensor) -> torch.Tensor:
+        u_NN   : Neural_Network,
+        N_NN   : Neural_Network,
+        Coords : torch.Tensor) -> torch.Tensor:
     """ This function evaluates the "PDE residual" at a set of coordinates. For
     brevtiy, let u = u_NN, and N = N_NN. At each coordinate, we compute
             du/dt - N(u, du/dx, d^2u/dx^2,... )

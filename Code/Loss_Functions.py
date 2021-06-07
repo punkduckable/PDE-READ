@@ -10,9 +10,9 @@ from typing         import Tuple;
 
 # Loss from the initial condition.
 def IC_Loss(
-        u_NN : Neural_Network,
+        u_NN      : Neural_Network,
         IC_Coords : torch.Tensor,
-        IC_Data : torch.Tensor) -> torch.Tensor:
+        IC_Data   : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well u_NN satisfies the initial condition.
     Specifically, for each point in IC_Coords, we evaluate u_NN. We then
     calculate the square of the difference between this and the corresponding
@@ -55,10 +55,10 @@ def IC_Loss(
 
 # Loss from imposing periodic BCs
 def Periodic_BC_Loss(
-        u_NN : Neural_Network,
+        u_NN               : Neural_Network,
         Lower_Bound_Coords : torch.Tensor,
         Upper_Bound_Coords : torch.Tensor,
-        Highest_Order : int) -> torch.Tensor:
+        Highest_Order      : int) -> torch.Tensor:
     """ This function evaluates how well the learned solution satisfies periodic
     Boundary conditions. Let N = Highest_Order. We require that the solution
     and it's first N derivatives satisify periodic boundary conditions (they
@@ -143,8 +143,8 @@ def Periodic_BC_Loss(
 
 # Loss from enforcing the PDE at the collocation points.
 def Collocation_Loss(
-        u_NN : Neural_Network,
-        N_NN : Neural_Network,
+        u_NN               : Neural_Network,
+        N_NN               : Neural_Network,
         Collocation_Coords : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well u_NN satisfies the learned PDE at the
     collocation points. For brevity, let u = u_NN and N = N_NN. At each
@@ -187,7 +187,7 @@ def Collocation_Loss(
 
 # Loss from the training data.
 def Data_Loss(
-        u_NN : Neural_Network,
+        u_NN        : Neural_Network,
         Data_Coords : torch.Tensor,
         Data_Values : torch.Tensor) -> torch.Tensor:
     """ This function evaluates how well the learned solution u satisfies the
