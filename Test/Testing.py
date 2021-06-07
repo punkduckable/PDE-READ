@@ -15,35 +15,52 @@ import torch;
 import unittest;
 import Network;
 import Loss_Functions;
+import PDE_Residual;
 
 
 
 # Global machine epsilon variable (for comparing floating point results)
-Epsilon : float = .00002;
+Epsilon : float = .000005;
+
+
+def One_Initialize_Network(Hidden_Neurons : int) -> Network.Neural_Network:
+    """ This function initializes a single-hidden-layer neural network with a
+    variable number of neurons in the first layer. Every weight and bias in the
+    network is initialized to a tensor of ones. This gives the network a
+    predictable (though still nonlinear) output, which is very useful for
+    testing. In particular, the network we create should evaluate as follows:
+        u_NN(x) = n*tanh(x[0] + x[1] + 1) + 1
+    where n = Hidden_Neurons. """
+
+    # Initialize the network.
+    NN = Network.Neural_Network(
+                Num_Hidden_Layers = 1,
+                Neurons_Per_Layer = Hidden_Neurons,
+                Input_Dim         = 2,
+                Output_Dim        = 1);
+
+    # Manually set the network Weights and Biases to tensors of ones.
+    torch.nn.init.ones_(NN.Layers[0].weight.data);
+    torch.nn.init.ones_(NN.Layers[1].weight.data);
+    torch.nn.init.ones_(NN.Layers[0].bias.data);
+    torch.nn.init.ones_(NN.Layers[1].bias.data);
+
+    return NN;
+
+
 
 class Test_Network(unittest.TestCase):
     def test_Network(self):
-        Neurons_Per_Hidden_Layer : int = 2;
-
         # Make a simple Neural Network.
-        NN : Network.Neural_Network = Network.Neural_Network(
-                                            Num_Hidden_Layers = 1,
-                                            Neurons_Per_Layer = Neurons_Per_Hidden_Layer,
-                                            Input_Dim         = 2,
-                                            Output_Dim        = 1);
+        Hidden_Neurons : int = 2;
+        NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # Confirm it has two layers (a single hidden layer and the output layer)
         self.assertEqual(len(NN.Layers), 2);
 
         # Confirm the hidden layer has the correct number of Neurons. This
         # is the number of rows of the weight matrix of the first layer.
-        self.assertEqual(NN.Layers[0].weight.data.shape[0], Neurons_Per_Hidden_Layer);
-
-        # Manually set the Network's weights, biases.
-        torch.nn.init.ones_(NN.Layers[0].weight.data);
-        torch.nn.init.ones_(NN.Layers[1].weight.data);
-        torch.nn.init.ones_(NN.Layers[0].bias.data);
-        torch.nn.init.ones_(NN.Layers[1].bias.data);
+        self.assertEqual(NN.Layers[0].weight.data.shape[0], Hidden_Neurons);
 
         # The network now has a predictable form. In particular,
         # NN(x) = 2tanh(x[0] + x[1] + 1) + 1
@@ -58,38 +75,11 @@ class Test_Network(unittest.TestCase):
 
 
 
-def One_Initialize_Network(Hidden_Neurons : int) -> Network.Neural_Network:
-    """ This function initializes a single-hidden-layer neural network with a
-    variable number of neurons in the first layer. Every weight and bias in the
-    network is initialized to a tensor of ones. This gives the network a
-    predictable (though still nonlinear) output, which is very useful for
-    testing. In particular, the network we create should evaluate as follows:
-        u_NN(x) = n*tanh(x[0] + x[1] + 1) + 1
-    where n = Hidden_Neurons. """
-
-    # Initialize the network.
-    u_NN = Network.Neural_Network(
-                Num_Hidden_Layers = 1,
-                Neurons_Per_Layer = Hidden_Neurons,
-                Input_Dim         = 2,
-                Output_Dim        = 1);
-
-    # Manually set the network Weights and Biases to tensors of ones.
-    torch.nn.init.ones_(u_NN.Layers[0].weight.data);
-    torch.nn.init.ones_(u_NN.Layers[1].weight.data);
-    torch.nn.init.ones_(u_NN.Layers[0].bias.data);
-    torch.nn.init.ones_(u_NN.Layers[1].bias.data);
-
-    return u_NN;
-
-
-
-
 class Test_Loss_Functions(unittest.TestCase):
     def test_IC_Loss(self):
         # First, initialize a simple network.
         Hidden_Neurons : int = 8;
-        u_NN = One_Initialize_Network(Hidden_Neurons);
+        u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # Make up some random initial condition coordinates and data.
         num_IC_Points = 50;
@@ -115,14 +105,14 @@ class Test_Loss_Functions(unittest.TestCase):
                                 IC_Data   = IC_Data);
 
         # Check that pediction is "sufficiently close" to actual.
-        self.assertLess(abs(IC_Error_Actual - IC_Error_Predict).item(), Epsilon);
+        self.assertLess(abs(IC_Error_Actual - IC_Error_Predict).item(), num_IC_Points*Epsilon);
 
 
 
     def test_BC_Loss(self):
         # First, make a simple network.
         Hidden_Neurons : int = 5;
-        u_NN = One_Initialize_Network(Hidden_Neurons);
+        u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # The network should now evaluate as follows:
         #   u_NN(x) = n*tanh(x[0] + x[1] + 1) + 1
@@ -160,7 +150,7 @@ class Test_Loss_Functions(unittest.TestCase):
                                 Highest_Order      = 1);
 
         # Check that pediction is "sufficiently close" to actual.
-        self.assertLess(abs(BC_Loss_Predict - BC_Loss_Actual).item(), Epsilon);
+        self.assertLess(abs(BC_Loss_Predict - BC_Loss_Actual).item(), Num_BC_Points*Epsilon);
 
 
 
@@ -190,24 +180,71 @@ class Test_Loss_Functions(unittest.TestCase):
 
         # Now compute actual Data Loss.
         Data_loss_Actual = Loss_Functions.Data_Loss(
-                                u_NN = u_NN,
+                                u_NN        = u_NN,
                                 Data_Coords = Data_Coords,
                                 Data_Values = Data_Values);
 
         # Check that pediction is "sufficiently close" to actual.
-        self.assertLess(abs(Data_Loss_Predict - Data_loss_Actual).item(), Epsilon);
+        self.assertLess(abs(Data_Loss_Predict - Data_loss_Actual).item(), Num_Data_Points*Epsilon);
 
 
 
 class Test_PDE_Residual(unittest.TestCase):
     def test_Evaluate_u_Derivatives(self):
-        # To do!
-        pass;
+        # Set up a simple network.
+        Hidden_Neurons : int = 10;
+        u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
-    def Test_PDE_Residual(self):
-        # To do!
-        pass;
+        # The network should now evaluate as follows:
+        #   u_NN(t, x) = n*tanh(t + x + 1) + 1
+        # where n = Hidden_Neurons. Thus,
+        #   (d/dz)u_NN(t, x) = n*tanh'(t + x + 1)
+        #                    = n*(1 - tanh^2(t + x + 1))
+        # for z = t, x. And thus,
+        #   (d^2/dx^2)u_NN(t, x) = -2*n*tanh(t + x + 1)*tanh'(t + x+ 1)
+        #                        = -2*n*tanh(t + x + 1)*[1 - tanh^2(t + x + 1)]
 
+        # Set up some random points to evaluate u and its derivatives.
+        num_Points = 1;
+        Coords     = torch.rand((num_Points, 2), dtype = torch.float32);
+
+        # Compute predicted value for du_dt, du_dx, and d^2u_dx^2.
+        du_dt_predict   = torch.empty(num_Points, dtype = torch.float32);
+        du_dx_predict   = torch.empty(num_Points, dtype = torch.float32);
+        d2u_dx2_predict = torch.empty(num_Points, dtype = torch.float32);
+        for i in range(num_Points):
+            t = Coords[i, 0];
+            x = Coords[i, 1];
+            n = Hidden_Neurons;
+
+            du_dt_predict[i]   = n*(1 - torch.tanh(t + x + 1)**2);
+            du_dx_predict[i]   = n*(1 - torch.tanh(t + x + 1)**2);
+            d2u_dx2_predict[i] = -2*n*torch.tanh(t + x + 1)*(1 - torch.tanh(t + x + 1)**2);
+
+        u_NN(torch.rand((1, 2), dtype = torch.float32));
+
+        # Now compute actual du_dt, du_dx, d2u_dx2.
+        (du_dt_actual, diu_dxi_actual) = PDE_Residual.Evaluate_u_Derivatives(
+                                                u_NN            = u_NN,
+                                                num_derivatives = 2,
+                                                Coords          = Coords);
+        du_dx_actual   = diu_dxi_actual[:, 1];
+        d2u_dx2_actual = diu_dxi_actual[:, 2];
+
+        # Compare actual, predicted values!
+        for i in range(num_Points):
+            self.assertLess(abs(du_dt_predict[i]   - du_dt_actual[i]  ).item(), Epsilon);
+            self.assertLess(abs(du_dx_predict[i]   - du_dx_actual[i]  ).item(), Epsilon);
+            self.assertLess(abs(d2u_dx2_predict[i] - d2u_dx2_actual[i]).item(), Epsilon);
+
+
+
+    # Note: We do not directly test PDE_Residual, since this function basically
+    # just calls Evaluate_u_Derivatives and then pushes one of the returned
+    # values through N_NN and compares the output to the other returned value.
+    # All of these operations are already covered/tested elsewhere, so it
+    # doesn't really make sense to write a test for this function as well.
+    # This is the same reason why I don't have a test for Collocation_Loss.
 
 
 """

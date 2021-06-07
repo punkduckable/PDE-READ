@@ -84,7 +84,7 @@ class Neural_Network(torch.nn.Module):
 
         A tensor containing the value of the network ealuated at X. """
 
-        # Pass x through the network's layers!
+        # Pass X through the network's layers!
         for i in range(self.Num_Layers - 1):
             X = self.Activation_Function(self.Layers[i](X));
 
