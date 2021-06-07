@@ -19,18 +19,18 @@ import Loss_Functions;
 
 
 # Global machine epsilon variable (for comparing floating point results)
-Epsilon : float = .00001;
+Epsilon : float = .00002;
 
 class Test_Network(unittest.TestCase):
     def test_Network(self):
         Neurons_Per_Hidden_Layer : int = 2;
 
         # Make a simple Neural Network.
-        NN : Neural_Network = Network.Neural_Network(
-                                    Num_Hidden_Layers = 1,
-                                    Neurons_Per_Layer = Neurons_Per_Hidden_Layer,
-                                    Input_Dim         = 2,
-                                    Output_Dim        = 1);
+        NN : Network.Neural_Network = Network.Neural_Network(
+                                            Num_Hidden_Layers = 1,
+                                            Neurons_Per_Layer = Neurons_Per_Hidden_Layer,
+                                            Input_Dim         = 2,
+                                            Output_Dim        = 1);
 
         # Confirm it has two layers (a single hidden layer and the output layer)
         self.assertEqual(len(NN.Layers), 2);
@@ -58,24 +58,41 @@ class Test_Network(unittest.TestCase):
 
 
 
+def One_Initialize_Network(Hidden_Neurons : int) -> Network.Neural_Network:
+    """ This function initializes a single-hidden-layer neural network with a
+    variable number of neurons in the first layer. Every weight and bias in the
+    network is initialized to a tensor of ones. This gives the network a
+    predictable (though still nonlinear) output, which is very useful for
+    testing. In particular, the network we create should evaluate as follows:
+        u_NN(x) = n*tanh(x[0] + x[1] + 1) + 1
+    where n = Hidden_Neurons. """
+
+    # Initialize the network.
+    u_NN = Network.Neural_Network(
+                Num_Hidden_Layers = 1,
+                Neurons_Per_Layer = Hidden_Neurons,
+                Input_Dim         = 2,
+                Output_Dim        = 1);
+
+    # Manually set the network Weights and Biases to tensors of ones.
+    torch.nn.init.ones_(u_NN.Layers[0].weight.data);
+    torch.nn.init.ones_(u_NN.Layers[1].weight.data);
+    torch.nn.init.ones_(u_NN.Layers[0].bias.data);
+    torch.nn.init.ones_(u_NN.Layers[1].bias.data);
+
+    return u_NN;
+
+
+
+
 class Test_Loss_Functions(unittest.TestCase):
     def test_IC_Loss(self):
-        # First, make a simple network.
-        u_NN = Network.Neural_Network(
-                    Num_Hidden_Layers = 1,
-                    Neurons_Per_Layer = 2,
-                    Input_Dim         = 2,
-                    Output_Dim        = 1);
-
-        # Manually set the network Weights and Biases so that the network has a
-        # predictable form.
-        torch.nn.init.ones_(u_NN.Layers[0].weight.data);
-        torch.nn.init.ones_(u_NN.Layers[1].weight.data);
-        torch.nn.init.ones_(u_NN.Layers[0].bias.data);
-        torch.nn.init.ones_(u_NN.Layers[1].bias.data);
+        # First, initialize a simple network.
+        Hidden_Neurons : int = 8;
+        u_NN = One_Initialize_Network(Hidden_Neurons);
 
         # Make up some random initial condition coordinates and data.
-        num_IC_Points = 10;
+        num_IC_Points = 50;
         IC_Coords = torch.rand((num_IC_Points, 2), dtype = torch.float32);
         IC_Data   = torch.rand(num_IC_Points, dtype = torch.float32);
 
@@ -84,37 +101,28 @@ class Test_Loss_Functions(unittest.TestCase):
         # (where n = num_IC_Points).
         # In theory, the network should evaluate to the following:
         #       u_NN(x) = 2*tanh(x[0] + x[1] + 1) + 1
-        IC_Error_Sum = 0.0;
+        IC_Error_Sum = torch.tensor(0, dtype = torch.float32);
         for i in range(num_IC_Points):
-            IC_Error_Sum += ((2*torch.tanh(IC_Coords[i, 0] + IC_Coords[i, 1] + 1) + 1)
-                            - IC_Data[i])**2;
+            u_NN_pt = Hidden_Neurons*torch.tanh(IC_Coords[i, 0] + IC_Coords[i, 1] + 1) + 1;
+            IC_Error_Sum += (u_NN_pt - IC_Data[i])**2;
+
         IC_Error_Predict = IC_Error_Sum/num_IC_Points;
 
+        # Now compute the actual IC loss.
         IC_Error_Actual = Loss_Functions.IC_Loss(
                                 u_NN      = u_NN,
                                 IC_Coords = IC_Coords,
                                 IC_Data   = IC_Data);
 
-        self.assertLess(abs(IC_Error_Actual - IC_Error_Predict), Epsilon);
+        # Check that pediction is "sufficiently close" to actual.
+        self.assertLess(abs(IC_Error_Actual - IC_Error_Predict).item(), Epsilon);
 
 
 
     def test_BC_Loss(self):
-        Hidden_Neurons : int = 5;
-
         # First, make a simple network.
-        u_NN = Network.Neural_Network(
-                    Num_Hidden_Layers = 1,
-                    Neurons_Per_Layer = Hidden_Neurons,
-                    Input_Dim         = 2,
-                    Output_Dim        = 1);
-
-        # Manually set the network Weights and Biases so that the network has a
-        # predictable form.
-        torch.nn.init.ones_(u_NN.Layers[0].weight.data);
-        torch.nn.init.ones_(u_NN.Layers[1].weight.data);
-        torch.nn.init.ones_(u_NN.Layers[0].bias.data);
-        torch.nn.init.ones_(u_NN.Layers[1].bias.data);
+        Hidden_Neurons : int = 5;
+        u_NN = One_Initialize_Network(Hidden_Neurons);
 
         # The network should now evaluate as follows:
         #   u_NN(x) = n*tanh(x[0] + x[1] + 1) + 1
@@ -124,12 +132,81 @@ class Test_Loss_Functions(unittest.TestCase):
         # for i = 0, 1.
 
         # Make up some random Boundary coordinates.
-        Num_BC_Points = 10;
+        Num_BC_Points : int = 30;
         Lower_Bound_Coords = torch.rand((Num_BC_Points, 2), dtype = torch.float32);
         Upper_Bound_Coords = torch.rand((Num_BC_Points, 2), dtype = torch.float32);
 
+        # Evaluate u and u' at the left and right boundary. Use these to
+        # construct the predicted BC loss.
+        U_Sq_Er   = torch.tensor(0, dtype = torch.float32);
+        U_x_Sq_Er = torch.tensor(0, dtype = torch.float32);
+
+        for i in range(Num_BC_Points):
+            u_low    = Hidden_Neurons*torch.tanh(Lower_Bound_Coords[i, 0] + Lower_Bound_Coords[i, 1] + 1) + 1;
+            u_high   = Hidden_Neurons*torch.tanh(Upper_Bound_Coords[i, 0] + Upper_Bound_Coords[i, 1] + 1) + 1;
+            U_Sq_Er += (u_low - u_high)**2;
+
+            u_x_low    = Hidden_Neurons*(1 - torch.tanh(Lower_Bound_Coords[i, 0] + Lower_Bound_Coords[i, 1] + 1)**2);
+            u_x_high   = Hidden_Neurons*(1 - torch.tanh(Upper_Bound_Coords[i, 0] + Upper_Bound_Coords[i, 1] + 1)**2);
+            U_x_Sq_Er += (u_x_low - u_x_high)**2;
+
+        BC_Loss_Predict = U_Sq_Er/Num_BC_Points + U_x_Sq_Er/Num_BC_Points;
+
+        # Now evaluate the actual BC loss.
+        BC_Loss_Actual  = Loss_Functions.Periodic_BC_Loss(
+                                u_NN               = u_NN,
+                                Lower_Bound_Coords = Lower_Bound_Coords,
+                                Upper_Bound_Coords = Upper_Bound_Coords,
+                                Highest_Order      = 1);
+
+        # Check that pediction is "sufficiently close" to actual.
+        self.assertLess(abs(BC_Loss_Predict - BC_Loss_Actual).item(), Epsilon);
 
 
+
+    # Note: We don't test Collocation Loss since this loss function literally
+    # just computes the mean square PDE_Residual.... it's only a few lines long.
+    # We have another test for the PDE_Residual. See below.
+
+
+
+    def test_Data_Loss(self):
+        # First, set up a simple network.
+        Hidden_Neurons : int = 7;
+        u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
+
+        # Make up some random data points, values. .
+        Num_Data_Points = 40;
+        Data_Coords = torch.rand((Num_Data_Points, 2), dtype = torch.float32);
+        Data_Values = torch.rand(Num_Data_Points, dtype = torch.float32);
+
+        # Calculuate predicted data Loss.
+        Data_Error = torch.tensor(0, dtype = torch.float32);
+        for i in range(Num_Data_Points):
+            u_pt = Hidden_Neurons*torch.tanh(Data_Coords[i, 0] + Data_Coords[i, 1] + 1) + 1;
+            Data_Error += (u_pt - Data_Values[i])**2;
+
+        Data_Loss_Predict = Data_Error/Num_Data_Points;
+
+        # Now compute actual Data Loss.
+        Data_loss_Actual = Loss_Functions.Data_Loss(
+                                u_NN = u_NN,
+                                Data_Coords = Data_Coords,
+                                Data_Values = Data_Values);
+
+        # Check that pediction is "sufficiently close" to actual.
+        self.assertLess(abs(Data_Loss_Predict - Data_loss_Actual).item(), Epsilon);
+
+
+
+class Test_PDE_Residual(unittest.TestCase):
+    def test_Evaluate_u_Derivatives(self):
+        # To do!
+        pass;
+
+    def Test_PDE_Residual(self):
+        # To do!
+        pass;
 
 
 

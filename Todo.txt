@@ -1,12 +1,16 @@
 - Unit testing galore!
 
-- Profile, optimize plotter (it's a big runtime bottleneck now)
+- try Lasso instead of thresholded least squares.
 
-- Add optimizer, activation function options to setup file
+- Add optimizer setting.
+
+- Add activation function setting.
 
 - Implement rational functions as an option (I'll need to pass the parameters
 for each layer's activation function to the optimizer). Initialize them to the
 best approximation to RELU.
+
+- Profile, optimize plotter (it's a runtime bottleneck now)
 
 - Variable number of spatial variables for the domain (and hardcode the data
 loader for the particular problem.... I guess?). I think I should hardcode cases

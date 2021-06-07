@@ -6,7 +6,7 @@ from Network import Neural_Network;
 
 
 
-def Evaluate_u_derivatives(
+def Evaluate_u_Derivatives(
         u_NN            : Neural_Network,
         num_derivatives : int,
         Coords          : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -148,7 +148,7 @@ def PDE_Residual(
     # this, we evaluate du/dt, u, and the first n-1 spatial derivatives of u at
     # each collocation point.
     num_derivatives             = N_NN.Input_Dim - 1;
-    du_dt_batch, diu_dxi_batch  = Evaluate_u_derivatives(
+    du_dt_batch, diu_dxi_batch  = Evaluate_u_Derivatives(
                                         u_NN            = u_NN,
                                         num_derivatives = num_derivatives,
                                         Coords          = Coords);

@@ -7,8 +7,8 @@ class Neural_Network(torch.nn.Module):
     def __init__(self,
                  Num_Hidden_Layers : int = 3,
                  Neurons_Per_Layer : int = 20,   # Neurons in each Hidden Layer
-                 Input_Dim : int         = 1,    # Dimension of the input
-                 Output_Dim : int        = 1):   # Dimension of the output
+                 Input_Dim         : int = 1,    # Dimension of the input
+                 Output_Dim        : int = 1):   # Dimension of the output
         # Note: we assume that Num_Hidden_Layers, Neurons_Per_Layer, Input_Dim,
         # and out_dim are positive integers.
         assert (Num_Hidden_Layers > 0   and
