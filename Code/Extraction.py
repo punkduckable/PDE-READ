@@ -8,30 +8,30 @@ from PDE_Residual import Evaluate_u_Derivatives;
 
 
 def Recursive_Counter(
-        n_sub_index_values  : int,
-        degree              : int,
-        sub_index           : int = 0,
-        sub_index_value     : int = 0,
-        counter             : int = 0) -> int:
+        num_sub_index_values : int,
+        degree               : int,
+        sub_index            : int = 0,
+        sub_index_value      : int = 0,
+        counter              : int = 0) -> int:
     """ This function determines the number of "distinct" multi-indices of
-    specified degree whose sub-indices take values in 0, 1... n_sub_index_values - 1.
+    specified degree whose sub-indices take values in 0, 1... num_sub_index_values - 1.
     Here, two multi-indices are "the same" if and only if the indices in one
     of them can be rearranged into the other. This defines an equivalence
     relation of multi-indices. Thus, we are essentially finding the number of
     equivalence classes.
 
-    For example, if n_sub_index_values = 4 and degree = 2, then the set of
+    For example, if num_sub_index_values = 4 and degree = 2, then the set of
     possible multi-indices is { (0, 0), (0, 1), (0, 2), (0, 3), (1, 1), (1, 2),
     (1, 3), (2, 2), (2, 3), (3, 3) }, which contains 10 elements. Thus, in this
     case, this function would return 10.
 
-    Note: we assume that degree and n_sub_index_values are POSITIVE integers.
+    Note: we assume that degree and num_sub_index_values are POSITIVE integers.
 
     ----------------------------------------------------------------------------
     Arguments:
 
-    n_sub_index_values: The number of distinct values that any one of the
-    sub-indices can take on. If n_sub_index_values = k, then each sub index
+    num_sub_index_values: The number of distinct values that any one of the
+    sub-indices can take on. If num_sub_index_values = k, then each sub index
     can take on values 0, 1,... k-1.
 
     degree: The number of sub-indices in the multi-index.
@@ -42,61 +42,61 @@ def Recursive_Counter(
 
     counter: the variable that actually stores the total number of
     multi-indices of specified oder whose sub-indices take values in 0, 1...
-    n_sub_index_values - 1. This is what's eventually returned.
+    num_sub_index_values - 1. This is what's eventually returned.
 
     ----------------------------------------------------------------------------
     Returns:
 
     The total number of "distinct" multi-indices (as defined above) of
     specified degree such that each sub-index takes values in 0, 1...
-    n_sub_index_values - 1. """
+    num_sub_index_values - 1. """
 
     # Assertions.
     assert (degree > 0), \
         ("Degree must be a POSITIVE integer. Got %d." % degree);
-    assert (n_sub_index_values > 0), \
-        ("n_sub_index_values must be a POSITIVE integer. Got %d." % n_sub_index_values);
+    assert (num_sub_index_values > 0), \
+        ("num_sub_index_values must be a POSITIVE integer. Got %d." % num_sub_index_values);
 
     # Base case
     if (sub_index == degree - 1):
-        return counter + (n_sub_index_values - sub_index_value);
+        return counter + (num_sub_index_values - sub_index_value);
 
     # Recursive case.
     else : # if (sub_index < degree - 1):
-        for j in range(sub_index_value, n_sub_index_values):
+        for j in range(sub_index_value, num_sub_index_values):
             counter = Recursive_Counter(
-                        n_sub_index_values  = n_sub_index_values,
-                        degree              = degree,
-                        sub_index           = sub_index + 1,
-                        sub_index_value     = j,
-                        counter             = counter);
+                        num_sub_index_values = num_sub_index_values,
+                        degree               = degree,
+                        sub_index            = sub_index + 1,
+                        sub_index_value      = j,
+                        counter              = counter);
 
         return counter;
 
 
 
 def Recursive_Multi_Indices(
-        multi_indices       : np.array,
-        n_sub_index_values  : int,
-        degree              : int,
-        sub_index           : int = 0,
-        sub_index_value     : int = 0,
-        position            : int = 0) -> int:
+        multi_indices        : np.array,
+        num_sub_index_values : int,
+        degree               : int,
+        sub_index            : int = 0,
+        sub_index_value      : int = 0,
+        position             : int = 0) -> int:
     """ This function essentially finds the set of "distinct" multi-indices of
     specified degree such that each sub-index in the multi-index takes values in
-    0,1... n_sub_index_values-1. Here, two multi-indices are "the same" if and
+    0,1... num_sub_index_values-1. Here, two multi-indices are "the same" if and
     only if the indices in one of them can be rearranged into the other. This
     defines an equivalence relation of multi-indices. Thus, we are essentially
     finding a representative for each equivalence class under this relation.
 
     We assume that multi_indices is a N by degree array, where N is
     "sufficiently large" (meaning that N is at least as large as the value
-    returned by Recursive_Counter with the n_sub_index_values and degree
+    returned by Recursive_Counter with the num_sub_index_values and degree
     arguments). This function each row of multi_indices with a multi-index. The
     i, j element of multi_indices contains the value of the jth sub-index of the
     ith "distinct" (as defined above) multi-index.
 
-    For example, if n_sub_index_values = 4 and degree = 2, then the set of
+    For example, if num_sub_index_values = 4 and degree = 2, then the set of
     "distinct" multi-indices is { (0, 0), (0, 1), (0, 2), (0, 3), (1, 1),
     (1, 2), (1, 3), (2, 2), (2, 3), (3, 3) }. This function will populate the
     first 10 rows of multi_indices with the following:
@@ -111,18 +111,18 @@ def Recursive_Multi_Indices(
         [2, 3]
         [3, 3]
 
-    Note: we assume that degree and n_sub_index_values are POSITIVE integers.
+    Note: we assume that degree and num_sub_index_values are POSITIVE integers.
 
     ----------------------------------------------------------------------------
     Arguments:
 
     multi_indices: An "sufficiently large" array which will hold all distinct
     multi-indices of specified degree whose sub-indices take values in 0, 1,...
-    n_sub_index_values - 1.
+    num_sub_index_values - 1.
 
-    n_sub_index_values: The number of distinct values that any sub-index can
-    take on. If n_sub_index_values = k, then each sub_index can take values
-    0, 1,... n_sub_index_values - 1.
+    num_sub_index_values: The number of distinct values that any sub-index can
+    take on. If num_sub_index_values = k, then each sub_index can take values
+    0, 1,... num_sub_index_values - 1.
 
     degree: The number of sub-indices in the multi-index.
 
@@ -138,26 +138,26 @@ def Recursive_Multi_Indices(
     # Assertions.
     assert (degree > 0), \
         ("Degree must be a POSITIVE integer. Got %d." % degree);
-    assert (n_sub_index_values > 0), \
-        ("n_sub_index_values must be a POSITIVE integer. Got %d." % n_sub_index_values);
+    assert (num_sub_index_values > 0), \
+        ("num_sub_index_values must be a POSITIVE integer. Got %d." % num_sub_index_values);
 
     # Base case
     if (sub_index == degree - 1):
-        for j in range(sub_index_value, n_sub_index_values):
+        for j in range(sub_index_value, num_sub_index_values):
             multi_indices[position + (j - sub_index_value), sub_index] = j;
 
-        return position + (n_sub_index_values - sub_index_value);
+        return position + (num_sub_index_values - sub_index_value);
 
     # Recursive case.
     else : # if (sub_index < degree - 1):
-        for j in range(sub_index_value, n_sub_index_values):
+        for j in range(sub_index_value, num_sub_index_values):
             new_position = Recursive_Multi_Indices(
-                            multi_indices       = multi_indices,
-                            n_sub_index_values  = n_sub_index_values,
-                            degree              = degree,
-                            sub_index           = sub_index + 1,
-                            sub_index_value     = j,
-                            position            = position);
+                            multi_indices        = multi_indices,
+                            num_sub_index_values = num_sub_index_values,
+                            degree               = degree,
+                            sub_index            = sub_index + 1,
+                            sub_index_value      = j,
+                            position             = position);
 
             for k in range(0, (new_position - position)):
                 multi_indices[position + k, sub_index] = j;
@@ -242,7 +242,7 @@ def Generate_Library(
     {0, 1,... num_derivatives}. """
 
     # We need a sub-index value for each derivative, as well as u itself.
-    n_sub_index_values = num_derivatives + 1;
+    num_sub_index_values = num_derivatives + 1;
 
     # Determine how many multi-indices with k sub-indices exist for each
     # k in {0, 1,... Poly_Degree}.
@@ -250,8 +250,8 @@ def Generate_Library(
     num_multi_indices[0] = 1;
     for i in range(1, Poly_Degree + 1):
         num_multi_indices[i] = Recursive_Counter(
-                                    n_sub_index_values  = n_sub_index_values,
-                                    degree              = i);
+                                    num_sub_index_values = num_sub_index_values,
+                                    degree               = i);
 
     # Set up a list to hold the multi-index arrays of each degree.
     multi_indices_list = [];
@@ -283,9 +283,9 @@ def Generate_Library(
 
         # Find the set of multi indices for this degree!
         Recursive_Multi_Indices(
-            multi_indices       = multi_indices,
-            n_sub_index_values  = n_sub_index_values,
-            degree              = degree);
+            multi_indices        = multi_indices,
+            num_sub_index_values = num_sub_index_values,
+            degree               = degree);
 
         # Cycle through the multi-indices of this degree
         for i in range(num_multi_indices[degree]):
@@ -340,7 +340,7 @@ def Thresholded_Least_Squares(
     If A has m columns, then the returned vector should have m components. """
 
     # Solve the initial least squares problem.
-    x : np.array = np.linalg.lstsq(A, b, rcond = None)[0];
+    x, Residual = np.linalg.lstsq(A, b, rcond = None)[0];
 
     # Perform the thresholding procedure.
     for k in range(0, 5):
@@ -349,14 +349,14 @@ def Thresholded_Least_Squares(
         # the threshold, and 0 otherwise.
         small_indices : np.array = (abs(x) < threshold);
         x[small_indices] = 0;
-        print("Eliminated %d components after step %d of thresholded least squares." % (small_indices.sum(), k));
+        print("Eliminated %d components after step %d of thresholded least squares. Residual = %f" % (small_indices.sum(), k, Residual));
 
         # Now determine which components of x are bigger than the threshold.
         big_indices : np.array   = np.logical_not(small_indices);
 
         # Resolve least squares problem but only using the columns of A
         # corresponding to the big columns.
-        x[big_indices] = np.linalg.lstsq(A[:, big_indices], b, rcond = None)[0];
+        x[big_indices], Residual = np.linalg.lstsq(A[:, big_indices], b, rcond = None)[0];
 
     # All done, return x!
     return x;

@@ -244,7 +244,7 @@ def Settings_Reader() -> Settings_Container:
 
     # Extraction mode specific settings.
     if (Settings.Mode == "Extraction"):
-        Settings.Extracted_term_degree   = int(Read_Line_After(File, "Extracted PDE term degree [int] :").strip());
+        Settings.Extracted_term_degree   = int(Read_Line_After(File, "Maximum term degree in extracted PDE [int] :").strip());
         Settings.Num_Extraction_Points   = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
         Settings.Least_Squares_Threshold = float(Read_Line_After(File, "Least Squares Threshold [float] :").strip());
 
@@ -258,7 +258,7 @@ def Settings_Reader() -> Settings_Container:
     Settings.u_Neurons_Per_Layer = int(Read_Line_After(File, "u Network - Neurons per Hidden Layer [int] :").strip());
 
     # Load N's network Architecture
-    Settings.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - Number u derivatives [int] :").strip());
+    Settings.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - PDE Order [int] :").strip());
     Settings.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
     Settings.N_Neurons_Per_Layer = int(Read_Line_After(File, "N Network - Neurons per Hidden Layer [int] :").strip());
 

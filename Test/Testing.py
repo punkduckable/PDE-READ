@@ -13,9 +13,12 @@ sys.path.append(Code_path);
 import numpy as np;
 import torch;
 import unittest;
+import random;
+
 import Network;
 import Loss_Functions;
 import PDE_Residual;
+import Extraction;
 
 
 
@@ -239,7 +242,7 @@ class Test_PDE_Residual(unittest.TestCase):
 
 
 
-    # Note: We do not directly test PDE_Residual, since this function basically
+    # Note: We do not test PDE_Residual, since this function basically
     # just calls Evaluate_u_Derivatives and then pushes one of the returned
     # values through N_NN and compares the output to the other returned value.
     # All of these operations are already covered/tested elsewhere, so it
@@ -247,33 +250,188 @@ class Test_PDE_Residual(unittest.TestCase):
     # This is the same reason why I don't have a test for Collocation_Loss.
 
 
-"""
-# I stole this from Extraction.py... turn it into a unit test!
-def main():
-    # Initialize parameters.
-    n_sub_index_values  = 4;
-    degree              = 3;
 
-    # Run Recursive_Counter to determine how big x must be.
-    counter = Recursive_Counter(
-                n_sub_index_values  = n_sub_index_values,
-                degree              = degree);
+class Test_Extraction(unittest.TestCase):
+    def test_Recursive_Counter(self):
+        # Test the Recursive Counter function with a few inputs for which we
+        # know the correct answer.
 
-    # allocate space for x.
-    multi_indices = np.empty((counter, degree), dtype = np.int);
-
-    # Populate x using Recursive_Multi_Indices
-    Recursive_Multi_Indices(
-        multi_indices       = multi_indices,
-        n_sub_index_values  = n_sub_index_values,
-        degree              = degree);
+        # If we allow one sub-index, which takes values in in {1, 2,... n} then
+        # there are possible multi-indices.
+        n : int             = random.randint(1, 100);
+        num_indices_predict = n;
+        num_indices_actual  = Extraction.Recursive_Counter(
+                                    num_sub_index_values = n,
+                                    degree               = 1);
+        self.assertEqual(num_indices_predict, num_indices_actual);
 
 
 
-    # Print results.
-    print(counter);
-    print(multi_indices);
-"""
+        # If we allow 2 sub-indices, each of which can take values in {1, 2,...
+        # n}, then there are (n+1)(n/2) possible multi-indices. They are
+        # the following:
+        #  (1, 1)
+        #  (1, 2) (2, 2)
+        #  (1, 3) (2, 3) (3, 3)
+        #   ...    ...    ...
+        #  (1, n) (2, n) (3, n) ... (n, n)
+        n : int = random.randint(1, 100);
+
+        num_indices_predict = ((n + 1)*n)//2;
+        num_indices_actual  = Extraction.Recursive_Counter(
+                                    num_sub_index_values = n,
+                                    degree               = 2);
+
+        self.assertEqual(num_indices_predict, num_indices_actual);
+
+
+
+        # If we allow 3 sub-indices, each of which can take values in {1, 2,...
+        # n}, then there are sum_{k = 1}^{n} (k + 1)(k/2) possible multi-indices
+        # They are the following:
+        # (1,1,1)                     (2,2,2)
+        # (1,1,2) (1,2,2)             (2,2,3) (2,3,3)
+        #   ...     ...                 ...     ...                   (n-1,n-1,n-1)
+        # (1,1,n) (1,2,n) ... (1,n,n) (2,2,n) (2,3,n) ... (2,n,n) ... (n-1,n-1,n  ) (n-1,n,n) (n,n,n)
+        n : int             = random.randint(1, 100);
+        num_indices_predict = 0;
+        for k in range(1, n+1):
+            num_indices_predict += ((k + 1)*k)//2;
+
+        num_indices_actual = Extraction.Recursive_Counter(
+                                num_sub_index_values = n,
+                                degree               = 3);
+
+        self.assertEqual(num_indices_predict, num_indices_actual);
+
+
+
+    def test_Recursive_Multi_Indices(self):
+        # If we allow 1 sub-index which takes on values in {1, 2,... n} then
+        # the possible multi-indices are 0, 1, 2,... n-1.
+        n : int     = random.randint(1, 1000);
+        num_indices = Extraction.Recursive_Counter(
+                                num_sub_index_values = n,
+                                degree               = 1);
+        multi_indices = np.empty((num_indices, 1), dtype = np.float);
+        Extraction.Recursive_Multi_Indices(
+                        multi_indices        = multi_indices,
+                        num_sub_index_values = n,
+                        degree               = 1);
+
+        # Check that each possible sub index is in Multi-indices.
+        multi_indices_list = multi_indices.tolist();
+        for k in range(n):
+            self.assertIn([k], multi_indices_list);
+
+
+
+        # If we allow 2 sub-indices which take values in {1, 2,... n} then the
+        # possible multi-indices are the following:
+        #  (1, 1)
+        #  (1, 2) (2, 2)
+        #  (1, 3) (2, 3) (3, 3)
+        #   ...    ...    ...
+        #  (1, n) (2, n) (3, n) ... (n, n)
+        n : int     = random.randint(1, 100);
+        num_indices = Extraction.Recursive_Counter(
+                                num_sub_index_values = n,
+                                degree               = 2);
+        multi_indices = np.empty((num_indices, 2), dtype = np.float);
+        Extraction.Recursive_Multi_Indices(
+                        multi_indices        = multi_indices,
+                        num_sub_index_values = n,
+                        degree               = 2);
+
+        multi_indices_list = multi_indices.tolist();
+        for i in range(n):
+            for j in range(i, n):
+                self.assertIn([i, j], multi_indices_list);
+
+
+
+        # If we allow 3 sub-indices which take values in {1, 2,... n} then the
+        # possible multi-indices are the following:
+        # (1,1,1)                     (2,2,2)
+        # (1,1,2) (1,2,2)             (2,2,3) (2,3,3)
+        #   ...     ...                 ...     ...                   (n-1,n-1,n-1)
+        # (1,1,n) (1,2,n) ... (1,n,n) (2,2,n) (2,3,n) ... (2,n,n) ... (n-1,n-1,n  ) (n-1,n,n) (n,n,n)
+        n : int     = random.randint(1, 10);
+        num_indices = Extraction.Recursive_Counter(
+                                num_sub_index_values = n,
+                                degree               = 3);
+        multi_indices = np.empty((num_indices, 3), dtype = np.float);
+        Extraction.Recursive_Multi_Indices(
+                        multi_indices        = multi_indices,
+                        num_sub_index_values = n,
+                        degree               = 3);
+
+        multi_indices_list = multi_indices.tolist();
+        for i in range(n):
+            for j in range(i, n):
+                for k in range(j, n):
+                    self.assertIn([i, j, k], multi_indices_list);
+
+
+
+    def test_Generate_Library(self):
+        # Make two simple neural networks. One for u and one for N. The N
+        # network will (by virtue of how One_Initialize_Network works) be a
+        # function of u and du/dx.
+        u_Hidden_Neurons : int        = random.randint(1, 10);
+        u_NN : Network.Neural_Network = One_Initialize_Network(u_Hidden_Neurons);
+
+        N_Hidden_Neurons : int        = random.randint(1, 10);
+        N_NN : Network.Neural_Network = One_Initialize_Network(N_Hidden_Neurons);
+
+        # u_NN and N_NN should take the following form:
+        #   u_NN(x, t )  = n_u*tanh(x + t  + 1) + 1
+        #   N_NN(u, u_x) = n_N*tanh(u + u' + 1) + 1
+        # where n_u = u_Hidden_Neurons, n_N = N_Hidden_Neurons, and u_x = du/dx.
+        # Further,
+        #   u_x(x, t) = n_u*(1 - tanh^2(x + t + 1))
+
+        # Generate some random points to evaluate the network at.
+        num_Coords : int = random.randint(20, 40);
+        Coords           = torch.rand((num_Coords, 2), dtype = torch.float32);
+
+        # Evaluate u_NN (and its derivatives) at each coordinate.
+        u_at_Coords   = np.empty(num_Coords, dtype = np.float32);
+        u_x_at_Coords = np.empty(num_Coords, dtype = np.float32);
+        for i in range(num_Coords):
+            n = u_Hidden_Neurons;
+            t = Coords[i, 0];
+            x = Coords[i, 1];
+
+            u_at_Coords[i]   = n*torch.tanh(t + x + 1.0) + 1.0;
+            u_x_at_Coords[i] = n*(1 - torch.tanh(t + x + 1)**2);
+
+        # Now generate a library. We will allow terms of degree <= 2. There
+        # should be 6 such terms.
+        Library_Predict = np.empty((num_Coords, 6), dtype = np.float32);
+        Library_Predict[:, 0] = 1;                         # const
+        Library_Predict[:, 1] = u_at_Coords;               # u
+        Library_Predict[:, 2] = u_x_at_Coords;             # du/dx
+        Library_Predict[:, 3] = u_at_Coords**2;            # u*u
+        Library_Predict[:, 4] = u_at_Coords*u_x_at_Coords; # u*du/dx
+        Library_Predict[:, 5] = u_x_at_Coords**2;          # du/dx*du/dx
+
+        # Evaluate the actual library and compare.
+        (N_Coords,
+         Library_Actual,
+         num_multi_indices,
+         multi_indices_list) = Extraction.Generate_Library(
+                                        u_NN            = u_NN,
+                                        N_NN            = N_NN,
+                                        Coords          = Coords,
+                                        num_derivatives = 1,
+                                        Poly_Degree     = 2);
+
+        self.assertEqual(Library_Actual.shape, Library_Predict.shape);
+        for i in range(num_Coords):
+            for j in range(6):
+                self.assertLess(abs(Library_Actual[i, j] - Library_Predict[i, j]).item(), 10*Epsilon);
+
 
 
 if(__name__ == "__main__"):
