@@ -14,28 +14,31 @@
 
 
 ################################################################################
-# General Settings
+# Save, Load, Plot Settings
 # If you plan to load the state of either network, then the network
 # Architecture settings must match those of the saved network. (same number of
-# layers and neurons per layer). Further, if we Load the Optimizer state, then
-# Learning Rate hyper-parameters will be ignored.
+# layers and neurons per layer).
+#
+# If you Load the Optimizer state, then the Optimizer setting must match
+# that of the saved optimizer. (If the save used Adam, then you must use Adam
+# here as well). Further, the Learning Rate hyper-parameters will be ignored.
 #
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
 # The Data File Name should include the file's file extension.
 #
-# You CAN NOT load the optimizer state if you change modes (Discovery vs PINNs).
-# If you plan to load the optimizer state from file and you were in Discovery
-# mode when you saved, then you must be in discovery mode now.
+# You CAN NOT load the optimizer state if you change from Discovery mode to
+# PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
+# extraction mode (it will throw an error).
 
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Save_Disc_3
+  Load File Name [str] :                         Burgers_Save_Disc_LBFGS
 
 Save State [Bool] :                              False
-  Save File Name [str] :                         Burgers_Save_Disc_4
+  Save File Name [str] :                         Burgers_Save_Disc_LBFGS
 
-Plot Final Result [bool] :                       False
+Plot Final Result [bool] :                       True
 
 
 
@@ -66,7 +69,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # controls the number of points (in the PDE domain) at which we attempt to
 # extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Extraction
+PINNs, Discovery, or Extraction mode [str] :     Discovery
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -80,14 +83,21 @@ Number of Training Collocation Points [int] :    10000
 Number of Testing Collocation Points [int] :     500
 
 # Extraction mode specific settings.
-Maximum term degree in extracted PDE [int] :     3
+Maximum term degree in extracted PDE [int] :     4
 Number of Extraction Points [int] :              10000
 Least Squares Threshold [float] :                .05
 
 
 
 ################################################################################
-# Network Architecture
+# Network Settings
+# If you load the optimizer from a save, then the Optimizer setting must match
+# that of the saved optimizer. (If the save used Adam, then you must use Adam
+# here as well).
+#
+# If you plan to load the state of either network, then the network
+# Architecture settings must match those of the saved network. (same number of
+# layers and neurons per layer).
 
 u Network - Number of Hidden Layers [int] :      5
 u Network - Neurons per Hidden Layer [int] :     50
@@ -96,13 +106,15 @@ N Network - PDE Order [int] :                    2
 N Network - Number of Hidden Layers [int] :      5
 N Network - Neurons per Hidden Layer [int] :     50
 
+Optimizer [Adam, LBFGS] :                        LBFGS
+
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         1000
-Learning Rate [float] :                          .001
+Number of Epochs [int] :                         100
+Learning Rate [float] :                          1
 
 
 

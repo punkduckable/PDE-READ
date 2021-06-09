@@ -1,5 +1,3 @@
-- Add optimizer setting.
-
 - Add activation function setting.
 
 - Implement rational functions as an option (I'll need to pass the parameters

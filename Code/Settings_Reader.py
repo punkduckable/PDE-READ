@@ -153,7 +153,7 @@ def Settings_Reader() -> Settings_Container:
 
 
     ############################################################################
-    # General Settings
+    # Save, Load, Plot Settings
 
     # Load u network state from File?
     Buffer = Read_Line_After(File, "Load u Network State [bool] :").strip();
@@ -251,16 +251,25 @@ def Settings_Reader() -> Settings_Container:
 
 
     ############################################################################
-    # Network Architecture
+    # Network Settings
 
-    # Load u's network Architecture
+    # Read u's network Architecture
     Settings.u_Num_Hidden_Layers = int(Read_Line_After(File, "u Network - Number of Hidden Layers [int] :").strip());
     Settings.u_Neurons_Per_Layer = int(Read_Line_After(File, "u Network - Neurons per Hidden Layer [int] :").strip());
 
-    # Load N's network Architecture
+    # Read N's network Architecture
     Settings.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - PDE Order [int] :").strip());
     Settings.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
     Settings.N_Neurons_Per_Layer = int(Read_Line_After(File, "N Network - Neurons per Hidden Layer [int] :").strip());
+
+    # Read optimizer.
+    Buffer = Read_Line_After(File, "Optimizer [Adam, LBFGS] :").strip();
+    if  (Buffer[0] == 'A' or Buffer[0] == 'a'):
+        Settings.Optimizer = "Adam";
+    elif(Buffer[0] == 'L' or Buffer[0] == 'l'):
+        Settings.Optimizer = "LBFGS";
+    else:
+        raise Read_Error("\"Optimizer [Adam, LBFGS] :\" should be \"Adam\" or \"LBFGS\". Got " + Buffer);
 
 
 

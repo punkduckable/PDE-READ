@@ -6,6 +6,7 @@ from Network import Neural_Network;
 from Loss_Functions import IC_Loss, Periodic_BC_Loss, Data_Loss, Collocation_Loss;
 
 
+
 def Discovery_Training(
         u_NN                : Neural_Network,
         N_NN                : Neural_Network,
@@ -50,28 +51,33 @@ def Discovery_Training(
 
     Nothing! """
 
-    # Zero out the gradients.
-    Optimizer.zero_grad();
+    def Discovery_Closure():
+        # Zero out the gradients if enabled.
+        if torch.is_grad_enabled():
+            Optimizer.zero_grad();
 
-    # Evaluate the Loss (Note, we enforce a BC of 0)
-    Loss = (Collocation_Loss(
-                u_NN = u_NN,
-                N_NN = N_NN,
-                Collocation_Coords = Collocation_Coords)
+        # Evaluate the Loss (Note, we enforce a BC of 0)
+        Loss = (Collocation_Loss(
+                    u_NN = u_NN,
+                    N_NN = N_NN,
+                    Collocation_Coords = Collocation_Coords)
 
-            +
+                +
 
-            Data_Loss(
-                u_NN = u_NN,
-                Data_Coords = Data_Coords,
-                Data_Values = Data_Values));
+                Data_Loss(
+                    u_NN = u_NN,
+                    Data_Coords = Data_Coords,
+                    Data_Values = Data_Values));
 
-    # Back-propigate to compute gradients of Loss with respect to network
-    # parameters.
-    Loss.backward();
+        # Back-propigate to compute gradients of Loss with respect to network
+        # parameters (only do if this if the loss requires grad)
+        if (Loss.requires_grad):
+            Loss.backward();
+
+        return Loss;
 
     # update network weights.
-    Optimizer.step();
+    Optimizer.step(Discovery_Closure);
 
 
 

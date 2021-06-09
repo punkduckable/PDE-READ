@@ -16,7 +16,8 @@ def Setup_Optimizer(
         u_NN            : Neural_Network,
         N_NN            : Neural_Network,
         Mode            : str,
-        Learning_Rate   : float) -> torch.optim.Optimizer:
+        Learning_Rate   : float,
+        Optimizer       : str) -> torch.optim.Optimizer:
     """ This function sets up the optimizer depending on if the N Network has
     learning enabled or not. It also disables gradients for all network
     parameters that are not being learned.
@@ -38,24 +39,35 @@ def Setup_Optimizer(
 
     Learning_Rate: the desired learning rate.
 
+    Optimizer: A string specifies which optimizer we should use.
+
     ----------------------------------------------------------------------------
     Returns:
 
     The optimizer! """
 
-    if(Mode == "Discovery"):
-        # We need to train both u_NN and N_NN. Pass both networks' parameters to
-        # the optimizer.
-        return torch.optim.Adam(list(u_NN.parameters()) + list(N_NN.parameters()), lr = Learning_Rate);
+    # Construct Params (this depends on the mode).
+    if  (Mode == "Discovery"):
+        # If we're in discovery mode, then we need to train both u_NN and N_NN.
+        # Thus, we need to pass both networks' paramaters to the optimizer.
+        Params = list(u_NN.parameters()) + list(N_NN.parameters());
     elif(Mode == "PINNs"):
-        # If we're in PINNs mode, then N_NN does not require gradients.
+        # If we're in PINNs mode, then we only need to train u_NN.
         N_NN.requires_grad_(False);
-
-        # Setup the optimizer using only u_NN's parameters.
-        return torch.optim.Adam(u_NN.parameters(), lr = Learning_Rate);
+        Params = u_NN.parameters();
     else:
-        print(("Mode is %s while it should be either \"Discovery\" or \"PINNs\"." % Mode));
-        print("Something went wrong. Aborting. Thrown by Setup_Optimizer");
+        print(("Mode is %s when it should be either \"Discovery\" or \"PINNs\"." % Mode));
+        print("Aborting. Thrown by Setup_Optimizer");
+        exit();
+
+    # Now pass Params to the Optimizer.
+    if  (Optimizer == "Adam"):
+        return torch.optim.Adam(Params, lr = Learning_Rate);
+    elif(Optimizer == "LBFGS"):
+        return torch.optim.LBFGS(Params, lr = Learning_Rate);
+    else:
+        print(("Optimizer is %s when it should be \"Adam\" or \"LBFGs\"" % Optimizer));
+        print("Aborting. Thrown by Setup_Optimizer");
         exit();
 
 
@@ -95,12 +107,13 @@ def main():
                             Input_Dim           = Settings.N_Num_u_derivatives + 1,
                             Output_Dim          = 1);
 
-    # Select the optimizer based on mode.
+    # Setup the optimizer.
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         Optimizer = Setup_Optimizer(u_NN            = u_NN,
                                     N_NN            = N_NN,
                                     Mode            = Settings.Mode,
-                                    Learning_Rate   = Learning_Rate );
+                                    Learning_Rate   = Learning_Rate,
+                                    Optimizer       = Settings.Optimizer);
 
     # Check if we're loading anything from file.
     if(     Settings.Load_u_Network_State == True or
