@@ -55,10 +55,10 @@ def One_Initialize_Network(Hidden_Neurons : int) -> Network.Neural_Network:
 class Test_Network(unittest.TestCase):
     def test_Network(self):
         # Make a simple Neural Network.
-        Hidden_Neurons : int = 2;
+        Hidden_Neurons : int = random.randint(1, 50);
         NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
-        # Confirm it has two layers (a single hidden layer and the output layer)
+        # Confirm it has 2 layers (a single hidden layer and the output layer)
         self.assertEqual(len(NN.Layers), 2);
 
         # Confirm the hidden layer has the correct number of Neurons. This
@@ -66,37 +66,43 @@ class Test_Network(unittest.TestCase):
         self.assertEqual(NN.Layers[0].weight.data.shape[0], Hidden_Neurons);
 
         # The network now has a predictable form. In particular,
-        # NN(x) = 2tanh(x[0] + x[1] + 1) + 1
-        # (think about it). To test generality, we will let x be random.
-        x = torch.rand((1, 2), dtype = torch.float32);
+        # NN(x) = n*tanh(x[0] + x[1] + 1) + 1
+        # where n = Hidden_Neurons. (think about it). To test generality, we
+        # will let x be random.
+        num_Points : int = random.randint(1, 1000);
+        x = torch.rand((num_Points, 2), dtype = torch.float32);
 
         NN_x_Actual  = NN(x);
-        NN_x_Predict = 2.0*torch.tanh(x[0,0] + x[0,1] + 1.0) + 1.0;
+        NN_x_Predict = Hidden_Neurons*torch.tanh(x[:, 0] + x[:, 1] + 1.0) + 1.0;
 
         # Check that actual and predicted outputs are sufficiently close.
-        self.assertLess(abs(NN_x_Actual - NN_x_Predict).item(), Epsilon);
+        for i in range(num_Points):
+            self.assertLess(abs(NN_x_Actual[i] - NN_x_Predict[i]).item(), Epsilon);
 
 
 
 class Test_Loss_Functions(unittest.TestCase):
     def test_IC_Loss(self):
         # First, initialize a simple network.
-        Hidden_Neurons : int = 8;
+        Hidden_Neurons : int          = random.randint(1, 100);
         u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # Make up some random initial condition coordinates and data.
-        num_IC_Points = 50;
-        IC_Coords = torch.rand((num_IC_Points, 2), dtype = torch.float32);
-        IC_Data   = torch.rand(num_IC_Points, dtype = torch.float32);
+        num_IC_Points : int = random.randint(10, 1000);
+        IC_Coords           = torch.rand((num_IC_Points, 2), dtype = torch.float32);
+        IC_Data             = torch.rand(num_IC_Points, dtype = torch.float32);
 
         # We expect the IC error to take the following form:
         #       IC_Error = (1/n) sum_{i = 0}^n (u_NN(IC_Coords[i]) - IC_Data[i])^2
         # (where n = num_IC_Points).
         # In theory, the network should evaluate to the following:
-        #       u_NN(x) = 2*tanh(x[0] + x[1] + 1) + 1
+        #       u_NN(x) = m*tanh(x[0] + x[1] + 1) + 1
+        # where m = Hidden_Neurons.
+
+        # Calculate predicted IC error.
         IC_Error_Sum = torch.tensor(0, dtype = torch.float32);
         for i in range(num_IC_Points):
-            u_NN_pt = Hidden_Neurons*torch.tanh(IC_Coords[i, 0] + IC_Coords[i, 1] + 1) + 1;
+            u_NN_pt = Hidden_Neurons*torch.tanh(IC_Coords[i, 0] + IC_Coords[i, 1] + 1.0) + 1.0;
             IC_Error_Sum += (u_NN_pt - IC_Data[i])**2;
 
         IC_Error_Predict = IC_Error_Sum/num_IC_Points;
@@ -114,7 +120,7 @@ class Test_Loss_Functions(unittest.TestCase):
 
     def test_BC_Loss(self):
         # First, make a simple network.
-        Hidden_Neurons : int = 5;
+        Hidden_Neurons : int          = random.randint(1, 100);
         u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # The network should now evaluate as follows:
@@ -125,9 +131,9 @@ class Test_Loss_Functions(unittest.TestCase):
         # for i = 0, 1.
 
         # Make up some random Boundary coordinates.
-        Num_BC_Points : int = 30;
-        Lower_Bound_Coords = torch.rand((Num_BC_Points, 2), dtype = torch.float32);
-        Upper_Bound_Coords = torch.rand((Num_BC_Points, 2), dtype = torch.float32);
+        Num_BC_Points : int = random.randint(10, 1000);
+        Lower_Bound_Coords  = torch.rand((Num_BC_Points, 2), dtype = torch.float32);
+        Upper_Bound_Coords  = torch.rand((Num_BC_Points, 2), dtype = torch.float32);
 
         # Evaluate u and u' at the left and right boundary. Use these to
         # construct the predicted BC loss.
@@ -135,12 +141,12 @@ class Test_Loss_Functions(unittest.TestCase):
         U_x_Sq_Er = torch.tensor(0, dtype = torch.float32);
 
         for i in range(Num_BC_Points):
-            u_low    = Hidden_Neurons*torch.tanh(Lower_Bound_Coords[i, 0] + Lower_Bound_Coords[i, 1] + 1) + 1;
-            u_high   = Hidden_Neurons*torch.tanh(Upper_Bound_Coords[i, 0] + Upper_Bound_Coords[i, 1] + 1) + 1;
+            u_low    = Hidden_Neurons*torch.tanh(Lower_Bound_Coords[i, 0] + Lower_Bound_Coords[i, 1] + 1.0) + 1.0;
+            u_high   = Hidden_Neurons*torch.tanh(Upper_Bound_Coords[i, 0] + Upper_Bound_Coords[i, 1] + 1.0) + 1.0;
             U_Sq_Er += (u_low - u_high)**2;
 
-            u_x_low    = Hidden_Neurons*(1 - torch.tanh(Lower_Bound_Coords[i, 0] + Lower_Bound_Coords[i, 1] + 1)**2);
-            u_x_high   = Hidden_Neurons*(1 - torch.tanh(Upper_Bound_Coords[i, 0] + Upper_Bound_Coords[i, 1] + 1)**2);
+            u_x_low    = Hidden_Neurons*(1 - torch.tanh(Lower_Bound_Coords[i, 0] + Lower_Bound_Coords[i, 1] + 1.0)**2);
+            u_x_high   = Hidden_Neurons*(1 - torch.tanh(Upper_Bound_Coords[i, 0] + Upper_Bound_Coords[i, 1] + 1.0)**2);
             U_x_Sq_Er += (u_x_low - u_x_high)**2;
 
         BC_Loss_Predict = U_Sq_Er/Num_BC_Points + U_x_Sq_Er/Num_BC_Points;
@@ -165,18 +171,18 @@ class Test_Loss_Functions(unittest.TestCase):
 
     def test_Data_Loss(self):
         # First, set up a simple network.
-        Hidden_Neurons : int = 7;
+        Hidden_Neurons : int          = random.randint(1, 100);
         u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # Make up some random data points, values. .
-        Num_Data_Points = 40;
-        Data_Coords = torch.rand((Num_Data_Points, 2), dtype = torch.float32);
-        Data_Values = torch.rand(Num_Data_Points, dtype = torch.float32);
+        Num_Data_Points : int = random.randint(10, 1000);
+        Data_Coords           = torch.rand((Num_Data_Points, 2), dtype = torch.float32);
+        Data_Values           = torch.rand(Num_Data_Points, dtype = torch.float32);
 
         # Calculuate predicted data Loss.
         Data_Error = torch.tensor(0, dtype = torch.float32);
         for i in range(Num_Data_Points):
-            u_pt = Hidden_Neurons*torch.tanh(Data_Coords[i, 0] + Data_Coords[i, 1] + 1) + 1;
+            u_pt        = Hidden_Neurons*torch.tanh(Data_Coords[i, 0] + Data_Coords[i, 1] + 1) + 1;
             Data_Error += (u_pt - Data_Values[i])**2;
 
         Data_Loss_Predict = Data_Error/Num_Data_Points;
@@ -195,7 +201,7 @@ class Test_Loss_Functions(unittest.TestCase):
 class Test_PDE_Residual(unittest.TestCase):
     def test_Evaluate_u_Derivatives(self):
         # Set up a simple network.
-        Hidden_Neurons : int = 10;
+        Hidden_Neurons : int          = random.randint(1, 100);
         u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
 
         # The network should now evaluate as follows:
@@ -208,10 +214,11 @@ class Test_PDE_Residual(unittest.TestCase):
         #                        = -2*n*tanh(t + x + 1)*[1 - tanh^2(t + x + 1)]
 
         # Set up some random points to evaluate u and its derivatives.
-        num_Points = 1;
+        num_Points = random.randint(10, 1000);
         Coords     = torch.rand((num_Points, 2), dtype = torch.float32);
 
         # Compute predicted value for du_dt, du_dx, and d^2u_dx^2.
+        u_predict       = torch.empty(num_Points, dtype = torch.float32);
         du_dt_predict   = torch.empty(num_Points, dtype = torch.float32);
         du_dx_predict   = torch.empty(num_Points, dtype = torch.float32);
         d2u_dx2_predict = torch.empty(num_Points, dtype = torch.float32);
@@ -220,25 +227,26 @@ class Test_PDE_Residual(unittest.TestCase):
             x = Coords[i, 1];
             n = Hidden_Neurons;
 
-            du_dt_predict[i]   = n*(1 - torch.tanh(t + x + 1)**2);
-            du_dx_predict[i]   = n*(1 - torch.tanh(t + x + 1)**2);
-            d2u_dx2_predict[i] = -2*n*torch.tanh(t + x + 1)*(1 - torch.tanh(t + x + 1)**2);
-
-        u_NN(torch.rand((1, 2), dtype = torch.float32));
+            u_predict[i]        = n*torch.tanh(t + x+  1.0) + 1.0;
+            du_dt_predict[i]   = n*(1.0 - torch.tanh(t + x + 1.0)**2);
+            du_dx_predict[i]   = n*(1.0 - torch.tanh(t + x + 1.0)**2);
+            d2u_dx2_predict[i] = -2.0*n*torch.tanh(t + x + 1.0)*(1.0 - torch.tanh(t + x + 1.0)**2);
 
         # Now compute actual du_dt, du_dx, d2u_dx2.
         (du_dt_actual, diu_dxi_actual) = PDE_Residual.Evaluate_u_Derivatives(
                                                 u_NN            = u_NN,
                                                 num_derivatives = 2,
                                                 Coords          = Coords);
+        u_actual       = diu_dxi_actual[:, 0];
         du_dx_actual   = diu_dxi_actual[:, 1];
         d2u_dx2_actual = diu_dxi_actual[:, 2];
 
         # Compare actual, predicted values!
         for i in range(num_Points):
-            self.assertLess(abs(du_dt_predict[i]   - du_dt_actual[i]  ).item(), Epsilon);
-            self.assertLess(abs(du_dx_predict[i]   - du_dx_actual[i]  ).item(), Epsilon);
-            self.assertLess(abs(d2u_dx2_predict[i] - d2u_dx2_actual[i]).item(), Epsilon);
+            self.assertLess(abs(u_predict[i]       - u_actual[i]      ).item(), 2.0*Epsilon);
+            self.assertLess(abs(du_dt_predict[i]   - du_dt_actual[i]  ).item(), 5.0*Epsilon);
+            self.assertLess(abs(du_dx_predict[i]   - du_dx_actual[i]  ).item(), 5.0*Epsilon);
+            self.assertLess(abs(d2u_dx2_predict[i] - d2u_dx2_actual[i]).item(), 9.0*Epsilon);
 
 
 
@@ -408,7 +416,7 @@ class Test_Extraction(unittest.TestCase):
 
         # Now generate a library. We will allow terms of degree <= 2. There
         # should be 6 such terms.
-        Library_Predict = np.empty((num_Coords, 6), dtype = np.float32);
+        Library_Predict       = np.empty((num_Coords, 6), dtype = np.float32);
         Library_Predict[:, 0] = 1;                         # const
         Library_Predict[:, 1] = u_at_Coords;               # u
         Library_Predict[:, 2] = u_x_at_Coords;             # du/dx
