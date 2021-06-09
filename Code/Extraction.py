@@ -1,6 +1,7 @@
 import numpy as np;
 import torch;
 from typing import Tuple;
+from sklearn import linear_model;
 
 from Network import Neural_Network;
 from PDE_Residual import Evaluate_u_Derivatives;
@@ -310,11 +311,30 @@ def Generate_Library(
 
 
 
+def Lasso(
+        A         : np.array,
+        b         : np.array,
+        alpha     : float) -> np.array:
+    """ This function applies sklearn's Lasso algorithm. In particular, it
+    finds arg_min((1/2n)||Ax - b||_{2}^2 + ||x||_{1}), where n is the number of
+    rows in A."""
+
+    # Define the Lasso object.
+    Lasso_Obj = linear_model.Lasso(alpha = alpha, fit_intercept = False);
+
+    # Try to fit Ax = b using Lasso!
+    Lasso_Obj.fit(A, b);
+
+    # Return what we found.
+    return Lasso_Obj.coef_;
+
+
+
 def Thresholded_Least_Squares(
         A         : np.array,
         b         : np.array,
         threshold : float) -> np.array:
-    """ This problem solves a thresholded leat squares problem. That is, it
+    """ This functions applies a thresholded least squares algorithm. It
     essentially finds arg_min(||Ax - b||_{2}). The big difference is that we try
     to eliminate the component of x which are smaller than the threshold. In
     particular, we first find x(1) = arg_min(||Ax - b||_{2}). We then find set
@@ -340,7 +360,7 @@ def Thresholded_Least_Squares(
     If A has m columns, then the returned vector should have m components. """
 
     # Solve the initial least squares problem.
-    x, Residual = np.linalg.lstsq(A, b, rcond = None)[0];
+    x, Residual = np.linalg.lstsq(A, b, rcond = None)[0:2];
 
     # Perform the thresholding procedure.
     for k in range(0, 5):
@@ -356,7 +376,7 @@ def Thresholded_Least_Squares(
 
         # Resolve least squares problem but only using the columns of A
         # corresponding to the big columns.
-        x[big_indices], Residual = np.linalg.lstsq(A[:, big_indices], b, rcond = None)[0];
+        x[big_indices], Residual = np.linalg.lstsq(A[:, big_indices], b, rcond = None)[0:2];
 
     # All done, return x!
     return x;

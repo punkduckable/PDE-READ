@@ -2,13 +2,13 @@ import numpy as np;
 import torch;
 import matplotlib.pyplot as plt;
 
-from Network            import Neural_Network;
-from Test_Train         import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Extraction         import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE;
-from Plotter            import Update_Axes, Setup_Axes;
-from Settings_Reader    import Settings_Reader, Settings_Container;
-from Data_Setup         import Data_Loader, Data_Container, Generate_Random_Coords;
-from Timing             import Timer;
+from Network         import Neural_Network;
+from Test_Train      import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
+from Extraction      import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE, Lasso;
+from Plotter         import Update_Axes, Setup_Axes;
+from Settings_Reader import Settings_Reader, Settings_Container;
+from Data_Setup      import Data_Loader, Data_Container, Generate_Random_Coords;
+from Timing          import Timer;
 
 
 
@@ -243,10 +243,15 @@ def main():
          num_multi_indices,
          multi_indices_list) = Generate_Library(
                                     u_NN            = u_NN,
-                                    N_NN            = N_NN, 
+                                    N_NN            = N_NN,
                                     Coords          = Data_Container.Extraction_Coords,
                                     num_derivatives = Settings.N_Num_u_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree);
+
+        #Extracted_PDE = Lasso(
+        #                    A         = Library,
+        #                    b         = N_NN_batch,
+        #                    alpha     = Settings.Least_Squares_Threshold);
 
         Extracted_PDE = Thresholded_Least_Squares(
                             A         = Library,

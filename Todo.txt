@@ -1,7 +1,3 @@
-- Unit testing galore!
-
-- try Lasso instead of thresholded least squares.
-
 - Add optimizer setting.
 
 - Add activation function setting.

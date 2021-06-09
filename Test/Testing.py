@@ -425,15 +425,12 @@ class Test_Extraction(unittest.TestCase):
         Library_Predict[:, 5] = u_x_at_Coords**2;          # du/dx*du/dx
 
         # Evaluate the actual library and compare.
-        (N_Coords,
-         Library_Actual,
-         num_multi_indices,
-         multi_indices_list) = Extraction.Generate_Library(
+        Library_Actual = Extraction.Generate_Library(
                                         u_NN            = u_NN,
                                         N_NN            = N_NN,
                                         Coords          = Coords,
                                         num_derivatives = 1,
-                                        Poly_Degree     = 2);
+                                        Poly_Degree     = 2)[1];
 
         self.assertEqual(Library_Actual.shape, Library_Predict.shape);
         for i in range(num_Coords):
