@@ -52,8 +52,8 @@ def Discovery_Training(
     Nothing! """
 
     def Discovery_Closure():
-        # Zero out the gradients if enabled.
-        if torch.is_grad_enabled():
+        # Zero out the gradients (if they are enabled).
+        if (torch.is_grad_enabled()):
             Optimizer.zero_grad();
 
         # Evaluate the Loss (Note, we enforce a BC of 0)
@@ -71,12 +71,12 @@ def Discovery_Training(
 
         # Back-propigate to compute gradients of Loss with respect to network
         # parameters (only do if this if the loss requires grad)
-        if (Loss.requires_grad):
+        if (Loss.requires_grad == True):
             Loss.backward();
 
         return Loss;
 
-    # update network weights.
+    # update network parameters.
     Optimizer.step(Discovery_Closure);
 
 
@@ -193,36 +193,39 @@ def PINNs_Training(
 
     Nothing! """
 
-    # Zero out the gradients.
-    Optimizer.zero_grad();
+    def PINNs_Closure():
+        # Zero out the gradients (if there are any).
+        if (torch.is_grad_enabled()):
+            Optimizer.zero_grad();
 
-    # Evaluate the Loss (Note, we enforce a BC of 0)
-    Loss = (IC_Loss(
-                u_NN = u_NN,
-                IC_Coords = IC_Coords,
-                IC_Data = IC_Data)
+        # Evaluate the Loss (Note, we enforce a BC of 0)
+        Loss = (IC_Loss(
+                    u_NN = u_NN,
+                    IC_Coords = IC_Coords,
+                    IC_Data = IC_Data)
 
-            +
+                +
 
-            Periodic_BC_Loss(
-                u_NN = u_NN,
-                Lower_Bound_Coords = Lower_Bound_Coords,
-                Upper_Bound_Coords = Upper_Bound_Coords,
-                Highest_Order = Periodic_BCs_Highest_Order)
+                Periodic_BC_Loss(
+                    u_NN = u_NN,
+                    Lower_Bound_Coords = Lower_Bound_Coords,
+                    Upper_Bound_Coords = Upper_Bound_Coords,
+                    Highest_Order = Periodic_BCs_Highest_Order)
 
-            +
+                +
 
-            Collocation_Loss(
-                u_NN = u_NN,
-                N_NN = N_NN,
-                Collocation_Coords = Collocation_Coords));
+                Collocation_Loss(
+                    u_NN = u_NN,
+                    N_NN = N_NN,
+                    Collocation_Coords = Collocation_Coords));
 
-    # Back-propigate to compute gradients of Loss with respect to network
-    # parameters
-    Loss.backward();
+            # Back-propigate to compute gradients of Loss with respect to network
+            # parameters (only do if this if the loss requires grad)
+            if(Loss.requires_grad == True):
+                Loss.backward();
 
-    # update network weights.
-    Optimizer.step();
+        # update network parameters.
+        Optimizer.step(PINNs_Closure);
 
 
 
