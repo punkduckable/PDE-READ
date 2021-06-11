@@ -77,7 +77,7 @@ def main():
     # Load settings from the settings file.
     Settings = Settings_Reader();
 
-    # Test that we got the correct input.
+    # Print the settings we read.
     print("Loaded the following settings:");
     for (setting, value) in Settings.__dict__.items():
         print(("%-25s = " % setting) + str(value));
@@ -99,13 +99,15 @@ def main():
     u_NN = Neural_Network(  Num_Hidden_Layers   = Settings.u_Num_Hidden_Layers,
                             Neurons_Per_Layer   = Settings.u_Neurons_Per_Layer,
                             Input_Dim           = 2,
-                            Output_Dim          = 1);
+                            Output_Dim          = 1,
+                            Data_Type           = Settings.Torch_dtype);
 
     # Set up the neural network to approximate the PDE operator N.
     N_NN = Neural_Network(  Num_Hidden_Layers   = Settings.N_Num_Hidden_Layers,
                             Neurons_Per_Layer   = Settings.N_Neurons_Per_Layer,
                             Input_Dim           = Settings.N_Num_u_derivatives + 1,
-                            Output_Dim          = 1);
+                            Output_Dim          = 1,
+                            Data_Type           = Settings.Torch_dtype);
 
     # Setup the optimizer.
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
@@ -157,12 +159,14 @@ def main():
         Data_Container.Train_Colloc_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Settings.Num_Train_Colloc_Points);
+                Num_Points          = Settings.Num_Train_Colloc_Points,
+                Data_Type           = Settings.Torch_dtype);
 
         Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Settings.Num_Test_Colloc_Points);
+                Num_Points          = Settings.Num_Test_Colloc_Points,
+                Data_Type           = Settings.Torch_dtype);
 
     elif(Settings.Mode == "Extraction"):
         # In this mode we need to set up the Extraction points.
@@ -171,7 +175,8 @@ def main():
         Data_Container.Extraction_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Settings.Num_Extraction_Points);
+                Num_Points          = Settings.Num_Extraction_Points,
+                Data_Type           = Settings.Torch_dtype);
 
 
     # Setup is done! Figure out how long it took.
@@ -189,9 +194,9 @@ def main():
 
     if  (Settings.Mode == "PINNs"):
         # Setup arrays for the different kinds of losses.
-        IC_Losses          = np.empty((Epochs), dtype = np.float);
-        BC_Losses          = np.empty((Epochs), dtype = np.float);
-        Collocation_Losses = np.empty((Epochs), dtype = np.float);
+        IC_Losses          = np.empty((Epochs), dtype = Settings.Numpy_dtype);
+        BC_Losses          = np.empty((Epochs), dtype = Settings.Numpy_dtype);
+        Collocation_Losses = np.empty((Epochs), dtype = Settings.Numpy_dtype);
 
         for t in range(Epochs):
             PINNs_Training(
@@ -217,15 +222,15 @@ def main():
 
             # Print losses.
             print(("Epoch #%-4d: "              % t)                    , end = '');
-            print(("\tIC Loss = %7f"            % IC_Losses[t])         , end = '');
-            print(("\tBC Loss = %7f"            % BC_Losses[t])         , end = '');
-            print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
-            print((",\t Total Loss = %7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
+            print(("\tIC Loss = %.7f"            % IC_Losses[t])         , end = '');
+            print(("\tBC Loss = %.7f"            % BC_Losses[t])         , end = '');
+            print(("\tCollocation Loss = %.7f"   % Collocation_Losses[t]), end = '');
+            print((",\t Total Loss = %.7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
 
     elif(Settings.Mode == "Discovery"):
         # Set up array for the different kinds of losses.
-        Collocation_Losses = np.empty((Epochs), dtype = np.float);
-        Data_Losses        = np.empty((Epochs), dtype = np.float);
+        Collocation_Losses = np.empty((Epochs), dtype = Settings.Numpy_dtype);
+        Data_Losses        = np.empty((Epochs), dtype = Settings.Numpy_dtype);
 
         for t in range(Epochs):
             Discovery_Training(
@@ -245,9 +250,9 @@ def main():
 
             # Print losses.
             print(("Epoch #%-4d: "              % t)                    , end = '');
-            print(("\tCollocation Loss = %7f"   % Collocation_Losses[t]), end = '');
-            print((",\t Data Loss = %7f"        % Data_Losses[t])       , end = '');
-            print((",\t Total Loss = %7f"       % (Collocation_Losses[t] + Data_Losses[t])));
+            print(("\tCollocation Loss = %.7f"   % Collocation_Losses[t]), end = '');
+            print((",\t Data Loss = %.7f"        % Data_Losses[t])       , end = '');
+            print((",\t Total Loss = %.7f"       % (Collocation_Losses[t] + Data_Losses[t])));
 
     elif(Settings.Mode == "Extraction"):
         # Generate the library!

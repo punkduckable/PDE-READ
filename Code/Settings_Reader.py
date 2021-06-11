@@ -1,3 +1,8 @@
+import torch;
+import numpy;
+
+
+
 class Read_Error(Exception):
     # Raised if we can't find a Phrase in a File.
     pass;
@@ -270,6 +275,18 @@ def Settings_Reader() -> Settings_Container:
         Settings.Optimizer = "LBFGS";
     else:
         raise Read_Error("\"Optimizer [Adam, LBFGS] :\" should be \"Adam\" or \"LBFGS\". Got " + Buffer);
+
+    # Read floating point precision
+    Buffer = Read_Line_After(File, "Floating point Precision [Single, Double] :").strip();
+    if  (Buffer[0] == 'S' or Buffer[0] == 's'):
+        Settings.Torch_dtype = torch.float32;
+        Settings.Numpy_dtype = numpy.float32;
+    elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
+        Settings.Torch_dtype = torch.float64;
+        Settings.Numpy_dtype = numpy.float64;
+    else:
+        raise Read_Error("\"Floating Point Precision [Single, Double] :\" should be \"Single\" or \"Double\". Got " + Buffer);
+
 
 
 

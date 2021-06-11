@@ -10,8 +10,9 @@ from Loss_Functions import PDE_Residual;
 
 # Evaluate solution at a set of points.
 def Evaluate_Approx_Sol(
-        u_NN : Neural_Network,
-        Point_Coords : torch.Tensor) -> np.array:
+        u_NN         : Neural_Network,
+        Point_Coords : torch.Tensor,
+        Data_Type    : np.dtype = np.float32) -> np.array:
     """ This function evaluates the approximate solution at each element of
     Point_Coords.
 
@@ -36,7 +37,7 @@ def Evaluate_Approx_Sol(
 
     # Get number of points, initialize the u array.
     num_Points : int = Point_Coords.shape[0];
-    u_NN_at_Points = np.empty((num_Points), dtype = np.float32);
+    u_NN_at_Points   = np.empty((num_Points), dtype = Data_Type);
 
     # Loop through the points, evaluate the network at each one.
     for i in range(num_Points):
@@ -154,7 +155,8 @@ def Update_Axes(
     # Flatten t_coods, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
     flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
-    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).float();
+    Data_Type : torch.dtype  = u_NN.Layers[0].weight.data.dtype;
+    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Data_Type);
 
     # Get number of possible x and t values, respectively.
     n_x = len(x_points);
@@ -164,7 +166,8 @@ def Update_Axes(
     # true and approximate solutions, and the PDE residual at the
     # specified Points. We need to reshape these into n_x by n_t grids, because
     # that's what matplotlib's contour function wants.
-    u_NN_on_Grid      = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
+    Data_Type         = True_Sol_On_Grid.dtype;
+    u_NN_on_Grid      = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords, Data_Type).reshape(n_x, n_t);
     Error_On_Grid     = np.abs(u_NN_on_Grid - True_Sol_On_Grid);
     Residual_on_Grid  = PDE_Residual(u_NN, N_NN, Grid_Point_Coords).detach().numpy().reshape(n_x, n_t);
 

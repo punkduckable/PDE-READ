@@ -19,9 +19,14 @@
 # Architecture settings must match those of the saved network. (same number of
 # layers and neurons per layer).
 #
+# The current value of the "Floating Point Precision" setting does not need to
+# match that of the saved state. Thus, you will be fine if the save used single
+# and you want to switch to doubles.
+#
 # If you Load the Optimizer state, then the Optimizer setting must match
 # that of the saved optimizer. (If the save used Adam, then you must use Adam
-# here as well). Further, the Learning Rate hyper-parameters will be ignored.
+# here as well). Further, in this case, the reader will ignore the Learning Rate
+# setting.
 #
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
 # The Data File Name should include the file's file extension.
@@ -33,12 +38,13 @@
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Save_Disc_LBFGS
+  Load File Name [str] :                         Burgers_Disc_Double_LBFGS
 
 Save State [Bool] :                              False
-  Save File Name [str] :                         Burgers_Save_Disc_LBFGS
+  Save File Name [str] :                         Burgers_Disc_Double_LBFGS
 
-Plot Final Result [bool] :                       True
+Plot Final Result [bool] :                       False
+
 
 
 
@@ -69,7 +75,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # controls the number of points (in the PDE domain) at which we attempt to
 # extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Discovery
+PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -107,6 +113,7 @@ N Network - Number of Hidden Layers [int] :      5
 N Network - Neurons per Hidden Layer [int] :     50
 
 Optimizer [Adam, LBFGS] :                        LBFGS
+Floating Point Precision [Single, Double] :      Double
 
 
 

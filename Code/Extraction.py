@@ -263,7 +263,7 @@ def Generate_Library(
     # below).
     num_rows : int = Coords.shape[0];
     num_cols : int = num_multi_indices.sum();
-    Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
+    Library : np.array = np.ones((num_rows, num_cols), dtype = np.float64);
 
     # Evaluate u, du/dx,... at each point.
     (du_dt, diu_dxi) = Evaluate_u_Derivatives(
@@ -294,7 +294,7 @@ def Generate_Library(
             # Cycle through the sub-indices of this multi-index.
             for j in range(degree):
                 Library[:, position] = (Library[:, position]*
-                                        diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy());
+                                        diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy().astype(dtype = np.float64));
 
             # Increment position
             position += 1;
@@ -304,7 +304,7 @@ def Generate_Library(
 
     # All done, the library is now populated! Package everything together and
     # return.
-    return (N_NN_batch.detach().squeeze().numpy(),
+    return (N_NN_batch.detach().squeeze().numpy().astype(dtype = np.float64),
             Library,
             num_multi_indices,
             multi_indices_list);

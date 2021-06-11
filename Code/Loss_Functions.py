@@ -88,10 +88,13 @@ def Periodic_BC_Loss(
 
     A scalar tensor containing the mean square BC error. """
 
-    # Allocate tensors to hold u and its derivatives at each coordinate.
-    Num_BC_Points : int = Lower_Bound_Coords.shape[0];
-    diu_dxi_upper_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = torch.float32);
-    diu_dxi_lower_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = torch.float32);
+    # Allocate tensors to hold u and its derivatives at each coordinate. To do
+    # this, we first need to know what data type N_NN and u_NN use. To determine
+    # this, we poach the dtype of the weight matrix of the 0 layer of u_NN.
+    Data_Type : torch.dtype = u_NN.Layers[0].weight.data.dtype;
+    Num_BC_Points : int     = Lower_Bound_Coords.shape[0];
+    diu_dxi_upper_batch      = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type);
+    diu_dxi_lower_batch      = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type);
 
     # Evaluate the NN at the upper and lower bound coords. This returns an N by
     # 1 tensor whose ith row holds the value of u at the ith upper or lower

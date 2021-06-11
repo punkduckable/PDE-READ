@@ -219,10 +219,10 @@ def PINNs_Training(
                     N_NN = N_NN,
                     Collocation_Coords = Collocation_Coords));
 
-            # Back-propigate to compute gradients of Loss with respect to network
-            # parameters (only do if this if the loss requires grad)
-            if(Loss.requires_grad == True):
-                Loss.backward();
+        # Back-propigate to compute gradients of Loss with respect to network
+        # parameters (only do if this if the loss requires grad)
+        if(Loss.requires_grad == True):
+            Loss.backward();
 
         # update network parameters.
         Optimizer.step(PINNs_Closure);

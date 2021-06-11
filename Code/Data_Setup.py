@@ -56,9 +56,9 @@ def Data_Loader(Settings : Settings_Container):
     # Thus, x_points will NOT include the upper domain bound.
     # We cast these to 32 bit floating point numbers since that's what the rest
     # of the code uses.
-    t_points = data_in[Settings.Time_Series_Label] .flatten()[:].astype(np.float32);
-    x_points = data_in[Settings.Space_Series_Label].flatten()[:].astype(np.float32);
-    True_Sol_in = (np.real(data_in[Settings.Solution_Series_Label])).astype(np.float32);
+    t_points = data_in[Settings.Time_Series_Label] .flatten()[:].astype(dtype = Settings.Numpy_dtype);
+    x_points = data_in[Settings.Space_Series_Label].flatten()[:].astype(dtype = Settings.Numpy_dtype);
+    True_Sol_in = (np.real(data_in[Settings.Solution_Series_Label])).astype(dtype = Settings.Numpy_dtype);
 
     # Generate the grid of (t, x) coordinates where we'll evaluate the solution.
     # Each row of these arrays corresponds to a specific position. Each column
@@ -97,8 +97,8 @@ def Data_Loader(Settings : Settings_Container):
     Container.t_points         = t_points;
     Container.x_points         = x_points;
     Container.True_Sol         = True_Sol_in;
-    Container.Dim_Lower_Bounds = np.array((t_lower, x_lower), dtype = np.float);
-    Container.Dim_Upper_Bounds = np.array((t_upper, x_upper), dtype = np.float);
+    Container.Dim_Lower_Bounds = np.array((t_lower, x_lower), dtype = Settings.Numpy_dtype);
+    Container.Dim_Upper_Bounds = np.array((t_upper, x_upper), dtype = Settings.Numpy_dtype);
 
 
     if  (Settings.Mode == "PINNs"):
@@ -116,7 +116,7 @@ def Data_Loader(Settings : Settings_Container):
 
         # There is an IC coordinate for each possible x value. The corresponding
         # time value for that coordinate is 0.
-        IC_Coords = np.zeros((n_x, 2), dtype = np.float32);
+        IC_Coords = np.zeros((n_x, 2), dtype = Settings.Numpy_dtype);
         IC_Coords[:, 1] = x_points;
 
         # Since each column of True_Sol_in corresponds to a specific time, the
@@ -137,18 +137,19 @@ def Data_Loader(Settings : Settings_Container):
         # We then set the 0 column of this array (the t coordinates) to the
         # set of possible t coordinates (t_points). We do something analagous
         # for Upper_Bound_Coords.
-        Lower_Bound_Coords = np.full((n_t, 2), x_lower, dtype = np.float32);
-        Upper_Bound_Coords = np.full((n_t, 2), x_upper, dtype = np.float32);
+        Lower_Bound_Coords = np.full((n_t, 2), x_lower, dtype = Settings.Numpy_dtype);
+        Upper_Bound_Coords = np.full((n_t, 2), x_upper, dtype = Settings.Numpy_dtype);
         Lower_Bound_Coords[:, 0] = t_points;
         Upper_Bound_Coords[:, 0] = t_points;
 
         # Add these items (or, rather, their tensor equivalents) to the
         # container. Note that everything should be of type float32. We use
         # the to method as a backup.
-        Container.IC_Coords             = torch.from_numpy(IC_Coords).to(dtype = torch.float32);
-        Container.IC_Data               = torch.from_numpy(IC_Data).to(dtype = torch.float32);
-        Container.Lower_Bound_Coords    = torch.from_numpy(Lower_Bound_Coords).to(dtype = torch.float32);
-        Container.Upper_Bound_Coords    = torch.from_numpy(Upper_Bound_Coords).to(dtype = torch.float32);
+        Container.IC_Coords          = torch.from_numpy(IC_Coords).to(dtype = Settings.Torch_dtype);
+        Container.IC_Data            = torch.from_numpy(IC_Data)  .to(dtype = Settings.Torch_dtype);
+
+        Container.Lower_Bound_Coords = torch.from_numpy(Lower_Bound_Coords).to(dtype = Settings.Torch_dtype);
+        Container.Upper_Bound_Coords = torch.from_numpy(Upper_Bound_Coords).to(dtype = Settings.Torch_dtype);
 
     elif(Settings.Mode == "Discovery"):
         # If we're in Discovery mode, then we need Testing/Training Data
@@ -156,14 +157,14 @@ def Data_Loader(Settings : Settings_Container):
 
         # Randomly select Num_Training_Points, Num_Testing_Points coordinate indicies.
         Train_Indicies = np.random.choice(All_Data_Coords.shape[0], Settings.Num_Train_Data_Points, replace = False);
-        Test_Indicies  = np.random.choice(All_Data_Coords.shape[0], Settings.Num_Test_Data_Points, replace = False);
+        Test_Indicies  = np.random.choice(All_Data_Coords.shape[0], Settings.Num_Test_Data_Points , replace = False);
 
         # Now select the corresponding testing, training data points, values.
-        Container.Train_Data_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = torch.float32);
-        Container.Train_Data_Values = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = torch.float32);
+        Container.Train_Data_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = Settings.Torch_dtype);
+        Container.Train_Data_Values = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = Settings.Torch_dtype);
 
-        Container.Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = torch.float32);
-        Container.Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = torch.float32);
+        Container.Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = Settings.Torch_dtype);
+        Container.Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = Settings.Torch_dtype);
 
     # The container is now full. Return it!
     return Container;
@@ -173,7 +174,8 @@ def Data_Loader(Settings : Settings_Container):
 def Generate_Random_Coords(
         Dim_Lower_Bounds    : np.array,
         Dim_Upper_Bounds    : np.array,
-        Num_Points          : int) -> torch.Tensor:
+        Num_Points          : int,
+        Data_Type           : torch.dtype = torch.float32) -> torch.Tensor:
     """ This function generates a collection of random points within a specified
     box.
 
@@ -188,6 +190,9 @@ def Generate_Random_Coords(
 
     num_Points: The number of points we want togenerate.
 
+    Data_Type: The data type used to hold the coords. Should be torch.float64
+    (double precision) or torch.float32 (single precision).
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -196,7 +201,7 @@ def Generate_Random_Coords(
 
     # Declare coords array
     d = Dim_Lower_Bounds.shape[0];
-    Coords = torch.empty((Num_Points, d), dtype = torch.float32);
+    Coords = torch.empty((Num_Points, d), dtype = Data_Type);
 
     # Populate the coordinates with random values.
     for i in range(Num_Points):

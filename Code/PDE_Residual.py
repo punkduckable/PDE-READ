@@ -47,8 +47,10 @@ def Evaluate_u_Derivatives(
     # The ith row of this tensor holds the value of u and its first n-1
     # derivatives at the ith collocation point. Its jth column holds the jth
     # spatial derivative of u at each collocation point.
+    Data_Type : torch.dtype      = u_NN.Layers[0].weight.data.dtype;
     num_Collocation_Points : int = Coords.shape[0];
-    diu_dxi_batch                = torch.empty((num_Collocation_Points, num_derivatives + 1), dtype = torch.float32);
+    diu_dxi_batch                = torch.empty((num_Collocation_Points, num_derivatives + 1),
+                                                dtype = Data_Type);
 
     # Calculate approximate solution at this collocation point.
     diu_dxi_batch[:, 0] = u_NN(Coords).squeeze();

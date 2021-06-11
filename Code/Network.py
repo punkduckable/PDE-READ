@@ -5,12 +5,13 @@ import torch;
 
 class Neural_Network(torch.nn.Module):
     def __init__(self,
-                 Num_Hidden_Layers : int = 3,
-                 Neurons_Per_Layer : int = 20,   # Neurons in each Hidden Layer
-                 Input_Dim         : int = 1,    # Dimension of the input
-                 Output_Dim        : int = 1):   # Dimension of the output
-        # Note: we assume that Num_Hidden_Layers, Neurons_Per_Layer, Input_Dim,
-        # and out_dim are positive integers.
+                 Num_Hidden_Layers : int         = 3,
+                 Neurons_Per_Layer : int         = 20,   # Neurons in each Hidden Layer
+                 Input_Dim         : int         = 1,    # Dimension of the input
+                 Output_Dim        : int         = 1,    # Dimension of the output
+                 Data_Type         : torch.dtype = torch.float32):
+        # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
+        # Input_Dim, and out_dim must be positive integers.
         assert (Num_Hidden_Layers > 0   and
                 Neurons_Per_Layer > 0   and
                 Input_Dim > 0           and
@@ -35,8 +36,7 @@ class Neural_Network(torch.nn.Module):
         self.Layers.append(
             torch.nn.Linear(    in_features  = Input_Dim,
                                 out_features = Neurons_Per_Layer,
-                                bias = True )
-        );
+                                bias = True ).to(dtype = Data_Type));
 
         # Now append the rest of the hidden layers. Each of these layers maps
         # from \mathbb{R}^{Neurons_Per_Layer} to itself. Thus, in_features =
@@ -46,16 +46,14 @@ class Neural_Network(torch.nn.Module):
             self.Layers.append(
                 torch.nn.Linear(    in_features  = Neurons_Per_Layer,
                                     out_features = Neurons_Per_Layer,
-                                    bias = True )
-            );
+                                    bias = True ).to(dtype = Data_Type));
 
         # Now, append the Output Layer, which has Neurons_Per_Layer input
         # features, but only Output_Dim output features.
         self.Layers.append(
             torch.nn.Linear(    in_features  = Neurons_Per_Layer,
                                 out_features = Output_Dim,
-                                bias = True )
-        );
+                                bias = True ).to(dtype = Data_Type));
 
         # Initialize the weight matricies, bias vectors in the network.
         for i in range(self.Num_Layers):
