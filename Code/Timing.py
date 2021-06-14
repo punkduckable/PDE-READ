@@ -15,7 +15,7 @@ class Timer:
     def Start(self) -> None:
         # Record the current time. Note that if the user calls this function
         # multiple times, then we'll will just override the starting time.
-        self.Start_Time = self.Start_Time = time.perf_counter();
+        self.Start_Time = time.perf_counter();
 
     def Stop(self) -> float:
         # Make sure the timer has actually started.

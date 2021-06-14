@@ -5,11 +5,12 @@ import torch;
 
 class Neural_Network(torch.nn.Module):
     def __init__(self,
-                 Num_Hidden_Layers : int         = 3,
-                 Neurons_Per_Layer : int         = 20,   # Neurons in each Hidden Layer
-                 Input_Dim         : int         = 1,    # Dimension of the input
-                 Output_Dim        : int         = 1,    # Dimension of the output
-                 Data_Type         : torch.dtype = torch.float32):
+                 Num_Hidden_Layers   : int             = 3,
+                 Neurons_Per_Layer   : int             = 20,   # Neurons in each Hidden Layer
+                 Input_Dim           : int             = 1,    # Dimension of the input
+                 Output_Dim          : int             = 1,    # Dimension of the output
+                 Data_Type           : torch.dtype     = torch.float32,
+                 Activation_Function : torch.nn.Module = torch.nn.Tanh()):
         # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
         # Input_Dim, and out_dim must be positive integers.
         assert (Num_Hidden_Layers > 0   and
@@ -60,7 +61,7 @@ class Neural_Network(torch.nn.Module):
             torch.nn.init.xavier_uniform_(self.Layers[i].weight);
 
         # Finally, set the Network's activation function.
-        self.Activation_Function = torch.nn.Tanh();
+        self.Activation_Function = Activation_Function;
 
 
 

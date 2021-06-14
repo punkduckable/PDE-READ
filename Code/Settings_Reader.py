@@ -232,7 +232,8 @@ def Settings_Reader() -> Settings_Container:
     elif(Buffer[0] == 'E' or Buffer[0] == 'e'):
         Settings.Mode = "Extraction";
     else:
-        raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be \"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
+        raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be" + \
+                         "\"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
 
     # PINNs mode specific settings
     if(Settings.Mode == "PINNs"):
@@ -262,10 +263,32 @@ def Settings_Reader() -> Settings_Container:
     Settings.u_Num_Hidden_Layers = int(Read_Line_After(File, "u Network - Number of Hidden Layers [int] :").strip());
     Settings.u_Neurons_Per_Layer = int(Read_Line_After(File, "u Network - Neurons per Hidden Layer [int] :").strip());
 
+    Buffer = Read_Line_After(File, "u Network - Activation Function [str] :").strip();
+    if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
+        Settings.u_Activation_Function = torch.nn.ReLU();
+    elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
+        Settings.u_Activation_Function = torch.nn.Sigmoid();
+    elif(Buffer[0] == 'T' or Buffer[0] == 't'):
+        Settings.u_Activation_Function = torch.nn.Tanh();
+    else:
+        raise Read_Error("\"u Network - Activation Function [str] :\" should be one of" + \
+                         "\"Tanh\", \"Sigmoid\", or \"ReLU\" Got " + Buffer);
+
     # Read N's network Architecture
     Settings.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - PDE Order [int] :").strip());
     Settings.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
     Settings.N_Neurons_Per_Layer = int(Read_Line_After(File, "N Network - Neurons per Hidden Layer [int] :").strip());
+
+    Buffer = Read_Line_After(File, "N Network - Activation Function [str] :").strip();
+    if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
+        Settings.N_Activation_Function = torch.nn.ReLU();
+    elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
+        Settings.N_Activation_Function = torch.nn.Sigmoid();
+    elif(Buffer[0] == 'T' or Buffer[0] == 't'):
+        Settings.N_Activation_Function = torch.nn.Tanh();
+    else:
+        raise Read_Error("\"N Network - Activation Function [str] :\" should be one of" + \
+                         "\"Tanh\", \"Sigmoid\", or \"ReLU\" Got " + Buffer);
 
     # Read optimizer.
     Buffer = Read_Line_After(File, "Optimizer [Adam, LBFGS] :").strip();

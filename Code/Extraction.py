@@ -362,6 +362,9 @@ def Thresholded_Least_Squares(
     # Solve the initial least squares problem.
     x, Residual = np.linalg.lstsq(A, b, rcond = None)[0:2];
 
+    if(Residual.size != 0):
+        print("Initial Residual = %f" % Residual);
+
     # Perform the thresholding procedure.
     for k in range(0, 5):
         # Determine which components of x are smaller than the threshold. This
@@ -369,7 +372,6 @@ def Thresholded_Least_Squares(
         # the threshold, and 0 otherwise.
         small_indices : np.array = (abs(x) < threshold);
         x[small_indices] = 0;
-        print("Eliminated %d components after step %d of thresholded least squares. Residual = %f" % (small_indices.sum(), k, Residual));
 
         # Now determine which components of x are bigger than the threshold.
         big_indices : np.array   = np.logical_not(small_indices);
@@ -377,6 +379,14 @@ def Thresholded_Least_Squares(
         # Resolve least squares problem but only using the columns of A
         # corresponding to the big columns.
         x[big_indices], Residual = np.linalg.lstsq(A[:, big_indices], b, rcond = None)[0:2];
+
+        # Print update
+        print("Eliminated %d components after step %d of thresholded least squares. " % \
+              (small_indices.sum(), k), end = '');
+        if  (Residual.size != 0):
+            print("Residual = %f" % Residual);
+        else:
+            print("");
 
     # All done, return x!
     return x;
