@@ -79,6 +79,57 @@ class Test_Network(unittest.TestCase):
         for i in range(num_Points):
             self.assertLess(abs(NN_x_Actual[i] - NN_x_Predict[i]).item(), Epsilon);
 
+    def test_Rational_ReLU(self):
+        # Initialize a rational relu activation function.
+        Rational = Network.Rational_ReLU();
+
+        # Now initialize a random tensor which requires grad.
+        n_Rows : int = random.randint(10, 100);
+        n_Cols : int = random.randint(10, 100);
+        T  = torch.rand((n_Rows, n_Cols), dtype = torch.float32);
+        T.requires_grad_(True);
+
+        # Pass T through the Rational function.
+        R_T = Rational(T);
+
+        # Now, evaluate the components of R_T. Let x denote the i,j entry of
+        # R. The i,j entry of R_T, which we will denote by R(x), should satisify
+        # the following:
+        #       R(x) = (a[0] + a[1]x + a[2]x^2 + a[3]x^3)/(b[0] + b[1]x + b[2]x^2)
+        a = Rational.a;
+        b = Rational.b;
+        for i in range(n_Rows):
+            for j in range(n_Cols):
+                x = T[i,j];
+
+                Nx = (a[0] + a[1]*x + a[2]*(x**2) + a[3]*(x**3));
+                Dx = (b[0] + b[1]*x + b[2]*(x**2));
+                Rx_predict = Nx/Dx;
+
+                Rx_actual = R_T[i,j];
+
+                self.assertLess(abs(Rx_actual - Rx_predict).item(), 5*Epsilon);
+
+        # Now let's sum all components of R_T to compute a "Loss". We will then
+        # differentiate this "Loss" with respect to each component of T. This
+        # should populate T's gradient tensor. In particular, if the i,j entry
+        # of T is x, then T.grad[i,j] should hold (d/dx)R(x).
+        Loss = R_T.sum();
+        Loss.backward();
+        for i in range(n_Rows):
+            for j in range(n_Cols):
+                x = T[i,j];
+
+                Nx     = (a[0] + a[1]*x + a[2]*(x**2) + a[3]*(x**3));
+                dNx_dx = (a[1] + 2*a[2]*x + 3*a[3]*(x**2));
+                Dx     = (b[0] + b[1]*x + b[2]*(x**2));
+                dDx_dx = (b[1] + 2*b[2]*x);
+                dRx_dx_predict = (dNx_dx/Dx) - (dDx_dx*Nx)/(Dx*Dx);
+
+                dRx_dx_actual = T.grad[i,j];
+
+                self.assertLess(abs(dRx_dx_predict - dRx_dx_actual).item(), 5*Epsilon);
+
 
 
 class Test_Loss_Functions(unittest.TestCase):
@@ -243,10 +294,10 @@ class Test_PDE_Residual(unittest.TestCase):
 
         # Compare actual, predicted values!
         for i in range(num_Points):
-            self.assertLess(abs(u_predict[i]       - u_actual[i]      ).item(), 2.0*Epsilon);
-            self.assertLess(abs(du_dt_predict[i]   - du_dt_actual[i]  ).item(), 5.0*Epsilon);
-            self.assertLess(abs(du_dx_predict[i]   - du_dx_actual[i]  ).item(), 5.0*Epsilon);
-            self.assertLess(abs(d2u_dx2_predict[i] - d2u_dx2_actual[i]).item(), 9.0*Epsilon);
+            self.assertLess(abs(u_predict[i]       - u_actual[i]      ).item(), 5.0*Epsilon);
+            self.assertLess(abs(du_dt_predict[i]   - du_dt_actual[i]  ).item(), 10.0*Epsilon);
+            self.assertLess(abs(du_dx_predict[i]   - du_dx_actual[i]  ).item(), 10.0*Epsilon);
+            self.assertLess(abs(d2u_dx2_predict[i] - d2u_dx2_actual[i]).item(), 15.0*Epsilon);
 
 
 

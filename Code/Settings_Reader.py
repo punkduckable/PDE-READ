@@ -265,14 +265,14 @@ def Settings_Reader() -> Settings_Container:
 
     Buffer = Read_Line_After(File, "u Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
-        Settings.u_Activation_Function = torch.nn.ReLU();
+        Settings.u_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.u_Activation_Function = torch.nn.Sigmoid();
+        Settings.u_Activation_Function = "Sigmoid";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.u_Activation_Function = torch.nn.Tanh();
+        Settings.u_Activation_Function = "Tanh";
     else:
         raise Read_Error("\"u Network - Activation Function [str] :\" should be one of" + \
-                         "\"Tanh\", \"Sigmoid\", or \"ReLU\" Got " + Buffer);
+                         "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
 
     # Read N's network Architecture
     Settings.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - PDE Order [int] :").strip());
@@ -281,14 +281,14 @@ def Settings_Reader() -> Settings_Container:
 
     Buffer = Read_Line_After(File, "N Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
-        Settings.N_Activation_Function = torch.nn.ReLU();
+        Settings.N_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.N_Activation_Function = torch.nn.Sigmoid();
+        Settings.N_Activation_Function = "Sigmoid";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.N_Activation_Function = torch.nn.Tanh();
+        Settings.N_Activation_Function = "Tanh";
     else:
         raise Read_Error("\"N Network - Activation Function [str] :\" should be one of" + \
-                         "\"Tanh\", \"Sigmoid\", or \"ReLU\" Got " + Buffer);
+                         "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
 
     # Read optimizer.
     Buffer = Read_Line_After(File, "Optimizer [Adam, LBFGS] :").strip();

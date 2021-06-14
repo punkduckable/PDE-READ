@@ -100,14 +100,16 @@ def main():
                             Neurons_Per_Layer   = Settings.u_Neurons_Per_Layer,
                             Input_Dim           = 2,
                             Output_Dim          = 1,
-                            Data_Type           = Settings.Torch_dtype);
+                            Data_Type           = Settings.Torch_dtype,
+                            Activation_Function = Settings.u_Activation_Function);
 
     # Set up the neural network to approximate the PDE operator N.
     N_NN = Neural_Network(  Num_Hidden_Layers   = Settings.N_Num_Hidden_Layers,
                             Neurons_Per_Layer   = Settings.N_Neurons_Per_Layer,
                             Input_Dim           = Settings.N_Num_u_derivatives + 1,
                             Output_Dim          = 1,
-                            Data_Type           = Settings.Torch_dtype);
+                            Data_Type           = Settings.Torch_dtype,
+                            Activation_Function = Settings.N_Activation_Function);
 
     # Setup the optimizer.
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
@@ -221,11 +223,11 @@ def main():
                 Collocation_Coords          = Data_Container.Test_Colloc_Coords);
 
             # Print losses.
-            print(("Epoch #%-4d: "              % t)                    , end = '');
-            print(("\tIC Loss = %.7f"            % IC_Losses[t])         , end = '');
-            print(("\tBC Loss = %.7f"            % BC_Losses[t])         , end = '');
-            print(("\tCollocation Loss = %.7f"   % Collocation_Losses[t]), end = '');
-            print((",\t Total Loss = %.7f"       % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
+            print(("Epoch #%-4d: "             % t)                    , end = '');
+            print(("\tIC Loss = %.7f"          % IC_Losses[t])         , end = '');
+            print(("\tBC Loss = %.7f"          % BC_Losses[t])         , end = '');
+            print(("\tCollocation Loss = %.7f" % Collocation_Losses[t]), end = '');
+            print((",\t Total Loss = %.7f"     % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
 
     elif(Settings.Mode == "Discovery"):
         # Set up array for the different kinds of losses.

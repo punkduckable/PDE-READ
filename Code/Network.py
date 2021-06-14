@@ -3,14 +3,55 @@ import torch;
 
 
 
+class Rational_ReLU(torch.nn.Module):
+    def __init__(self, Data_Type = torch.float32):
+        # Based on the following paper (see appendix A for coefficients):
+        # Boulle, Nicolas, Yuji Nakatsukasa, and Alex Townsend. "Rational neural
+        # networks." arXiv preprint arXiv:2004.01902 (2020).
+
+        super(Rational_ReLU, self).__init__();
+
+        # Initialize numerator and denominator coefficients to the best
+        # rational function approximation to ReLU.
+        self.a = torch.nn.parameter.Parameter(torch.tensor((1.1915, 1.5957, 0.5, .0218), dtype = Data_Type));
+        self.a.requires_grad_(True);
+
+        self.b = torch.nn.parameter.Parameter(torch.tensor((2.3830, 0.0, 1.0), dtype = Data_Type));
+        self.b.requires_grad_(True);
+
+    def forward(self, X : torch.tensor):
+        """This method elementwise applies the rational function to X.
+
+        ------------------------------------------------------------------------
+        Arguments:
+
+        X : A B by n tensor, where B is the batch size, and n is the number of
+        neurons in some layer of some neural network.
+
+        ------------------------------------------------------------------------
+        Returns:
+
+        Let N(x) = sum_{i = 0}^{3} a_i x^i and D(x) = sum_{i = 0}^{2} b_i x^i.
+        Let R = N/D (ignoring points where D(x) = 0). This function applies R
+        to each element of X and returns the resulting tensor. """
+
+        # We create aliases for self.a and self.b so to make the code cleaner
+        a = self.a;
+        b = self.b;
+
+        # Return R = N/D. This also evalutes elementwise.
+        return (a[0] + X*(a[1] + X*(a[2] + a[3]*X)))/(b[0] + X*(b[1] + b[2]*X));
+
+
+
 class Neural_Network(torch.nn.Module):
     def __init__(self,
-                 Num_Hidden_Layers   : int             = 3,
-                 Neurons_Per_Layer   : int             = 20,   # Neurons in each Hidden Layer
-                 Input_Dim           : int             = 1,    # Dimension of the input
-                 Output_Dim          : int             = 1,    # Dimension of the output
-                 Data_Type           : torch.dtype     = torch.float32,
-                 Activation_Function : torch.nn.Module = torch.nn.Tanh()):
+                 Num_Hidden_Layers   : int         = 3,
+                 Neurons_Per_Layer   : int         = 20,   # Neurons in each Hidden Layer
+                 Input_Dim           : int         = 1,    # Dimension of the input
+                 Output_Dim          : int         = 1,    # Dimension of the output
+                 Data_Type           : torch.dtype = torch.float32,
+                 Activation_Function : str         = "Tanh"):
         # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
         # Input_Dim, and out_dim must be positive integers.
         assert (Num_Hidden_Layers > 0   and
@@ -29,7 +70,7 @@ class Neural_Network(torch.nn.Module):
         self.Num_Layers : int = Num_Hidden_Layers + 1;
 
         # Define Layers ModuleList.
-        self.Layers = torch.nn.ModuleList();
+        self.Layers               = torch.nn.ModuleList();
 
         # Append the first hidden layer. The domain of this layer is the input
         # domain, which means that in_features = Input_Dim. Since this is a
@@ -38,6 +79,7 @@ class Neural_Network(torch.nn.Module):
             torch.nn.Linear(    in_features  = Input_Dim,
                                 out_features = Neurons_Per_Layer,
                                 bias = True ).to(dtype = Data_Type));
+
 
         # Now append the rest of the hidden layers. Each of these layers maps
         # from \mathbb{R}^{Neurons_Per_Layer} to itself. Thus, in_features =
@@ -60,8 +102,21 @@ class Neural_Network(torch.nn.Module):
         for i in range(self.Num_Layers):
             torch.nn.init.xavier_uniform_(self.Layers[i].weight);
 
-        # Finally, set the Network's activation function.
-        self.Activation_Function = Activation_Function;
+        # Finally, set the Network's activation functions.
+        self.Activation_Functions = torch.nn.ModuleList();
+        if  (Activation_Function == "Tanh"):
+            for i in range(Num_Hidden_Layers):
+                self.Activation_Functions.append(torch.nn.Tanh());
+        elif(Activation_Function == "Sigmoid"):
+            for i in range(Num_Hidden_Layers):
+                self.Activation_Functions.append(torch.nn.Sigmoid());
+        elif(Activation_Function == "Rational"):
+            for i in range(Num_Hidden_Layers):
+                self.Activation_Functions.append(Rational_ReLU());
+        else:
+            print("Unknown Activation Function. Got %s" % Activation_Function);
+            print("Thrown by Neural_Network.__init__. Aborting.");
+            exit();
 
 
 
@@ -85,7 +140,7 @@ class Neural_Network(torch.nn.Module):
 
         # Pass X through the network's layers!
         for i in range(self.Num_Layers - 1):
-            X = self.Activation_Function(self.Layers[i](X));
+            X = self.Activation_Functions[i](self.Layers[i](X));
 
         # Pass through the last layer and return (there is no activation
         # function in the last layer)
