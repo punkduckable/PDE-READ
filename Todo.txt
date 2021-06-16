@@ -1,8 +1,6 @@
-- Implement rational functions as an option (I'll need to pass the parameters
-for each layer's activation function to the optimizer). Initialize them to the
-best approximation to RELU.
+- Profile code
 
-- Profile, optimize plotter (it's a runtime bottleneck now)
+- Optimize plotter (it's a runtime bottleneck)
 
 - Variable number of spatial variables for the domain (and hardcode the data
 loader for the particular problem.... I guess?). I think I should hardcode cases

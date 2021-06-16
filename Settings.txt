@@ -35,15 +35,15 @@
 # PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
 # extraction mode (it will throw an error).
 
-Load u Network State [bool] :                    False
-Load N Network State [bool] :                    False
+Load u Network State [bool] :                    True
+Load N Network State [bool] :                    True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Adam_Tanh
+  Load File Name [str] :                         Burgers_LBFGS_Tanh_3
 
-Save State [Bool] :                              True
-  Save File Name [str] :                         Burgers_Adam_Rational
+Save State [Bool] :                              False
+  Save File Name [str] :                         Burgers_LBFGS_Tanh_3
 
-Plot Final Result [bool] :                       True
+Plot Final Result [bool] :                       False
 
 
 
@@ -74,7 +74,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # controls the number of points (in the PDE domain) at which we attempt to
 # extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Discovery
+PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -83,12 +83,12 @@ Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
 Number of Data Training Points [int] :           5000
-Number of Data Testing Points [int] :            500
+Number of Data Testing Points [int] :            1000
 Number of Training Collocation Points [int] :    5000
-Number of Testing Collocation Points [int] :     500
+Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
-Maximum term degree in extracted PDE [int] :     2
+Maximum term degree in extracted PDE [int] :     4
 Number of Extraction Points [int] :              10000
 Least Squares Threshold [float] :                .05
 
@@ -109,14 +109,14 @@ Least Squares Threshold [float] :                .05
 
 u Network - Number of Hidden Layers [int] :      5
 u Network - Neurons per Hidden Layer [int] :     50
-u Network - Activation Function [str] :          Rational
+u Network - Activation Function [str] :          Tanh
 
-N Network - PDE Order [int] :                    2
-N Network - Number of Hidden Layers [int] :      5
-N Network - Neurons per Hidden Layer [int] :     50
-N Network - Activation Function [str] :          Rational
+N Network - PDE Order [int] :                    3
+N Network - Number of Hidden Layers [int] :      2
+N Network - Neurons per Hidden Layer [int] :     100
+N Network - Activation Function [str] :          Tanh
 
-Optimizer [Adam, LBFGS] :                        Adam
+Optimizer [Adam, LBFGS] :                        LBFGS
 
 Floating Point Precision [Single, Double] :      Single
 
@@ -125,8 +125,8 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         1000
-Learning Rate [float] :                          .001
+Number of Epochs [int] :                         500
+Learning Rate [float] :                          .2
 
 
 

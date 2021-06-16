@@ -35,12 +35,16 @@ class Rational_ReLU(torch.nn.Module):
         Let R = N/D (ignoring points where D(x) = 0). This function applies R
         to each element of X and returns the resulting tensor. """
 
-        # We create aliases for self.a and self.b so to make the code cleaner
+        # Create aliases for self.a and self.b so to make the code cleaner
         a = self.a;
         b = self.b;
 
-        # Return R = N/D. This also evalutes elementwise.
-        return (a[0] + X*(a[1] + X*(a[2] + a[3]*X)))/(b[0] + X*(b[1] + b[2]*X));
+        # Evaluate the numerator and denominator.
+        N_X = a[0] + X*(a[1] + X*(a[2] + a[3]*X));
+        D_X = b[0] + X*(b[1] + b[2]*X);
+
+        # Return R = N_X/D_X. This also evalutes elementwise.
+        return N_X/D_X;
 
 
 
@@ -56,8 +60,9 @@ class Neural_Network(torch.nn.Module):
         # Input_Dim, and out_dim must be positive integers.
         assert (Num_Hidden_Layers > 0   and
                 Neurons_Per_Layer > 0   and
-                Input_Dim > 0           and
-                Output_Dim > 0), "Neural_Network initialization arguments must be positive integers!"
+                Input_Dim         > 0   and
+                Output_Dim        > 0), \
+                "Neural_Network initialization arguments must be positive integers!"
 
         # Call the superclass initializer.
         super(Neural_Network, self).__init__();
