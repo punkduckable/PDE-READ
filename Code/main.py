@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt;
 from Network         import Neural_Network;
 from Test_Train      import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
 from Extraction      import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE, Lasso;
-from Plotter         import Update_Axes, Setup_Axes;
+from Plotter         import Initialize_Axes, Setup_Axes;
 from Settings_Reader import Settings_Reader, Settings_Container;
 from Data_Setup      import Data_Loader, Data_Container, Generate_Random_Coords;
 from Timing          import Timer;
@@ -251,7 +251,7 @@ def main():
                 Data_Values         = Data_Container.Test_Data_Values );
 
             # Print losses.
-            print(("Epoch #%-4d: "              % t)                    , end = '');
+            print(("Epoch #%-4d: "               % t)                    , end = '');
             print(("\tCollocation Loss = %.7f"   % Collocation_Losses[t]), end = '');
             print((",\t Data Loss = %.7f"        % Data_Losses[t])       , end = '');
             print((",\t Total Loss = %.7f"       % (Collocation_Losses[t] + Data_Losses[t])));
@@ -294,7 +294,8 @@ def main():
 
     if (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         print("Running %d epochs took %fs." % (Epochs, Main_Time));
-        print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
+        if (Epochs > 0):
+            print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
 
     elif(Settings.Mode == "Extraction"):
         print("Extraction took %fs." % Main_Time);
@@ -303,7 +304,8 @@ def main():
 
     ############################################################################
     # Save the network and optimizer states!
-    # This only makes sense if we're in PINNs or Discovery modes.
+    # This only makes sense if we're in PINNs or Discovery modes since those
+    # those modes actually train something.
 
     if((Settings.Mode == "PINNs" or Settings.Mode == "Discovery") and Settings.Save_To_File == True):
         Save_File_Path : str = "../Saves/" + Settings.Save_File_Name;
@@ -318,14 +320,24 @@ def main():
     # Plot final results
 
     if(Settings.Plot_Final_Results == True):
-        fig, Axes = Setup_Axes();
-        Update_Axes(fig                 = fig,
-                    Axes                = Axes,
-                    u_NN                = u_NN,
-                    N_NN                = N_NN,
-                    x_points            = Data_Container.x_points,
-                    t_points            = Data_Container.t_points,
-                    True_Sol_On_Grid    = Data_Container.True_Sol);
+        # Make note of how long this takes.
+        Print_Timer = Timer();
+        Print_Timer.Start();
+        print("Plotting... ", end = '');
+
+        # Now, setup the plot.
+        fig, Axes = Initialize_Axes();
+        Setup_Axes(fig              = fig,
+                   Axes             = Axes,
+                   u_NN             = u_NN,
+                   N_NN             = N_NN,
+                   x_points         = Data_Container.x_points,
+                   t_points         = Data_Container.t_points,
+                   u_true_On_Grid   = Data_Container.u_true);
+        Print_Time = Print_Timer.Stop();
+        print("Done! Took %fs" % Print_Time);
+
+        # Plot!
         plt.show();
 
 

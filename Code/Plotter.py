@@ -35,20 +35,14 @@ def Evaluate_Approx_Sol(
     A numpy array whose ith element holds the value of u_NN at the ith point.
     """
 
-    # Get number of points, initialize the u array.
-    num_Points : int = Point_Coords.shape[0];
-    u_NN_at_Points   = np.empty((num_Points), dtype = Data_Type);
-
-    # Loop through the points, evaluate the network at each one.
-    for i in range(num_Points):
-        u_NN_at_Points[i] = u_NN.forward(Point_Coords[i]).item();
-
-    return u_NN_at_Points;
+    # Evaluate the Netowk at each point, return its numpy equivalent.
+    u_approx_at_points = u_NN(Point_Coords);
+    return u_approx_at_points.detach().numpy();
 
 
 
 # Set up Axes objects for plotting
-def Setup_Axes() -> Tuple[plt.figure, np.array]:
+def Initialize_Axes() -> Tuple[plt.figure, np.array]:
     """ This function sets up the figure, axes objects for plotting. There
     are a lot of settings to tweak, so I thought the code would be cleaner
     if those details were outsourced to this function.
@@ -103,14 +97,14 @@ def Setup_Axes() -> Tuple[plt.figure, np.array]:
 
 
 # The plotting function!
-def Update_Axes(
+def Setup_Axes(
         fig                 : plt.figure,
         Axes                : np.ndarray,
         u_NN                : Neural_Network,
         N_NN                : Neural_Network,
         x_points            : np.array,
         t_points            : np.array,
-        True_Sol_On_Grid    : np.array) -> None:
+        u_true_On_Grid      : np.array) -> None:
     """ This function plots the approximate solution and residual at the
     specified points.
 
@@ -145,38 +139,35 @@ def Update_Axes(
     # arrays corresponds to a specific position. Each column corresponds to a
     # specific time.
     grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
-    # You may wonder why we do this again, when we did it in the data loader.
-    # The answer is memory. There are a lot of coordinates, and storing them
-    # in memory is wasteful. We really only need these coordinates when loading
-    # the data, and when plotting. Thus, we recreate the grid points here. Sure,
-    # this means we do the same computations twice, but we only run them twice,
-    # so they won't tank overall performance.
+
+    # Determine which data type the neural networks in this code use. We'll
+    # initialize Grid_Point_Coords to match this data type.
+    Data_Type : torch.dtype  = u_NN.Layers[0].weight.data.dtype;
 
     # Flatten t_coods, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
     flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
-    Data_Type : torch.dtype  = u_NN.Layers[0].weight.data.dtype;
     Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Data_Type);
 
     # Get number of possible x and t values, respectively.
     n_x = len(x_points);
     n_t = len(t_points);
 
-    # Evaluate the network's approximate solution, the difference between the
-    # true and approximate solutions, and the PDE residual at the
-    # specified Points. We need to reshape these into n_x by n_t grids, because
-    # that's what matplotlib's contour function wants.
-    Data_Type         = True_Sol_On_Grid.dtype;
-    u_NN_on_Grid      = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords, Data_Type).reshape(n_x, n_t);
-    Error_On_Grid     = np.abs(u_NN_on_Grid - True_Sol_On_Grid);
-    Residual_on_Grid  = PDE_Residual(u_NN, N_NN, Grid_Point_Coords).detach().numpy().reshape(n_x, n_t);
+
+    # Evaluate the network's approximate solution, the absolute error, and the
+    # PDE resitual at each coordinate. We need to reshape these into n_x by n_t
+    # grids, because that's what matplotlib's contour function wants.
+    u_approx_on_grid  = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
+    Error_On_Grid     = np.abs(u_approx_on_grid - u_true_On_Grid);
+    Residual_on_Grid_1  = PDE_Residual(u_NN, N_NN, Grid_Point_Coords);
+    Residual_on_Grid = Residual_on_Grid_1.detach().numpy().reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
-    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, u_NN_on_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, u_approx_on_grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the true solution + colorbar
-    ColorMap1 = Axes[1].contourf(grid_t_coords, grid_x_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap1 = Axes[1].contourf(grid_t_coords, grid_x_coords, u_true_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the Error between the true and approximate solution + colorbar.

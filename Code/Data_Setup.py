@@ -56,9 +56,9 @@ def Data_Loader(Settings : Settings_Container):
     # Thus, x_points will NOT include the upper domain bound.
     # We cast these to 32 bit floating point numbers since that's what the rest
     # of the code uses.
-    t_points = data_in[Settings.Time_Series_Label] .flatten()[:].astype(dtype = Settings.Numpy_dtype);
-    x_points = data_in[Settings.Space_Series_Label].flatten()[:].astype(dtype = Settings.Numpy_dtype);
-    True_Sol_in = (np.real(data_in[Settings.Solution_Series_Label])).astype(dtype = Settings.Numpy_dtype);
+    t_points  = data_in[Settings.Time_Series_Label] .flatten()[:].astype(dtype = Settings.Numpy_dtype);
+    x_points  = data_in[Settings.Space_Series_Label].flatten()[:].astype(dtype = Settings.Numpy_dtype);
+    u_true_in = (np.real(data_in[Settings.Solution_Series_Label])).astype(dtype = Settings.Numpy_dtype);
 
     # Generate the grid of (t, x) coordinates where we'll evaluate the solution.
     # Each row of these arrays corresponds to a specific position. Each column
@@ -77,7 +77,7 @@ def Data_Loader(Settings : Settings_Container):
 
     # Generate data coordinates, corresponding Data Values.
     All_Data_Coords = np.hstack((flattened_grid_t_coords, flattened_grid_x_coords));
-    All_Data_Values = True_Sol_in.flatten();
+    All_Data_Values = u_true_in.flatten();
 
     # Determine the upper and lower spatial, temporal bounds. t is easy, x is
     # not. x_points only includes the lower spatial bound of the domain. The
@@ -96,7 +96,7 @@ def Data_Loader(Settings : Settings_Container):
     Container = Data_Container();
     Container.t_points         = t_points;
     Container.x_points         = x_points;
-    Container.True_Sol         = True_Sol_in;
+    Container.u_true           = u_true_in;
     Container.Dim_Lower_Bounds = np.array((t_lower, x_lower), dtype = Settings.Numpy_dtype);
     Container.Dim_Upper_Bounds = np.array((t_upper, x_upper), dtype = Settings.Numpy_dtype);
 
@@ -106,8 +106,8 @@ def Data_Loader(Settings : Settings_Container):
 
         ############################################################################
         # Initial Conditions
-        # Since each column of True_Sol_in corresponds to a specific time, the
-        # initial condition is just the 0 column of True_Sol_in. We also need the
+        # Since each column of u_true_in corresponds to a specific time, the
+        # initial condition is just the 0 column of u_true_in. We also need the
         # corresponding coordinates.
 
         # Get number of spatial, temporal coordinates.
@@ -119,9 +119,9 @@ def Data_Loader(Settings : Settings_Container):
         IC_Coords = np.zeros((n_x, 2), dtype = Settings.Numpy_dtype);
         IC_Coords[:, 1] = x_points;
 
-        # Since each column of True_Sol_in corresponds to a specific time, the
-        # 0 column of True_sol_in holds the initial condition.
-        IC_Data = True_Sol_in[:, 0];
+        # Since each column of u_true_in corresponds to a specific time, the
+        # 0 column of u_true_in holds the initial condition.
+        IC_Data = u_true_in[:, 0];
 
 
 
