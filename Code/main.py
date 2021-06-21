@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt;
 
 from Network         import Neural_Network;
 from Test_Train      import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Extraction      import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE, Lasso;
+from Extraction      import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE, Lasso_Selection;
 from Plotter         import Initialize_Axes, Setup_Axes;
 from Settings_Reader import Settings_Reader, Settings_Container;
 from Data_Setup      import Data_Loader, Data_Container, Generate_Random_Coords;
@@ -268,15 +268,15 @@ def main():
                                     num_derivatives = Settings.N_Num_u_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree);
 
-        #Extracted_PDE = Lasso(
-        #                    A         = Library,
-        #                    b         = N_NN_batch,
-        #                    alpha     = Settings.Least_Squares_Threshold);
-
-        Extracted_PDE = Thresholded_Least_Squares(
+        Extracted_PDE = Lasso_Selection(
                             A         = Library,
                             b         = N_NN_batch,
-                            threshold = Settings.Least_Squares_Threshold);
+                            alpha     = Settings.Least_Squares_Threshold);
+
+        #Extracted_PDE = Thresholded_Least_Squares(
+        #                    A         = Library,
+        #                    b         = N_NN_batch,
+        #                    threshold = Settings.Least_Squares_Threshold);
 
         Print_Extracted_PDE(
             Extracted_PDE      = Extracted_PDE,

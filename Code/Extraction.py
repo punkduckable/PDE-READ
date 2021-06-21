@@ -311,7 +311,7 @@ def Generate_Library(
 
 
 
-def Lasso(
+def Lasso_Selection(
         A         : np.array,
         b         : np.array,
         alpha     : float) -> np.array:
@@ -325,8 +325,25 @@ def Lasso(
     # Try to fit Ax = b using Lasso!
     Lasso_Obj.fit(A, b);
 
-    # Return what we found.
-    return Lasso_Obj.coef_;
+    # Now, make not of which coefficients are non-zero. We will use these to
+    # fit a least squares solution.
+    Zero_Indicies       = (Lasso_Obj.coef_ == 0);
+    Non_Zero_Indicies   = np.logical_not(Zero_Indicies);
+
+    # Now, perform the least squares fit on the relevant columns of A.
+    x = np.zeros_like(Lasso_Obj.coef_);
+    x[Non_Zero_Indicies], Residual = np.linalg.lstsq(A[:, Non_Zero_Indicies], b, rcond = None)[0:2];
+
+    # Print results
+    print("Eliminated %d components. " % Zero_Indicies.sum(), end = '');
+    if (Residual.size != 0):
+        print("Residual = %f" % Residual);
+    else:
+        print("");
+
+    # All done!
+    return x;
+
 
 
 

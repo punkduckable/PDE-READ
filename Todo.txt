@@ -1,6 +1,8 @@
+- Noise
+
 - Profile code
 
-- Optimize plotter (it's a runtime bottleneck)
+- Write a readme.
 
 - Variable number of spatial variables for the domain (and hardcode the data
 loader for the particular problem.... I guess?). I think I should hardcode cases
@@ -12,5 +14,3 @@ PDE residual. This may slightly improve runtime.
 
 - Try randomizing the collocation points every few Epochs (or maybe even every
 Epoch).
-
-- Write a readme.
