@@ -268,15 +268,15 @@ def main():
                                     num_derivatives = Settings.N_Num_u_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree);
 
-        Extracted_PDE = Lasso_Selection(
-                            A         = Library,
-                            b         = N_NN_batch,
-                            alpha     = Settings.Least_Squares_Threshold);
-
-        #Extracted_PDE = Thresholded_Least_Squares(
+        #Extracted_PDE = Lasso_Selection(
         #                    A         = Library,
         #                    b         = N_NN_batch,
-        #                    threshold = Settings.Least_Squares_Threshold);
+        #                    alpha     = Settings.Least_Squares_Threshold);
+
+        Extracted_PDE = Thresholded_Least_Squares(
+                            A         = Library,
+                            b         = N_NN_batch,
+                            threshold = Settings.Least_Squares_Threshold);
 
         Print_Extracted_PDE(
             Extracted_PDE      = Extracted_PDE,

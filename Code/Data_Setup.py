@@ -60,6 +60,9 @@ def Data_Loader(Settings : Settings_Container):
     x_points  = data_in[Settings.Space_Series_Label].flatten()[:].astype(dtype = Settings.Numpy_dtype);
     u_true_in = (np.real(data_in[Settings.Solution_Series_Label])).astype(dtype = Settings.Numpy_dtype);
 
+    # Add noise to true solution.
+    u_true_in += (Settings.Noise_Proportion)*np.std(u_true_in)*np.random.randn(*u_true_in.shape);
+
     # Generate the grid of (t, x) coordinates where we'll evaluate the solution.
     # Each row of these arrays corresponds to a specific position. Each column
     # corresponds to a specific time.

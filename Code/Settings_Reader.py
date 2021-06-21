@@ -250,7 +250,7 @@ def Settings_Reader() -> Settings_Container:
 
     # Extraction mode specific settings.
     if (Settings.Mode == "Extraction"):
-        Settings.Extracted_term_degree   = int(Read_Line_After(File, "Maximum term degree in extracted PDE [int] :").strip());
+        Settings.Extracted_term_degree   = int(Read_Line_After(File, "Extracted PDE maximum term degree [int] :").strip());
         Settings.Num_Extraction_Points   = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
         Settings.Least_Squares_Threshold = float(Read_Line_After(File, "Least Squares Threshold [float] :").strip());
 
@@ -324,12 +324,12 @@ def Settings_Reader() -> Settings_Container:
     ############################################################################
     # Data
 
-    Settings.Data_File_Name       =  Read_Line_After(File, "Data File [str] :").strip();
+    Settings.Data_File_Name        = Read_Line_After(File, "Data File [str] :").strip();
     Settings.Time_Series_Label     = Read_Line_After(File, "Time Variable Series Label [str] :").strip();
     Settings.Space_Series_Label    = Read_Line_After(File, "Space Variable Series Label [str] :").strip();
     Settings.Solution_Series_Label = Read_Line_After(File, "Solution Series Label [str] :").strip();
 
-
+    Settings.Noise_Proportion      = float(Read_Line_After(File, "Noise Proportion [float] :").strip());
 
     # All done! Return the settings!
     return Settings;
