@@ -145,14 +145,13 @@ def Setup_Axes(
     Data_Type : torch.dtype  = u_NN.Layers[0].weight.data.dtype;
 
     # Flatten t_coods, x_coords. use them to generate grid point coodinates.
-    flattened_grid_x_coords  = grid_x_coords.flatten()[:, np.newaxis];
-    flattened_grid_t_coords  = grid_t_coords.flatten()[:, np.newaxis];
+    flattened_grid_x_coords = grid_x_coords.flatten()[:, np.newaxis];
+    flattened_grid_t_coords = grid_t_coords.flatten()[:, np.newaxis];
     Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Data_Type);
 
     # Get number of possible x and t values, respectively.
     n_x = len(x_points);
     n_t = len(t_points);
-
 
     # Evaluate the network's approximate solution, the absolute error, and the
     # PDE resitual at each coordinate. We need to reshape these into n_x by n_t

@@ -1,5 +1,3 @@
-- Noise
-
 - Profile code
 
 - Write a readme.

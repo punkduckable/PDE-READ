@@ -319,7 +319,7 @@ def main():
     ############################################################################
     # Plot final results
 
-    if(Settings.Plot_Final_Results == True):
+    if(Settings.Plot_Final_Results == True or Settings.Save_Plot == True):
         # Make note of how long this takes.
         Print_Timer = Timer();
         Print_Timer.Start();
@@ -337,8 +337,13 @@ def main():
         Print_Time = Print_Timer.Stop();
         print("Done! Took %fs" % Print_Time);
 
-        # Plot!
-        plt.show();
+        # Show the plot (if we're supposed to)
+        if(Settings.Plot_Final_Results == True):
+            plt.show();
+
+        # Save the plot (if we're supposed to)
+        if(Settings.Save_Plot == True):
+            fig.savefig(fname = "../Figures/%s" % Settings.Save_File_Name);
 
 
 if __name__ == '__main__':
