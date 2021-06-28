@@ -8,11 +8,9 @@ from Loss_Functions import PDE_Residual;
 
 
 
-# Evaluate solution at a set of points.
 def Evaluate_Approx_Sol(
         u_NN         : Neural_Network,
-        Point_Coords : torch.Tensor,
-        Data_Type    : np.dtype = np.float32) -> np.array:
+        Point_Coords : torch.Tensor) -> np.array:
     """ This function evaluates the approximate solution at each element of
     Point_Coords.
 
@@ -41,7 +39,6 @@ def Evaluate_Approx_Sol(
 
 
 
-# Set up Axes objects for plotting
 def Initialize_Axes() -> Tuple[plt.figure, np.array]:
     """ This function sets up the figure, axes objects for plotting. There
     are a lot of settings to tweak, so I thought the code would be cleaner
@@ -96,7 +93,6 @@ def Initialize_Axes() -> Tuple[plt.figure, np.array]:
 
 
 
-# The plotting function!
 def Setup_Axes(
         fig                 : plt.figure,
         Axes                : np.ndarray,
@@ -104,7 +100,9 @@ def Setup_Axes(
         N_NN                : Neural_Network,
         x_points            : np.array,
         t_points            : np.array,
-        u_true_On_Grid      : np.array) -> None:
+        u_true_On_Grid      : np.array,
+        Torch_dtype         : torch.dtype = torch.float32,
+        Device              : torch.device = torch.device('cpu')) -> None:
     """ This function plots the approximate solution and residual at the
     specified points.
 
@@ -129,6 +127,11 @@ def Setup_Axes(
     True_Sol_at_Points: A numpy array containing the true solution at each
     possible x, t coordinate.
 
+    Torch_dtype: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -140,14 +143,10 @@ def Setup_Axes(
     # specific time.
     grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
 
-    # Determine which data type the neural networks in this code use. We'll
-    # initialize Grid_Point_Coords to match this data type.
-    Data_Type : torch.dtype  = u_NN.Layers[0].weight.data.dtype;
-
     # Flatten t_coods, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords = grid_x_coords.flatten()[:, np.newaxis];
     flattened_grid_t_coords = grid_t_coords.flatten()[:, np.newaxis];
-    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Data_Type);
+    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Torch_dtype, device = Device);
 
     # Get number of possible x and t values, respectively.
     n_x = len(x_points);
@@ -156,10 +155,15 @@ def Setup_Axes(
     # Evaluate the network's approximate solution, the absolute error, and the
     # PDE resitual at each coordinate. We need to reshape these into n_x by n_t
     # grids, because that's what matplotlib's contour function wants.
-    u_approx_on_grid  = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
-    Error_On_Grid     = np.abs(u_approx_on_grid - u_true_On_Grid);
-    Residual_on_Grid_1  = PDE_Residual(u_NN, N_NN, Grid_Point_Coords);
-    Residual_on_Grid = Residual_on_Grid_1.detach().numpy().reshape(n_x, n_t);
+    u_approx_on_grid   = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
+    Error_On_Grid      = np.abs(u_approx_on_grid - u_true_On_Grid);
+    Residual_on_Grid_1 = PDE_Residual(
+                            u_NN      = u_NN,
+                            N_NN      = N_NN,
+                            Coords    = Grid_Point_Coords,
+                            Data_Type = Torch_dtype,
+                            Device    = Device);
+    Residual_on_Grid   = Residual_on_Grid_1.detach().numpy().reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
     ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, u_approx_on_grid, levels = 50, cmap = plt.cm.jet);

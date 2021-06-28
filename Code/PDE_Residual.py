@@ -9,7 +9,9 @@ from Network import Neural_Network;
 def Evaluate_u_Derivatives(
         u_NN            : Neural_Network,
         num_derivatives : int,
-        Coords          : torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        Coords          : torch.Tensor,
+        Data_Type       : torch.dtype = torch.float32,
+        Device          : torch.device = torch.device('cpu')) -> Tuple[torch.Tensor, torch.Tensor]:
     """ This function evaluates u, du/dt, and d^i u/dx^i (for i = 1,2... ) at each
     coordinate in Coords.
 
@@ -26,6 +28,11 @@ def Evaluate_u_Derivatives(
 
     Coords: A two column tensor whose ith row holds the t, x coordinates of the
     ith point we'll evaluate u and its derivatives at.
+
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -47,10 +54,10 @@ def Evaluate_u_Derivatives(
     # The ith row of this tensor holds the value of u and its first n-1
     # derivatives at the ith collocation point. Its jth column holds the jth
     # spatial derivative of u at each collocation point.
-    Data_Type : torch.dtype      = u_NN.Layers[0].weight.data.dtype;
     num_Collocation_Points : int = Coords.shape[0];
     diu_dxi_batch                = torch.empty((num_Collocation_Points, num_derivatives + 1),
-                                                dtype = Data_Type);
+                                                dtype = Data_Type,
+                                                device = Device);
 
     # Calculate approximate solution at this collocation point.
     diu_dxi_batch[:, 0] = u_NN(Coords).squeeze();
@@ -116,9 +123,11 @@ def Evaluate_u_Derivatives(
 
 
 def PDE_Residual(
-        u_NN   : Neural_Network,
-        N_NN   : Neural_Network,
-        Coords : torch.Tensor) -> torch.Tensor:
+        u_NN      : Neural_Network,
+        N_NN      : Neural_Network,
+        Coords    : torch.Tensor,
+        Data_Type : torch.dtype = torch.float32,
+        Device    : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates the "PDE residual" at a set of coordinates. For
     brevtiy, let u = u_NN, and N = N_NN. At each coordinate, we compute
             du/dt - N(u, du/dx, d^2u/dx^2,... )
@@ -136,6 +145,11 @@ def PDE_Residual(
     Coords: A two column tensor whose ith row holds the t, x coordinates of the
     ith point where we want to evaluate the PDE resitual.
 
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -150,10 +164,13 @@ def PDE_Residual(
     # this, we evaluate du/dt, u, and the first n-1 spatial derivatives of u at
     # each collocation point.
     num_derivatives             = N_NN.Input_Dim - 1;
+
     du_dt_batch, diu_dxi_batch  = Evaluate_u_Derivatives(
                                         u_NN            = u_NN,
                                         num_derivatives = num_derivatives,
-                                        Coords          = Coords);
+                                        Coords          = Coords,
+                                        Data_Type       = Data_Type,
+                                        Device          = Device);
 
     # Evaluate N at each row of diu_dxi. This yields a N by 1 tensor (where N is
     # the number of Coords) whose ith row holds the value of N at (u(t_i, x_i),

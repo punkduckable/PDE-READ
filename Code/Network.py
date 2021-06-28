@@ -3,20 +3,22 @@ import torch;
 
 
 
-class Rational_ReLU(torch.nn.Module):
-    def __init__(self, Data_Type = torch.float32):
+class Rational(torch.nn.Module):
+    def __init__(self,
+                 Data_Type = torch.float32,
+                 Device    = torch.device('cpu')):
         # Based on the following paper (see appendix A for coefficients):
         # Boulle, Nicolas, Yuji Nakatsukasa, and Alex Townsend. "Rational neural
         # networks." arXiv preprint arXiv:2004.01902 (2020).
 
-        super(Rational_ReLU, self).__init__();
+        super(Rational, self).__init__();
 
         # Initialize numerator and denominator coefficients to the best
         # rational function approximation to ReLU.
-        self.a = torch.nn.parameter.Parameter(torch.tensor((1.1915, 1.5957, 0.5, .0218), dtype = Data_Type));
+        self.a = torch.nn.parameter.Parameter(torch.tensor((1.1915, 1.5957, 0.5, .0218), dtype = Data_Type, device = Device));
         self.a.requires_grad_(True);
 
-        self.b = torch.nn.parameter.Parameter(torch.tensor((2.3830, 0.0, 1.0), dtype = Data_Type));
+        self.b = torch.nn.parameter.Parameter(torch.tensor((2.3830, 0.0, 1.0), dtype = Data_Type, device = Device));
         self.b.requires_grad_(True);
 
     def forward(self, X : torch.tensor):
@@ -50,12 +52,13 @@ class Rational_ReLU(torch.nn.Module):
 
 class Neural_Network(torch.nn.Module):
     def __init__(self,
-                 Num_Hidden_Layers   : int         = 3,
-                 Neurons_Per_Layer   : int         = 20,   # Neurons in each Hidden Layer
-                 Input_Dim           : int         = 1,    # Dimension of the input
-                 Output_Dim          : int         = 1,    # Dimension of the output
-                 Data_Type           : torch.dtype = torch.float32,
-                 Activation_Function : str         = "Tanh"):
+                 Num_Hidden_Layers   : int          = 3,
+                 Neurons_Per_Layer   : int          = 20,   # Neurons in each Hidden Layer
+                 Input_Dim           : int          = 1,    # Dimension of the input
+                 Output_Dim          : int          = 1,    # Dimension of the output
+                 Data_Type           : torch.dtype  = torch.float32,
+                 Device              : torch.device = torch.device('cpu'),
+                 Activation_Function : str          = "Tanh"):
         # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
         # Input_Dim, and out_dim must be positive integers.
         assert (Num_Hidden_Layers > 0   and
@@ -83,7 +86,7 @@ class Neural_Network(torch.nn.Module):
         self.Layers.append(
             torch.nn.Linear(    in_features  = Input_Dim,
                                 out_features = Neurons_Per_Layer,
-                                bias = True ).to(dtype = Data_Type));
+                                bias = True ).to(dtype = Data_Type, device = Device));
 
 
         # Now append the rest of the hidden layers. Each of these layers maps
@@ -94,14 +97,14 @@ class Neural_Network(torch.nn.Module):
             self.Layers.append(
                 torch.nn.Linear(    in_features  = Neurons_Per_Layer,
                                     out_features = Neurons_Per_Layer,
-                                    bias = True ).to(dtype = Data_Type));
+                                    bias = True ).to(dtype = Data_Type, device = Device));
 
         # Now, append the Output Layer, which has Neurons_Per_Layer input
         # features, but only Output_Dim output features.
         self.Layers.append(
             torch.nn.Linear(    in_features  = Neurons_Per_Layer,
                                 out_features = Output_Dim,
-                                bias = True ).to(dtype = Data_Type));
+                                bias = True ).to(dtype = Data_Type, device = Device));
 
         # Initialize the weight matricies, bias vectors in the network.
         for i in range(self.Num_Layers):
@@ -117,7 +120,7 @@ class Neural_Network(torch.nn.Module):
                 self.Activation_Functions.append(torch.nn.Sigmoid());
         elif(Activation_Function == "Rational"):
             for i in range(Num_Hidden_Layers):
-                self.Activation_Functions.append(Rational_ReLU());
+                self.Activation_Functions.append(Rational(Data_Type = Data_Type, Device = Device));
         else:
             print("Unknown Activation Function. Got %s" % Activation_Function);
             print("Thrown by Neural_Network.__init__. Aborting.");

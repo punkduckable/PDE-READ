@@ -13,7 +13,9 @@ def Discovery_Training(
         Collocation_Coords  : torch.Tensor,
         Data_Coords         : torch.Tensor,
         Data_Values         : torch.Tensor,
-        Optimizer           : torch.optim.Optimizer) -> None:
+        Optimizer           : torch.optim.Optimizer,
+        Data_Type           : torch.dtype = torch.float32,
+        Device              : torch.device = torch.device('cpu')) -> None:
     """ This function runs one epoch of training when in "Discovery" mode. In
     this mode, we enforce the leaned PDE at the Collocation_Points, and the
     Data_Values at the Data_Points.
@@ -46,6 +48,11 @@ def Discovery_Training(
     optimizer: the optimizer we use to train u_NN and N_NN. It should be
     loaded with the gradients of both networks.
 
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -60,14 +67,18 @@ def Discovery_Training(
         Loss = (Collocation_Loss(
                     u_NN = u_NN,
                     N_NN = N_NN,
-                    Collocation_Coords = Collocation_Coords)
+                    Collocation_Coords = Collocation_Coords,
+                    Data_Type = Data_Type,
+                    Device    = Device)
 
                 +
 
                 Data_Loss(
                     u_NN = u_NN,
                     Data_Coords = Data_Coords,
-                    Data_Values = Data_Values));
+                    Data_Values = Data_Values,
+                    Data_Type = Data_Type,
+                    Device    = Device));
 
         # Back-propigate to compute gradients of Loss with respect to network
         # parameters (only do if this if the loss requires grad)
@@ -86,7 +97,9 @@ def Discovery_Testing(
         N_NN                :  Neural_Network,
         Collocation_Coords  : torch.Tensor,
         Data_Coords         : torch.Tensor,
-        Data_Values         : torch.Tensor) -> Tuple[float, float]:
+        Data_Values         : torch.Tensor,
+        Data_Type           : torch.dtype = torch.float32,
+        Device              : torch.device = torch.device('cpu')) -> Tuple[float, float]:
     """ This function runs testing when in "Discovery" mode. You CAN NOT run this
     function with no_grad set True. Why? Because we need to evaluate derivatives
     of the solution with respect to the inputs! Thus, we need torch to build a
@@ -117,6 +130,11 @@ def Discovery_Testing(
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -127,11 +145,15 @@ def Discovery_Testing(
     Coloc_Loss : float = Collocation_Loss(
                             u_NN = u_NN,
                             N_NN = N_NN,
-                            Collocation_Coords = Collocation_Coords).item();
+                            Collocation_Coords = Collocation_Coords,
+                            Data_Type = Data_Type,
+                            Device    = Device).item();
     Data_loss : float  = Data_Loss(
                             u_NN = u_NN,
                             Data_Coords = Data_Coords,
-                            Data_Values = Data_Values).item();
+                            Data_Values = Data_Values,
+                            Data_Type = Data_Type,
+                            Device    = Device).item();
 
     # Return the losses.
     return (Coloc_Loss, Data_loss);
@@ -147,7 +169,9 @@ def PINNs_Training(
         Upper_Bound_Coords          : torch.Tensor,
         Periodic_BCs_Highest_Order  : int,
         Collocation_Coords          : torch.Tensor,
-        Optimizer                   : torch.optim.Optimizer) -> None:
+        Optimizer                   : torch.optim.Optimizer,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> None:
     """ This function runs one epoch of training when in "PINNs" mode. In
     this mode, we enforce the leaned PDE at the Collocation_Points, impose
     Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
@@ -188,6 +212,11 @@ def PINNs_Training(
 
     Optimizer: the optimizer we use to train u_NN.
 
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -200,9 +229,11 @@ def PINNs_Training(
 
         # Evaluate the Loss (Note, we enforce a BC of 0)
         Loss = (IC_Loss(
-                    u_NN = u_NN,
+                    u_NN      = u_NN,
                     IC_Coords = IC_Coords,
-                    IC_Data = IC_Data)
+                    IC_Data   = IC_Data,
+                    Data_Type = Data_Type,
+                    Device    = Device)
 
                 +
 
@@ -210,14 +241,18 @@ def PINNs_Training(
                     u_NN = u_NN,
                     Lower_Bound_Coords = Lower_Bound_Coords,
                     Upper_Bound_Coords = Upper_Bound_Coords,
-                    Highest_Order = Periodic_BCs_Highest_Order)
+                    Highest_Order = Periodic_BCs_Highest_Order,
+                    Data_Type = Data_Type,
+                    Device    = Device)
 
                 +
 
                 Collocation_Loss(
                     u_NN = u_NN,
                     N_NN = N_NN,
-                    Collocation_Coords = Collocation_Coords));
+                    Collocation_Coords = Collocation_Coords,
+                    Data_Type = Data_Type,
+                    Device    = Device));
 
         # Back-propigate to compute gradients of Loss with respect to network
         # parameters (only do if this if the loss requires grad)
@@ -237,7 +272,9 @@ def PINNs_Testing(
         Lower_Bound_Coords          : torch.Tensor,
         Upper_Bound_Coords          : torch.Tensor,
         Periodic_BCs_Highest_Order  : int,
-        Collocation_Coords          : torch.Tensor) -> Tuple[float, float, float]:
+        Collocation_Coords          : torch.Tensor,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> Tuple[float, float, float]:
     """ This function runs one epoch of testing when in "PINNs" mode. In
     this mode, we enforce the leaned PDE at the Collocation_Points, impose
     Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
@@ -276,6 +313,11 @@ def PINNs_Testing(
     tensor whose ith row holds the t, x_1,... x_d coordinates the ith
     Collocation point.
 
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on. 
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -285,20 +327,26 @@ def PINNs_Testing(
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
     IC_Loss_Var : float     = IC_Loss(
-                                u_NN = u_NN,
+                                u_NN      = u_NN,
                                 IC_Coords = IC_Coords,
-                                IC_Data = IC_Data);
+                                IC_Data   = IC_Data,
+                                Data_Type = Data_Type,
+                                Device    = Device).item();
 
     BC_Loss_Var : float     = Periodic_BC_Loss(
                                 u_NN = u_NN,
                                 Lower_Bound_Coords = Lower_Bound_Coords,
                                 Upper_Bound_Coords = Upper_Bound_Coords,
-                                Highest_Order = Periodic_BCs_Highest_Order).item();
+                                Highest_Order = Periodic_BCs_Highest_Order,
+                                Data_Type = Data_Type,
+                                Device    = Device).item();
 
     Col_Loss_Var : float    = Collocation_Loss(
                                 u_NN = u_NN,
                                 N_NN = N_NN,
-                                Collocation_Coords = Collocation_Coords).item();
+                                Collocation_Coords = Collocation_Coords,
+                                Data_Type = Data_Type,
+                                Device    = Device).item();
 
     # Return the losses.
     return (IC_Loss_Var, BC_Loss_Var, Col_Loss_Var);

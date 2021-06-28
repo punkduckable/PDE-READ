@@ -148,11 +148,11 @@ def Data_Loader(Settings : Settings_Container):
         # Add these items (or, rather, their tensor equivalents) to the
         # container. Note that everything should be of type float32. We use
         # the to method as a backup.
-        Container.IC_Coords          = torch.from_numpy(IC_Coords).to(dtype = Settings.Torch_dtype);
-        Container.IC_Data            = torch.from_numpy(IC_Data)  .to(dtype = Settings.Torch_dtype);
+        Container.IC_Coords        = torch.from_numpy(IC_Coords).to(dtype = Settings.Torch_dtype, device = Settings.Device);
+        Container.IC_Data          = torch.from_numpy(IC_Data)  .to(dtype = Settings.Torch_dtype, device = Settings.Device);
 
-        Container.Lower_Bound_Coords = torch.from_numpy(Lower_Bound_Coords).to(dtype = Settings.Torch_dtype);
-        Container.Upper_Bound_Coords = torch.from_numpy(Upper_Bound_Coords).to(dtype = Settings.Torch_dtype);
+        Container.Lower_Bound_Coords = torch.from_numpy(Lower_Bound_Coords).to(dtype = Settings.Torch_dtype, device = Settings.Device);
+        Container.Upper_Bound_Coords = torch.from_numpy(Upper_Bound_Coords).to(dtype = Settings.Torch_dtype, device = Settings.Device);
 
     elif(Settings.Mode == "Discovery"):
         # If we're in Discovery mode, then we need Testing/Training Data
@@ -163,11 +163,11 @@ def Data_Loader(Settings : Settings_Container):
         Test_Indicies  = np.random.choice(All_Data_Coords.shape[0], Settings.Num_Test_Data_Points , replace = False);
 
         # Now select the corresponding testing, training data points, values.
-        Container.Train_Data_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = Settings.Torch_dtype);
-        Container.Train_Data_Values = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = Settings.Torch_dtype);
+        Container.Train_Data_Coords = torch.from_numpy(All_Data_Coords[Train_Indicies, :]).to(dtype = Settings.Torch_dtype, device = Settings.Device);
+        Container.Train_Data_Values = torch.from_numpy(All_Data_Values[Train_Indicies]).to(dtype = Settings.Torch_dtype, device = Settings.Device);
 
-        Container.Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = Settings.Torch_dtype);
-        Container.Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = Settings.Torch_dtype);
+        Container.Test_Data_Coords  = torch.from_numpy(All_Data_Coords[Test_Indicies, :]).to(dtype = Settings.Torch_dtype, device = Settings.Device);
+        Container.Test_Data_Values  = torch.from_numpy(All_Data_Values[Test_Indicies]).to(dtype = Settings.Torch_dtype, device = Settings.Device);
 
     # The container is now full. Return it!
     return Container;
@@ -178,7 +178,8 @@ def Generate_Random_Coords(
         Dim_Lower_Bounds    : np.array,
         Dim_Upper_Bounds    : np.array,
         Num_Points          : int,
-        Data_Type           : torch.dtype = torch.float32) -> torch.Tensor:
+        Data_Type           : torch.dtype = torch.float32,
+        Device              : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function generates a collection of random points within a specified
     box.
 
@@ -204,7 +205,7 @@ def Generate_Random_Coords(
 
     # Declare coords array
     d = Dim_Lower_Bounds.shape[0];
-    Coords = torch.empty((Num_Points, d), dtype = Data_Type);
+    Coords = torch.empty((Num_Points, d), dtype = Data_Type, device = Device);
 
     # Populate the coordinates with random values.
     for i in range(Num_Points):

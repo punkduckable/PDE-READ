@@ -7,12 +7,13 @@ from typing         import Tuple;
 
 
 
-
 # Loss from the initial condition.
 def IC_Loss(
         u_NN      : Neural_Network,
         IC_Coords : torch.Tensor,
-        IC_Data   : torch.Tensor) -> torch.Tensor:
+        IC_Data   : torch.Tensor,
+        Data_Type : torch.dtype = torch.float32,
+        Device    : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates how well u_NN satisfies the initial condition.
     Specifically, for each point in IC_Coords, we evaluate u_NN. We then
     calculate the square of the difference between this and the corresponding
@@ -33,6 +34,11 @@ def IC_Loss(
 
     IC_Data: The value of the initial condition at each point in IC_Coords. If
     IC_Coords has N rows, then this should be an N element tensor.
+
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -58,7 +64,9 @@ def Periodic_BC_Loss(
         u_NN               : Neural_Network,
         Lower_Bound_Coords : torch.Tensor,
         Upper_Bound_Coords : torch.Tensor,
-        Highest_Order      : int) -> torch.Tensor:
+        Highest_Order      : int,
+        Data_Type          : torch.dtype = torch.float32,
+        Device             : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates how well the learned solution satisfies periodic
     Boundary conditions. Let N = Highest_Order. We require that the solution
     and it's first N derivatives satisify periodic boundary conditions (they
@@ -83,18 +91,21 @@ def Periodic_BC_Loss(
     we want to impose periodic boundary conditions on. If this is 0, then we
     only apply periodic BCs to the solution itself (not any of its derivatives).
 
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
     A scalar tensor containing the mean square BC error. """
 
     # Allocate tensors to hold u and its derivatives at each coordinate. To do
-    # this, we first need to know what data type N_NN and u_NN use. To determine
-    # this, we poach the dtype of the weight matrix of the 0 layer of u_NN.
-    Data_Type : torch.dtype = u_NN.Layers[0].weight.data.dtype;
-    Num_BC_Points : int     = Lower_Bound_Coords.shape[0];
-    diu_dxi_upper_batch      = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type);
-    diu_dxi_lower_batch      = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type);
+    # this, we first need to know what data type N_NN and u_NN use.
+    Num_BC_Points : int = Lower_Bound_Coords.shape[0];
+    diu_dxi_upper_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type, device = Device);
+    diu_dxi_lower_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type, device = Device);
 
     # Evaluate the NN at the upper and lower bound coords. This returns an N by
     # 1 tensor whose ith row holds the value of u at the ith upper or lower
@@ -148,7 +159,9 @@ def Periodic_BC_Loss(
 def Collocation_Loss(
         u_NN               : Neural_Network,
         N_NN               : Neural_Network,
-        Collocation_Coords : torch.Tensor) -> torch.Tensor:
+        Collocation_Coords : torch.Tensor,
+        Data_Type          : torch.dtype = torch.float32,
+        Device             : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates how well u_NN satisfies the learned PDE at the
     collocation points. For brevity, let u = u_NN and N = N_NN. At each
     collocation point, we compute the following:
@@ -159,6 +172,11 @@ def Collocation_Loss(
     errors.
 
     Note: this function only works is u is a function of 1 spatial variable.
+
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -179,9 +197,11 @@ def Collocation_Loss(
     # At each Collocation point, evaluate the square of the residuals
     # du/dt - N(u, du/dx,... ).
     residual_batch = PDE_Residual(
-                        u_NN    = u_NN,
-                        N_NN    = N_NN,
-                        Coords  = Collocation_Coords);
+                        u_NN      = u_NN,
+                        N_NN      = N_NN,
+                        Coords    = Collocation_Coords,
+                        Data_Type = Data_Type,
+                        Device    = Device);
 
     # Return the mean square residual.
     return (residual_batch ** 2).mean();
@@ -192,7 +212,9 @@ def Collocation_Loss(
 def Data_Loss(
         u_NN        : Neural_Network,
         Data_Coords : torch.Tensor,
-        Data_Values : torch.Tensor) -> torch.Tensor:
+        Data_Values : torch.Tensor,
+        Data_Type   : torch.dtype = torch.float32,
+        Device      : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates how well the learned solution u satisfies the
     training data. Specifically, for each point ((t_i, X_i), u_i) in
     data, we compute the square of the difference between u_i (the true
@@ -217,6 +239,11 @@ def Data_Loss(
     data point. If there are N data points, then this should be an N element
     tesnor whose ith element holds the value of the true solution at the ith
     data point.
+
+    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
+    should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:

@@ -101,6 +101,7 @@ def main():
                             Input_Dim           = 2,
                             Output_Dim          = 1,
                             Data_Type           = Settings.Torch_dtype,
+                            Device              = Settings.Device,
                             Activation_Function = Settings.u_Activation_Function);
 
     # Set up the neural network to approximate the PDE operator N.
@@ -109,6 +110,7 @@ def main():
                             Input_Dim           = Settings.N_Num_u_derivatives + 1,
                             Output_Dim          = 1,
                             Data_Type           = Settings.Torch_dtype,
+                            Device              = Settings.Device,
                             Activation_Function = Settings.N_Activation_Function);
 
     # Setup the optimizer.
@@ -124,9 +126,9 @@ def main():
             Settings.Load_N_Network_State == True or
             Settings.Load_Optimize_State  == True):
 
-        # Load the saved checkpoint.
+        # Load the saved checkpoint. Make sure to map it to the correct device.
         Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
-        Saved_State = torch.load(Load_File_Path);
+        Saved_State = torch.load(Load_File_Path, map_location = Settings.Device);
 
         if(Settings.Load_u_Network_State == True):
             u_NN.load_state_dict(Saved_State["u_Network_State"]);
@@ -162,13 +164,15 @@ def main():
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Settings.Num_Train_Colloc_Points,
-                Data_Type           = Settings.Torch_dtype);
+                Data_Type           = Settings.Torch_dtype,
+                Device              = Settings.Device);
 
         Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Settings.Num_Test_Colloc_Points,
-                Data_Type           = Settings.Torch_dtype);
+                Data_Type           = Settings.Torch_dtype,
+                Device              = Settings.Device);
 
     elif(Settings.Mode == "Extraction"):
         # In this mode we need to set up the Extraction points.
@@ -178,7 +182,8 @@ def main():
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Settings.Num_Extraction_Points,
-                Data_Type           = Settings.Torch_dtype);
+                Data_Type           = Settings.Torch_dtype,
+                Device              = Settings.Device);
 
 
     # Setup is done! Figure out how long it took.
@@ -210,7 +215,9 @@ def main():
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
                 Collocation_Coords          = Data_Container.Train_Colloc_Coords,
-                Optimizer                   = Optimizer);
+                Optimizer                   = Optimizer,
+                Data_Type                   = Settings.Torch_dtype,
+                Device                      = Settings.Device);
 
             (IC_Losses[t], BC_Losses[t], Collocation_Losses[t]) = PINNs_Testing(
                 u_NN                        = u_NN,
@@ -220,7 +227,9 @@ def main():
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                Collocation_Coords          = Data_Container.Test_Colloc_Coords);
+                Collocation_Coords          = Data_Container.Test_Colloc_Coords,
+                Data_Type                   = Settings.Torch_dtype,
+                Device                      = Settings.Device);
 
             # Print losses.
             print(("Epoch #%-4d: "             % t)                    , end = '');
@@ -241,14 +250,18 @@ def main():
                 Collocation_Coords  = Data_Container.Train_Colloc_Coords,
                 Data_Coords         = Data_Container.Train_Data_Coords,
                 Data_Values         = Data_Container.Train_Data_Values,
-                Optimizer           = Optimizer);
+                Optimizer           = Optimizer,
+                Data_Type           = Settings.Torch_dtype,
+                Device              = Settings.Device);
 
             (Collocation_Losses[t], Data_Losses[t]) = Discovery_Testing(
                 u_NN                = u_NN,
                 N_NN                = N_NN,
                 Collocation_Coords  = Data_Container.Test_Colloc_Coords,
                 Data_Coords         = Data_Container.Test_Data_Coords,
-                Data_Values         = Data_Container.Test_Data_Values );
+                Data_Values         = Data_Container.Test_Data_Values,
+                Data_Type           = Settings.Torch_dtype,
+                Device              = Settings.Device);
 
             # Print losses.
             print(("Epoch #%-4d: "               % t)                    , end = '');
@@ -266,7 +279,9 @@ def main():
                                     N_NN            = N_NN,
                                     Coords          = Data_Container.Extraction_Coords,
                                     num_derivatives = Settings.N_Num_u_derivatives,
-                                    Poly_Degree     = Settings.Extracted_term_degree);
+                                    Poly_Degree     = Settings.Extracted_term_degree,
+                                    Torch_Data_Type = Settings.Torch_dtype,
+                                    Device          = Settings.Device);
 
         #Extracted_PDE = Lasso_Selection(
         #                    A         = Library,
@@ -333,7 +348,9 @@ def main():
                    N_NN             = N_NN,
                    x_points         = Data_Container.x_points,
                    t_points         = Data_Container.t_points,
-                   u_true_On_Grid   = Data_Container.u_true);
+                   u_true_On_Grid   = Data_Container.u_true,
+                   Torch_dtype      = Settings.Torch_dtype,
+                   Device           = Settings.Device);
         Print_Time = Print_Timer.Stop();
         print("Done! Took %fs" % Print_Time);
 

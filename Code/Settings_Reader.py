@@ -262,6 +262,19 @@ def Settings_Reader() -> Settings_Container:
         Settings.Num_Extraction_Points   = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
         Settings.Least_Squares_Threshold = float(Read_Line_After(File, "Least Squares Threshold [float] :").strip());
 
+    # Should we try to learn on a GPU?
+    Buffer = Read_Line_After(File, "Train on CPU or GPU [GPU, CPU] :").strip();
+    if(Buffer[0] == 'G' or Buffer[0] == 'g'):
+        if(torch.cuda.is_available() == True):
+            Settings.Device = torch.device('cuda');
+        else:
+            Settings.Device = torch.device('cpu');
+            print("You requested a GPU, but cuda is not available on this machine. Switching to CPU");
+    elif(Buffer[0] == 'C' or Buffer[0] == 'c'):
+        Settings.Device = torch.device('cpu');
+    else:
+        raise Read_Error("\"Train on CPU or GPU\" should be \"CPU\" or \"GPU\". Got " + Buffer);
+
 
 
     ############################################################################

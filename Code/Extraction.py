@@ -174,7 +174,9 @@ def Generate_Library(
         N_NN            : Neural_Network,
         Coords          : torch.Tensor,
         num_derivatives : int,
-        Poly_Degree     : int) -> np.array:
+        Poly_Degree     : int,
+        Torch_dtype     : torch.dtype = torch.float32,
+        Device          : torch.device = torch.device('cpu')) -> np.array:
     """ This function populates the library matrix in the SINDY algorithm. How
     this works (and why it works the way that it does) is a tad involved.... so
     buckle up, here comes a (rather verbose) explanation:
@@ -229,6 +231,11 @@ def Generate_Library(
     example, if we expect to extract a linear PDE, then Poly_Degree should be 1.
     Setting Poly_Degree > 1 allows the algorithm to search for non-linear PDEs.
 
+    Torch_dtype: The data type that all tensors use. All tensors in u_NN and
+    N_NN should use this data type.
+
+    Device: The device that u_NN and N_NN are loaded on.
+
     ----------------------------------------------------------------------------
     Returns:
 
@@ -269,7 +276,9 @@ def Generate_Library(
     (du_dt, diu_dxi) = Evaluate_u_Derivatives(
                             u_NN            = u_NN,
                             num_derivatives = num_derivatives,
-                            Coords          = Coords);
+                            Coords          = Coords,
+                            Data_Type       = Torch_dtype,
+                            Device          = Device);
 
     # Evaluate n at the output given by diu_dxi.
     N_NN_batch = N_NN(diu_dxi);
@@ -343,7 +352,6 @@ def Lasso_Selection(
 
     # All done!
     return x;
-
 
 
 

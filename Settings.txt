@@ -35,16 +35,16 @@
 # PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
 # extraction mode (it will throw an error).
 
-Load u Network State [bool] :                    True
-Load N Network State [bool] :                    True
+Load u Network State [bool] :                    False
+Load N Network State [bool] :                    False
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_LBFGS_Sigmoid
+  Load File Name [str] :                         KS_Adam_Rational
 
 Plot Final Result [bool] :                       True
 
 Save State [Bool] :                              False
-Save Plot [Bool] :                               True
-  Save File Name [str] :                         Burgers_LBFGS_Sigmoid
+Save Plot [Bool] :                               False
+  Save File Name [str] :                         KS_Adam_Rational
 
 
 
@@ -83,15 +83,17 @@ Number of Training Collocation Points [int] :    7000
 Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           10000
+Number of Data Training Points [int] :           5000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    10000
+Number of Training Collocation Points [int] :    5000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
 Extracted PDE maximum term degree [int] :        2
-Number of Extraction Points [int] :              10000
+Number of Extraction Points [int] :              20000
 Least Squares Threshold [float] :                .05
+
+Train on CPU or GPU [GPU, CPU] :                 CPU
 
 
 
@@ -110,14 +112,14 @@ Least Squares Threshold [float] :                .05
 
 u Network - Number of Hidden Layers [int] :      5
 u Network - Neurons per Hidden Layer [int] :     50
-u Network - Activation Function [str] :          Sigmoid
+u Network - Activation Function [str] :          Rational
 
-N Network - PDE Order [int] :                    2
-N Network - Number of Hidden Layers [int] :      5
-N Network - Neurons per Hidden Layer [int] :     50
-N Network - Activation Function [str] :          Sigmoid
+N Network - PDE Order [int] :                    4
+N Network - Number of Hidden Layers [int] :      2
+N Network - Neurons per Hidden Layer [int] :     100
+N Network - Activation Function [str] :          Rational
 
-Optimizer [Adam, LBFGS] :                        LBFGS
+Optimizer [Adam, LBFGS] :                        Adam
 
 Floating Point Precision [Single, Double] :      Single
 
@@ -126,17 +128,17 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         0
-Learning Rate [float] :                          1
+Number of Epochs [int] :                         1000
+Learning Rate [float] :                          .01
 
 
 
 ################################################################################
 # Data
 
-Data File [str] :                           burgers_sine.mat
+Data File [str] :                           KS.mat
 Time Variable Series Label [str] :          t
 Space Variable Series Label [str] :         x
 Solution Series Label [str] :               usol
 
-Noise Proportion [float] :                  0
+Noise Proportion [float] :                  .0
