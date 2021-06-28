@@ -259,8 +259,8 @@ def PINNs_Training(
         if(Loss.requires_grad == True):
             Loss.backward();
 
-        # update network parameters.
-        Optimizer.step(PINNs_Closure);
+    # update network parameters.
+    Optimizer.step(PINNs_Closure);
 
 
 
@@ -316,7 +316,7 @@ def PINNs_Testing(
     Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
     should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on. 
+    Device: The device that u_NN and N_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:

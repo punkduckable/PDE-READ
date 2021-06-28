@@ -37,7 +37,7 @@
 
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
-Load Optimizer State [bool] :                    True
+Load Optimizer State [bool] :                    False
   Load File Name [str] :                         KS_Adam_Rational
 
 Plot Final Result [bool] :                       False
@@ -75,7 +75,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # controls the number of points (in the PDE domain) at which we attempt to
 # extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Discovery
+PINNs, Discovery, or Extraction mode [str] :     PINNs
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
