@@ -35,15 +35,15 @@
 # PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
 # extraction mode (it will throw an error).
 
-Load u Network State [bool] :                    False
-Load N Network State [bool] :                    False
-Load Optimizer State [bool] :                    False
+Load u Network State [bool] :                    True
+Load N Network State [bool] :                    True
+Load Optimizer State [bool] :                    True
   Load File Name [str] :                         KS_Adam_Rational
 
 Plot Final Result [bool] :                       True
 
 Save State [Bool] :                              False
-Save Plot [Bool] :                               False
+Save Plot [Bool] :                               True
   Save File Name [str] :                         KS_Adam_Rational
 
 
@@ -128,7 +128,7 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         1000
+Number of Epochs [int] :                         0
 Learning Rate [float] :                          .01
 
 

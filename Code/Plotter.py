@@ -9,34 +9,80 @@ from Loss_Functions import PDE_Residual;
 
 
 def Evaluate_Approx_Sol(
-        u_NN         : Neural_Network,
-        Point_Coords : torch.Tensor) -> np.array:
+        u_NN    : Neural_Network,
+        Coords  : torch.Tensor) -> np.array:
     """ This function evaluates the approximate solution at each element of
-    Point_Coords.
+    Point_Coords. Setup_Axes is the only function that should call this one. """
 
-    Note: This function works regardless of how many spatial variables u depends
-    on.
+    # Because of potential memory constraints, we need to evaluate the network
+    # in batches. Coords should be a matrix whose ith row holds the ith
+    # coodinate. Thus, the number of rows of Coords gives the number of
+    # Coordinate.
+    Batch_Size : int = 5000;
+    Num_Coords : int = Coords.shape[0];
 
-    ----------------------------------------------------------------------------
-    Arguments:
+    # Initialize a np array to store the value of the network at each coordinate.
+    u_approx = np.empty(Num_Coords, dtype = np.float32);
 
-    u_NN: The network that approximates the PDE solution.
+    # main loop.
+    for i in range(0, Num_Coords - Batch_Size, Batch_Size):
+        # Evaluate the PDE Residual for this batch of coordinates.
+        Batch_u = u_NN(Coords[i:(i + Batch_Size)]).squeeze();
 
-    Point_Coords: The set of points where we want to evaluate the approximate
-    solution. If u accepts d spatial vaiables, then this should be a d+1 column
-    tensor whose ith column holds the t, x_1,... x_d coordinates of the ith
-    point where we want to evaluate the approximate solution.
+        # Now store these in the associated components of Residual
+        u_approx[i:(i + Batch_Size)] = Batch_u.detach().numpy();
 
-    ----------------------------------------------------------------------------
-    Returns:
+    # Clean up loop.
+    Batch_u = u_NN(Coords[(i + Batch_Size):]).squeeze();
+    u_approx[(i + Batch_Size):] = Batch_u.detach().numpy();
 
-    A numpy array whose ith element holds the value of u_NN at the ith point.
-    """
+    return u_approx;
 
-    # Evaluate the Netowk at each point, return its numpy equivalent.
-    u_approx_at_points = u_NN(Point_Coords);
-    return u_approx_at_points.detach().numpy();
 
+
+def Evaluate_Residual(
+        u_NN            : Neural_Network,
+        N_NN            : Neural_Network,
+        Coords          : torch.Tensor,
+        Data_Type       : torch.dtype,
+        Device          : torch.device):
+    """ This functions evalutes the PDE residual at each coordinate. Setup_Axes
+    is the only function that should call this one """
+
+    # Because of potential memory constraints, we need to evaluate the Residual
+    # in batches. Coords should be a matrix whose ith row is the ith
+    # coordinates. Thus, the number of rows of Coords is the number of
+    # coordinates we need to evaluate.
+    Batch_Size : int = 2000;
+    Num_Coords : int = Coords.shape[0];
+
+    # Initialize a np array to store the PDE residuals.
+    Residual = np.empty(Num_Coords, dtype = np.float32);
+
+    # Main loop
+    for i in range(0, Num_Coords - Batch_Size, Batch_Size):
+        # Evaluate the PDE Residual for this batch of coordinates.
+        Batch_Residual = PDE_Residual(
+                            u_NN      = u_NN,
+                            N_NN      = N_NN,
+                            Coords    = Coords[i:(i+Batch_Size)],
+                            Data_Type = Data_Type,
+                            Device    = Device);
+
+        # Now store these in the associated components of Residual
+        Residual[i:(i + Batch_Size)] = Batch_Residual.detach().numpy();
+
+    # Clean up loop.
+    Batch_Residual = PDE_Residual(
+                        u_NN      = u_NN,
+                        N_NN      = N_NN,
+                        Coords    = Coords[(i+Batch_Size):],
+                        Data_Type = Data_Type,
+                        Device    = Device)
+    Residual[(i + Batch_Size):] = Batch_Residual.detach().numpy();
+
+    # All done!
+    return Residual;
 
 
 def Initialize_Axes() -> Tuple[plt.figure, np.array]:
@@ -143,7 +189,7 @@ def Setup_Axes(
     # specific time.
     grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
 
-    # Flatten t_coods, x_coords. use them to generate grid point coodinates.
+    # Flatten t_coords, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords = grid_x_coords.flatten()[:, np.newaxis];
     flattened_grid_t_coords = grid_t_coords.flatten()[:, np.newaxis];
     Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Torch_dtype, device = Device);
@@ -157,13 +203,12 @@ def Setup_Axes(
     # grids, because that's what matplotlib's contour function wants.
     u_approx_on_grid   = Evaluate_Approx_Sol(u_NN, Grid_Point_Coords).reshape(n_x, n_t);
     Error_On_Grid      = np.abs(u_approx_on_grid - u_true_On_Grid);
-    Residual_on_Grid_1 = PDE_Residual(
+    Residual_on_Grid   = Evaluate_Residual(
                             u_NN      = u_NN,
                             N_NN      = N_NN,
                             Coords    = Grid_Point_Coords,
                             Data_Type = Torch_dtype,
-                            Device    = Device);
-    Residual_on_Grid   = Residual_on_Grid_1.detach().numpy().reshape(n_x, n_t);
+                            Device    = Device).reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
     ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, u_approx_on_grid, levels = 50, cmap = plt.cm.jet);

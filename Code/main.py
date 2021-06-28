@@ -23,28 +23,7 @@ def Setup_Optimizer(
     parameters that are not being learned.
 
     Note: This function works regardless of how many spatial variables u depends
-    on.
-
-    ----------------------------------------------------------------------------
-    Arguments:
-
-    u_NN: The network that approximates the PDE solution.
-
-    N_NN: The network that approximates the PDE.
-
-    Mode: Controls which mode the code is running in. You should only call
-    this function if mode is either "PINNs" or "Discovery". If "Discovery",
-    then we learn both u_NN and N_NN. If "PINNs", then we only learn u_NN
-    (and assume that N_NN is trained).
-
-    Learning_Rate: the desired learning rate.
-
-    Optimizer: A string specifies which optimizer we should use.
-
-    ----------------------------------------------------------------------------
-    Returns:
-
-    The optimizer! """
+    on. """
 
     # Construct Params (this depends on the mode).
     if  (Mode == "Discovery"):
