@@ -178,7 +178,7 @@ def main():
     Main_Timer = Timer();
     Main_Timer.Start();
 
-    if  (Settings.Mode == "PINNs"):
+    if  (Settings.Mode == "PINNs" and Epochs != 0):
         # Setup arrays for the different kinds of losses.
         IC_Losses          = np.empty((Epochs), dtype = Settings.Numpy_dtype);
         BC_Losses          = np.empty((Epochs), dtype = Settings.Numpy_dtype);
@@ -217,10 +217,15 @@ def main():
             print(("\tCollocation Loss = %.7f" % Collocation_Losses[t]), end = '');
             print((",\t Total Loss = %.7f"     % (IC_Losses[t] + BC_Losses[t] + Collocation_Losses[t])));
 
-    elif(Settings.Mode == "Discovery"):
-        # Set up array for the different kinds of losses.
-        Collocation_Losses = np.empty((Epochs), dtype = Settings.Numpy_dtype);
-        Data_Losses        = np.empty((Epochs), dtype = Settings.Numpy_dtype);
+    elif(Settings.Mode == "Discovery" and Epochs != 0):
+        # Set up array for the different losses. In this case, columns 0 and 1
+        # correspond to the Testing Collocation and Data losses. Columns 2 and 3
+        # corresponds to the Training Collocation and Data Losses. We only print
+        # the losses every few Epochs. As a result, the loss array only needs
+        # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
+        Epochs_Between_Prints : int = 10;
+        Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 4), dtype = Settings.Numpy_dtype);
+        Print_Counter : int = 0;
 
         for t in range(Epochs):
             Discovery_Training(
@@ -233,20 +238,38 @@ def main():
                 Data_Type           = Settings.Torch_dtype,
                 Device              = Settings.Device);
 
-            (Collocation_Losses[t], Data_Losses[t]) = Discovery_Testing(
-                u_NN                = u_NN,
-                N_NN                = N_NN,
-                Collocation_Coords  = Data_Container.Test_Colloc_Coords,
-                Data_Coords         = Data_Container.Test_Data_Coords,
-                Data_Values         = Data_Container.Test_Data_Values,
-                Data_Type           = Settings.Torch_dtype,
-                Device              = Settings.Device);
+            # Periodically print loss updates. Otherwise, just print the Epoch #
+            # to indicate that we're still alive.
+            if(t % Epochs_Between_Prints == 0 or t == Epochs - 1):
+                # Evaluate losses on Testing, Training points.
+                (Losses[Print_Counter, 0], Losses[Print_Counter, 1]) = Discovery_Testing(
+                    u_NN                = u_NN,
+                    N_NN                = N_NN,
+                    Collocation_Coords  = Data_Container.Test_Colloc_Coords,
+                    Data_Coords         = Data_Container.Test_Data_Coords,
+                    Data_Values         = Data_Container.Test_Data_Values,
+                    Data_Type           = Settings.Torch_dtype,
+                    Device              = Settings.Device);
 
-            # Print losses.
-            print(("Epoch #%-4d: "               % t)                    , end = '');
-            print(("\tCollocation Loss = %.7f"   % Collocation_Losses[t]), end = '');
-            print((",\t Data Loss = %.7f"        % Data_Losses[t])       , end = '');
-            print((",\t Total Loss = %.7f"       % (Collocation_Losses[t] + Data_Losses[t])));
+                (Losses[Print_Counter, 2], Losses[Print_Counter, 3]) = Discovery_Testing(
+                    u_NN                = u_NN,
+                    N_NN                = N_NN,
+                    Collocation_Coords  = Data_Container.Train_Colloc_Coords,
+                    Data_Coords         = Data_Container.Train_Data_Coords,
+                    Data_Values         = Data_Container.Train_Data_Values,
+                    Data_Type           = Settings.Torch_dtype,
+                    Device              = Settings.Device);
+
+                # Print results!
+                print("Epoch #%-4d | Test: \t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
+                      % (t, Losses[Print_Counter, 0], Losses[Print_Counter, 1], Losses[Print_Counter, 0] + Losses[Print_Counter, 1]));
+                print("            | Train:\t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
+                      % (Losses[Print_Counter, 2], Losses[Print_Counter, 3], Losses[Print_Counter, 2] + Losses[Print_Counter, 3]));
+
+                # Increement the counter.
+                Print_Counter += 1;
+            else:
+                print(("Epoch #%-4d | "   % t));
 
     elif(Settings.Mode == "Extraction"):
         # Generate the library!
