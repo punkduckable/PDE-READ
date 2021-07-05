@@ -251,7 +251,7 @@ def main():
         # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
         Epochs_Between_Prints : int = 10;
         Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 4), dtype = Settings.Numpy_dtype);
-        Print_Counter : int = 0;
+        Loss_Counter : int = 0;
 
         for t in range(Epochs):
             Discovery_Training(
