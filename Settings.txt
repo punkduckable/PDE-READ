@@ -25,8 +25,7 @@
 #
 # If you Load the Optimizer state, then the Optimizer setting must match
 # that of the saved optimizer. (If the save used Adam, then you must use Adam
-# here as well). Further, in this case, the reader will ignore the Learning Rate
-# setting.
+# here as well).
 #
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
 # The Data File Name should include the file's file extension.
@@ -37,14 +36,14 @@
 
 Load u Network State [bool] :                    True
 Load N Network State [bool] :                    True
-Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         KS_Adam_Rational
+Load Optimizer State [bool] :                    True
+  Load File Name [str] :                         Test_Save
 
 Plot Final Result [bool] :                       False
 
-Save State [Bool] :                              False
+Save State [Bool] :                              True
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         KS_Adam_Rational
+  Save File Name [str] :                         Test_Save
 
 
 
@@ -75,7 +74,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # controls the number of points (in the PDE domain) at which we attempt to
 # extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     PINNs
+PINNs, Discovery, or Extraction mode [str] :     Discovery
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -112,12 +111,12 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 
 u Network - Number of Hidden Layers [int] :      5
 u Network - Neurons per Hidden Layer [int] :     50
-u Network - Activation Function [str] :          Rational
+u Network - Activation Function [str] :          Tanh
 
-N Network - PDE Order [int] :                    4
+N Network - PDE Order [int] :                    2
 N Network - Number of Hidden Layers [int] :      2
-N Network - Neurons per Hidden Layer [int] :     100
-N Network - Activation Function [str] :          Rational
+N Network - Neurons per Hidden Layer [int] :     50
+N Network - Activation Function [str] :          Tanh
 
 Optimizer [Adam, LBFGS] :                        Adam
 
@@ -128,7 +127,7 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         10
+Number of Epochs [int] :                         100
 Learning Rate [float] :                          .01
 
 

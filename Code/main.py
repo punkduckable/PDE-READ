@@ -93,6 +93,7 @@ def main():
                             Activation_Function = Settings.N_Activation_Function);
 
     # Setup the optimizer.
+    Optimizer = None;
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         Optimizer = Setup_Optimizer(u_NN            = u_NN,
                                     N_NN            = N_NN,
@@ -101,9 +102,9 @@ def main():
                                     Optimizer       = Settings.Optimizer);
 
     # Check if we're loading anything from file.
-    if(     Settings.Load_u_Network_State == True or
-            Settings.Load_N_Network_State == True or
-            Settings.Load_Optimize_State  == True):
+    if( Settings.Load_u_Network_State == True or
+        Settings.Load_N_Network_State == True or
+        Settings.Load_Optimize_State  == True):
 
         # Load the saved checkpoint. Make sure to map it to the correct device.
         Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
@@ -117,12 +118,12 @@ def main():
             N_NN.load_state_dict(Saved_State["N_Network_State"]);
             N_NN.train();
 
-        # Note that this will overwrite the Learning Rate using the
-        # Learning rate in the saved state. Thus, if this is set to true, then
-        # we essentially ignore the learning rate in the settings.
         if(Settings.Load_Optimize_State  == True):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
+            # Enforce the new learning rate (not the old one).
+            for param_group in Optimizer.param_groups:
+                param_group['lr'] = Settings.Learning_Rate;
 
 
     ############################################################################
