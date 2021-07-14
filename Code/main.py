@@ -154,14 +154,18 @@ def main():
 
     if  (Settings.Mode == "PINNs"):
         if(Epochs != 0):
-            # Set up array for the different losses. In this case, columns 0, 1, and
-            # 2 correspond to the Testing IC, BC, and Collocation losses. Columns
-            # 3, 4, and 5 corresponds to the Training IC, BC, and Collocation
-            # losses. We only print the losses every few Epochs. As a result, the
-            # loss array only needs (Epochs - 2)//Epochs_Between_Prints + 2 rows
-            # (think about it).
+            # Set up array for the different losses. We only print the losses
+            # every few Epochs. As a result, the loss arrays only need
+            # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
             Epochs_Between_Prints : int = 10;
-            Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 6), dtype = Settings.Numpy_dtype);
+            Num_Loss_Measurements : int = (Epochs - 2)//Epochs_Between_Prints + 2;
+            Test_IC_Loss    = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Test_BC_Loss    = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Test_Data_Loss  = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Train_IC_Loss   = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Train_BC_Loss   = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Train_Data_Loss = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+
             Loss_Counter : int = 0;
 
         for t in range(Epochs):
@@ -181,7 +185,10 @@ def main():
             # Periodically print loss updates. Otherwise, just print the Epoch #
             # to indicate that we're still alive.
             if((t % Epochs_Between_Prints == 0) or t == Epochs - 1):
-                (Losses[Loss_Counter, 0], Losses[Loss_Counter, 1], Losses[Loss_Counter, 2]) = PINNs_Testing(
+                # Alias the Loss counter for brevity
+                i : int = Loss_Counter;
+
+                (Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i]) = PINNs_Testing(
                     u_NN                        = u_NN,
                     N_NN                        = N_NN,
                     IC_Coords                   = Data_Container.IC_Coords,
@@ -193,7 +200,7 @@ def main():
                     Data_Type                   = Settings.Torch_dtype,
                     Device                      = Settings.Device);
 
-                (Losses[Loss_Counter, 3], Losses[Loss_Counter, 4], Losses[Loss_Counter, 5]) = PINNs_Testing(
+                (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i]) = PINNs_Testing(
                     u_NN                        = u_NN,
                     N_NN                        = N_NN,
                     IC_Coords                   = Data_Container.IC_Coords,
@@ -207,26 +214,29 @@ def main():
 
                 # Print losses!
                 print("Epoch #%-4d | Test: \t IC = %.7f\t BC = %.7f\t Collocation = %.7f\t Total = %.7f"
-                      % (t, Losses[Loss_Counter, 0], Losses[Loss_Counter, 1], Losses[Loss_Counter, 2],
-                         Losses[Loss_Counter, 0] + Losses[Loss_Counter, 1] + Losses[Loss_Counter, 2]));
+                      % (t, Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i],
+                         Test_IC_Loss[i] + Test_BC_Loss[i] + Test_Data_Loss[i]));
                 print("            | Train:\t IC = %.7f\t BC = %.7f\t Collocation = %.7f\t Total = %.7f"
-                      % (Losses[Loss_Counter, 3], Losses[Loss_Counter, 4], Losses[Loss_Counter, 5],
-                         Losses[Loss_Counter, 3] + Losses[Loss_Counter, 4] + Losses[Loss_Counter, 5]));
+                      % (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i],
+                         Train_IC_Loss[i] + Train_BC_Loss[i] + Train_Data_Loss[i]));
 
-                # Increement the counter.
+                # Increment the counter.
                 Loss_Counter += 1;
             else:
                 print(("Epoch #%-4d | "   % t));
 
     elif(Settings.Mode == "Discovery"):
         if(Epochs != 0):
-            # Set up array for the different losses. In this case, columns 0 and 1
-            # correspond to the Testing Collocation and Data losses. Columns 2 and 3
-            # corresponds to the Training Collocation and Data Losses. We only print
-            # the losses every few Epochs. As a result, the loss array only needs
+            # Set up arrays for the different losses. We only measure the loss every
+            # few epochs. As a result, the loss arrays only need
             # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
             Epochs_Between_Prints : int = 10;
-            Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 4), dtype = Settings.Numpy_dtype);
+            Num_Loss_Measurements : int = (Epochs - 2)//Epochs_Between_Prints + 2;
+            Test_Coll_Loss  = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Test_Data_Loss  = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Train_Coll_Loss = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+            Train_Data_Loss = np.empty(Num_Loss_Measurements, dtype = Settings.Numpy_dtype);
+
             Loss_Counter : int = 0;
 
         for t in range(Epochs):
@@ -243,8 +253,11 @@ def main():
             # Periodically print loss updates. Otherwise, just print the Epoch #
             # to indicate that we're still alive.
             if(t % Epochs_Between_Prints == 0 or t == Epochs - 1):
+                # Alias the Loss counter for brevity
+                i : int = Loss_Counter;
+
                 # Evaluate losses on Testing, Training points.
-                (Losses[Loss_Counter, 0], Losses[Loss_Counter, 1]) = Discovery_Testing(
+                (Test_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
                     u_NN                = u_NN,
                     N_NN                = N_NN,
                     Collocation_Coords  = Data_Container.Test_Colloc_Coords,
@@ -253,7 +266,7 @@ def main():
                     Data_Type           = Settings.Torch_dtype,
                     Device              = Settings.Device);
 
-                (Losses[Loss_Counter, 2], Losses[Loss_Counter, 3]) = Discovery_Testing(
+                (Train_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
                     u_NN                = u_NN,
                     N_NN                = N_NN,
                     Collocation_Coords  = Data_Container.Train_Colloc_Coords,
@@ -264,11 +277,11 @@ def main():
 
                 # Print losses!
                 print("Epoch #%-4d | Test: \t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
-                      % (t, Losses[Loss_Counter, 0], Losses[Loss_Counter, 1], Losses[Loss_Counter, 0] + Losses[Loss_Counter, 1]));
+                    % (t, Test_Coll_Loss[i], Test_Data_Loss[i], Test_Coll_Loss[i] + Test_Data_Loss[i]));
                 print("            | Train:\t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
-                      % (Losses[Loss_Counter, 2], Losses[Loss_Counter, 3], Losses[Loss_Counter, 2] + Losses[Loss_Counter, 3]));
+                    % (Train_Coll_Loss[i], Test_Data_Loss[i], Train_Coll_Loss[i] + Test_Data_Loss[i]));
 
-                # Increement the counter.
+                # Increment the counter.
                 Loss_Counter += 1;
             else:
                 print(("Epoch #%-4d | "   % t));
