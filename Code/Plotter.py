@@ -198,6 +198,10 @@ def Setup_Axes(
     n_x = len(x_points);
     n_t = len(t_points);
 
+    # Put networks into evaluation mode.
+    u_NN.eval();
+    N_NN.eval();
+
     # Evaluate the network's approximate solution, the absolute error, and the
     # PDE resitual at each coordinate. We need to reshape these into n_x by n_t
     # grids, because that's what matplotlib's contour function wants.

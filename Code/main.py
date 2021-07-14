@@ -81,7 +81,8 @@ def main():
                             Output_Dim          = 1,
                             Data_Type           = Settings.Torch_dtype,
                             Device              = Settings.Device,
-                            Activation_Function = Settings.u_Activation_Function);
+                            Activation_Function = Settings.u_Activation_Function,
+                            Dropout_Proportion  = Settings.u_Dropout_Proportion);
 
     # Set up the neural network to approximate the PDE operator N.
     N_NN = Neural_Network(  Num_Hidden_Layers   = Settings.N_Num_Hidden_Layers,
@@ -90,7 +91,8 @@ def main():
                             Output_Dim          = 1,
                             Data_Type           = Settings.Torch_dtype,
                             Device              = Settings.Device,
-                            Activation_Function = Settings.N_Activation_Function);
+                            Activation_Function = Settings.N_Activation_Function,
+                            Dropout_Proportion  = Settings.N_Dropout_Proportion);
 
     # Setup the optimizer.
     Optimizer = None;
@@ -179,16 +181,17 @@ def main():
     Main_Timer = Timer();
     Main_Timer.Start();
 
-    if  (Settings.Mode == "PINNs" and Epochs != 0):
-        # Set up array for the different losses. In this case, columns 0, 1, and
-        # 2 correspond to the Testing IC, BC, and Collocation losses. Columns
-        # 3, 4, and 5 corresponds to the Training IC, BC, and Collocation
-        # losses. We only print the losses every few Epochs. As a result, the
-        # loss array only needs (Epochs - 2)//Epochs_Between_Prints + 2 rows
-        # (think about it).
-        Epochs_Between_Prints : int = 10;
-        Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 6), dtype = Settings.Numpy_dtype);
-        Loss_Counter : int = 0;
+    if  (Settings.Mode == "PINNs"):
+        if(Epochs != 0):
+            # Set up array for the different losses. In this case, columns 0, 1, and
+            # 2 correspond to the Testing IC, BC, and Collocation losses. Columns
+            # 3, 4, and 5 corresponds to the Training IC, BC, and Collocation
+            # losses. We only print the losses every few Epochs. As a result, the
+            # loss array only needs (Epochs - 2)//Epochs_Between_Prints + 2 rows
+            # (think about it).
+            Epochs_Between_Prints : int = 10;
+            Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 6), dtype = Settings.Numpy_dtype);
+            Loss_Counter : int = 0;
 
         for t in range(Epochs):
             PINNs_Training(
@@ -244,15 +247,16 @@ def main():
             else:
                 print(("Epoch #%-4d | "   % t));
 
-    elif(Settings.Mode == "Discovery" and Epochs != 0):
-        # Set up array for the different losses. In this case, columns 0 and 1
-        # correspond to the Testing Collocation and Data losses. Columns 2 and 3
-        # corresponds to the Training Collocation and Data Losses. We only print
-        # the losses every few Epochs. As a result, the loss array only needs
-        # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
-        Epochs_Between_Prints : int = 10;
-        Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 4), dtype = Settings.Numpy_dtype);
-        Loss_Counter : int = 0;
+    elif(Settings.Mode == "Discovery"):
+        if(Epochs != 0):
+            # Set up array for the different losses. In this case, columns 0 and 1
+            # correspond to the Testing Collocation and Data losses. Columns 2 and 3
+            # corresponds to the Training Collocation and Data Losses. We only print
+            # the losses every few Epochs. As a result, the loss array only needs
+            # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
+            Epochs_Between_Prints : int = 10;
+            Losses = np.empty(((Epochs - 2)//Epochs_Between_Prints + 2, 4), dtype = Settings.Numpy_dtype);
+            Loss_Counter : int = 0;
 
         for t in range(Epochs):
             Discovery_Training(
@@ -328,7 +332,7 @@ def main():
             multi_indices_list = multi_indices_list);
 
     else:
-        print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Mode));
+        print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Settings.Mode));
         print("Something went wrong. Aborting. Thrown by main.");
         exit();
 

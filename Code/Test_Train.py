@@ -58,6 +58,11 @@ def Discovery_Training(
 
     Nothing! """
 
+    # Put the networks in training mode.
+    u_NN.train();
+    N_NN.train();
+
+    # Define closure function (needed for LBFGS)
     def Discovery_Closure():
         # Zero out the gradients (if they are enabled).
         if (torch.is_grad_enabled()):
@@ -141,6 +146,10 @@ def Discovery_Testing(
     a tuple of floats. The first element holds the collocation loss, while
     the second holds the data loss. """
 
+    # Put the networks in evaluation mode
+    u_NN.eval();
+    N_NN.eval();
+
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
     Coloc_Loss : float = Collocation_Loss(
                             u_NN = u_NN,
@@ -222,6 +231,11 @@ def PINNs_Training(
 
     Nothing! """
 
+    # Put the networks in training mode.
+    u_NN.train();
+    N_NN.train();
+
+    # Define closure function (needed for LBFGS)
     def PINNs_Closure():
         # Zero out the gradients (if there are any).
         if (torch.is_grad_enabled()):
@@ -324,6 +338,10 @@ def PINNs_Testing(
     A tuple of three floats. The 0 element holds the Iniitial Condition loss,
     the 1 element holds the Boundary Condition loss, the 2 element holds the
     Collocation loss. """
+
+    # Put the networks in evaluation mode
+    u_NN.eval();
+    N_Nn.eval();
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
     IC_Loss_Var : float     = IC_Loss(

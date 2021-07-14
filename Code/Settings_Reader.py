@@ -160,23 +160,23 @@ def Settings_Reader() -> Settings_Container:
     ############################################################################
     # Save, Load, Plot Settings
 
-    # Load u network state from File?
-    Buffer = Read_Line_After(File, "Load u Network State [bool] :").strip();
+    # Load Sol network state from File?
+    Buffer = Read_Line_After(File, "Load Sol Network State [bool] :").strip();
     if  (Buffer[0] == 'T' or Buffer[0] == 't'):
         Settings.Load_u_Network_State = True;
     elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Settings.Load_u_Network_State = False;
     else:
-        raise Read_Error("\"Load u Network State\" should be \"True\" or \"False\". Got " + Buffer);
+        raise Read_Error("\"Load Sol Network State\" should be \"True\" or \"False\". Got " + Buffer);
 
-    # Load N network state from File?
-    Buffer = Read_Line_After(File, "Load N Network State [bool] :").strip();
+    # Load PDE network state from File?
+    Buffer = Read_Line_After(File, "Load PDE Network State [bool] :").strip();
     if  (Buffer[0] == 'T' or Buffer[0] == 't'):
         Settings.Load_N_Network_State = True;
     elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
         Settings.Load_N_Network_State = False;
     else:
-        raise Read_Error("\"Load N Network State\" should be \"True\" or \"False\". Got " + Buffer);
+        raise Read_Error("\"Load PDE Network State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # Load optimizer state from file?
     Buffer = Read_Line_After(File, "Load Optimizer State [bool] :").strip();
@@ -281,10 +281,11 @@ def Settings_Reader() -> Settings_Container:
     # Network Settings
 
     # Read u's network Architecture
-    Settings.u_Num_Hidden_Layers = int(Read_Line_After(File, "u Network - Number of Hidden Layers [int] :").strip());
-    Settings.u_Neurons_Per_Layer = int(Read_Line_After(File, "u Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.u_Num_Hidden_Layers  = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
+    Settings.u_Neurons_Per_Layer  = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.u_Dropout_Proportion = float(Read_Line_After(File, "Sol Network - Dropout Proportion [float] :").strip());
 
-    Buffer = Read_Line_After(File, "u Network - Activation Function [str] :").strip();
+    Buffer = Read_Line_After(File, "Sol Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
         Settings.u_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
@@ -292,15 +293,18 @@ def Settings_Reader() -> Settings_Container:
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
         Settings.u_Activation_Function = "Tanh";
     else:
-        raise Read_Error("\"u Network - Activation Function [str] :\" should be one of" + \
+        raise Read_Error("\"Sol Network - Activation Function [str] :\" should be one of" + \
                          "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
 
-    # Read N's network Architecture
-    Settings.N_Num_u_derivatives = int(Read_Line_After(File, "N Network - PDE Order [int] :").strip());
-    Settings.N_Num_Hidden_Layers = int(Read_Line_After(File, "N Network - Number of Hidden Layers [int] :").strip());
-    Settings.N_Neurons_Per_Layer = int(Read_Line_After(File, "N Network - Neurons per Hidden Layer [int] :").strip());
 
-    Buffer = Read_Line_After(File, "N Network - Activation Function [str] :").strip();
+    # Read N's network Architecture
+    Settings.N_Num_u_derivatives  = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
+    Settings.N_Num_Hidden_Layers  = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
+    Settings.N_Neurons_Per_Layer  = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.N_Dropout_Proportion = float(Read_Line_After(File, "PDE Network - Dropout Proportion [float] :").strip());
+
+
+    Buffer = Read_Line_After(File, "PDE Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
         Settings.N_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
@@ -308,7 +312,7 @@ def Settings_Reader() -> Settings_Container:
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
         Settings.N_Activation_Function = "Tanh";
     else:
-        raise Read_Error("\"N Network - Activation Function [str] :\" should be one of" + \
+        raise Read_Error("\"PDE Network - Activation Function [str] :\" should be one of" + \
                          "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
 
     # Read optimizer.

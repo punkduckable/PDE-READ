@@ -34,16 +34,16 @@
 # PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
 # extraction mode (it will throw an error).
 
-Load u Network State [bool] :                    True
-Load N Network State [bool] :                    True
-Load Optimizer State [bool] :                    True
-  Load File Name [str] :                         Test_Save
+Load Sol Network State [bool] :                  False
+Load PDE Network State [bool] :                  False
+Load Optimizer State [bool] :                    False
+  Load File Name [str] :                         KS_Adam_Tanh
 
-Plot Final Result [bool] :                       False
+Plot Final Result [bool] :                       True
 
 Save State [Bool] :                              True
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         Test_Save
+  Save File Name [str] :                         KS_Adam_Tanh_Dropout
 
 
 
@@ -55,24 +55,24 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # "PINNs", any word that begins with "d" or "D" as "Discovery", and any word
 # that begins with "e" or "E" as "Extraction"... PDE's, get it? ;)
 #
-# In Discovery mode, we learn both the N and u networks. The loss comes from the
-# data and collocation losses. In this mode, you can ignore the PINNs and
-# Extraction settings, as the parser will ignore them.
+# In Discovery mode, we learn both the Solution and PDE networks. The loss comes
+# from the data and collocation losses. In this mode, you can ignore the PINNs
+# and Extraction settings, as the parser will ignore them.
 #
-# In PINNs mode, we only learn u (not the N network, which means that you
-# should probably load N_NN from file). The loss comes from the collocation
-# points, the IC, and the periodic BCs. In this mode, you MUST set the "Periodic
-# BCs highest order". If this setting is set to N, then we will enforce periodic
-# BCs on the solution and its first N-1 derivatives.
+# In PINNs mode, we only learn the solution network (not the PDE network, which
+# means that you should load a trained PDE network). The loss comes from the
+# collocation points, the IC, and the periodic BCs. In this mode, you MUST set
+# the "Periodic BCs highest order". If this setting is set to N, then we will
+# enforce periodic BCs on the solution and its first N-1 derivatives.
 #
-# In Extraction mode, we learn neither u nor N. Instead, we attempt to
-# extract a PDE from u (which probably means that u should be loaded from
-# a trained network). In this mode, you must set the "Extracted PDE term degree"
-# and "Number of Extraction Points" settings. The former controls the maximum
-# degree of the terms that we try to extract (the term du_dx has degree one,
-# u*du_dx has degree 2, u^2 (du_dx)^3 d^2u_dx^2 has order 6, etc.). The latter
-# controls the number of points (in the PDE domain) at which we attempt to
-# extract the PDE.
+# In Extraction mode, neither network learns. Instead, we attempt to
+# extract a PDE from the solution network (which probably means that you should
+# load a trained solution network). In this mode, you must set the "Extracted
+# PDE term degree" and "Number of Extraction Points" settings. The former
+# controls the maximum degree of the terms that we try to extract (the term
+# du_dx has degree one, u*du_dx has degree 2, u^2 (du_dx)^3 d^2u_dx^2 has order
+# 6, etc.). The latter controls the number of points (in the PDE domain) at
+# which we attempt to extract the PDE.
 
 PINNs, Discovery, or Extraction mode [str] :     Discovery
 
@@ -109,14 +109,16 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 # Each Network's Activation function must be from the set {Rational, Tanh,
 # Sigmoid}
 
-u Network - Number of Hidden Layers [int] :      5
-u Network - Neurons per Hidden Layer [int] :     50
-u Network - Activation Function [str] :          Tanh
+Sol Network - Number of Hidden Layers [int] :    5
+Sol Network - Neurons per Hidden Layer [int] :   50
+Sol Network - Dropout Proportion [float] :       0.2
+Sol Network - Activation Function [str] :        Tanh
 
-N Network - PDE Order [int] :                    2
-N Network - Number of Hidden Layers [int] :      2
-N Network - Neurons per Hidden Layer [int] :     50
-N Network - Activation Function [str] :          Tanh
+PDE Network - PDE Order [int] :                  4
+PDE Network - Number of Hidden Layers [int] :    2
+PDE Network - Neurons per Hidden Layer [int] :   100
+PDE Network - Dropout Proportion [float] :       0.2
+PDE Network - Activation Function [str] :        Tanh
 
 Optimizer [Adam, LBFGS] :                        Adam
 
@@ -127,8 +129,8 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         100
-Learning Rate [float] :                          .01
+Number of Epochs [int] :                         1000
+Learning Rate [float] :                          .005
 
 
 

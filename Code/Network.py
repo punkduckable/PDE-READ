@@ -58,14 +58,16 @@ class Neural_Network(torch.nn.Module):
                  Output_Dim          : int          = 1,    # Dimension of the output
                  Data_Type           : torch.dtype  = torch.float32,
                  Device              : torch.device = torch.device('cpu'),
-                 Activation_Function : str          = "Tanh"):
+                 Activation_Function : str          = "Tanh",
+                 Dropout_Proportion  : float        = 0):
         # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
         # Input_Dim, and out_dim must be positive integers.
-        assert (Num_Hidden_Layers > 0   and
-                Neurons_Per_Layer > 0   and
-                Input_Dim         > 0   and
-                Output_Dim        > 0), \
-                "Neural_Network initialization arguments must be positive integers!"
+        assert(Num_Hidden_Layers  > 0), "Num_Hidden_Layers must be positive. Got %du" % Num_Hidden_Layers;
+        assert(Neurons_Per_Layer  > 0), "Neurons_Per_Layer must be positive. Got %u" % Neurons_Per_Layer;
+        assert(Input_Dim          > 0), "Input_Dim must be positive. Got %u" % Input_Dim;
+        assert(Output_Dim         > 0), "Output_Dim must be positive. Got %u" % Output_Dim;
+        assert(Dropout_Proportion >= 0 and Dropout_Proportion < 1), \
+                    "Dropout_Proportion must be in [0,1). Got %f" % Dropout_Proportion;
 
         # Call the superclass initializer.
         super(Neural_Network, self).__init__();
@@ -77,32 +79,34 @@ class Neural_Network(torch.nn.Module):
         self.Output_Dim : int = Output_Dim;
         self.Num_Layers : int = Num_Hidden_Layers + 1;
 
+        # Define Dropout module.
+        self.Dropout = torch.nn.Dropout(p = Dropout_Proportion);
+
         # Define Layers ModuleList.
-        self.Layers               = torch.nn.ModuleList();
+        self.Layers = torch.nn.ModuleList();
 
         # Append the first hidden layer. The domain of this layer is the input
         # domain, which means that in_features = Input_Dim. Since this is a
         # hidden layer, however it must have Neurons_Per_Layer output features.
-        self.Layers.append(
-            torch.nn.Linear(    in_features  = Input_Dim,
+        self.Layers.append(torch.nn.Linear(
+                                in_features  = Input_Dim,
                                 out_features = Neurons_Per_Layer,
                                 bias = True ).to(dtype = Data_Type, device = Device));
-
 
         # Now append the rest of the hidden layers. Each of these layers maps
         # from \mathbb{R}^{Neurons_Per_Layer} to itself. Thus, in_features =
         # out_features = Neurons_Per_Layer. We start at i = 1 because we already
         # setup the 1st hidden layer.
         for i in range(1, Num_Hidden_Layers):
-            self.Layers.append(
-                torch.nn.Linear(    in_features  = Neurons_Per_Layer,
+            self.Layers.append(torch.nn.Linear(
+                                    in_features  = Neurons_Per_Layer,
                                     out_features = Neurons_Per_Layer,
                                     bias = True ).to(dtype = Data_Type, device = Device));
 
         # Now, append the Output Layer, which has Neurons_Per_Layer input
         # features, but only Output_Dim output features.
-        self.Layers.append(
-            torch.nn.Linear(    in_features  = Neurons_Per_Layer,
+        self.Layers.append(torch.nn.Linear(
+                                in_features  = Neurons_Per_Layer,
                                 out_features = Output_Dim,
                                 bias = True ).to(dtype = Data_Type, device = Device));
 
@@ -146,9 +150,9 @@ class Neural_Network(torch.nn.Module):
 
         A tensor containing the value of the network ealuated at X. """
 
-        # Pass X through the network's layers!
-        for i in range(self.Num_Layers - 1):
-            X = self.Activation_Functions[i](self.Layers[i](X));
+        # Pass X through the hidden layers (each of which has dropout).
+        for i in range(0, self.Num_Layers - 1):
+            X = self.Dropout(self.Activation_Functions[i](self.Layers[i](X)));
 
         # Pass through the last layer and return (there is no activation
         # function in the last layer)
