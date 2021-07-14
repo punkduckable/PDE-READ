@@ -12,51 +12,10 @@ from Timing          import Timer;
 
 
 
-def Setup_Optimizer(
-        u_NN            : Neural_Network,
-        N_NN            : Neural_Network,
-        Mode            : str,
-        Learning_Rate   : float,
-        Optimizer       : str) -> torch.optim.Optimizer:
-    """ This function sets up the optimizer depending on if the N Network has
-    learning enabled or not. It also disables gradients for all network
-    parameters that are not being learned.
-
-    Note: This function works regardless of how many spatial variables u depends
-    on. """
-
-    # Construct Params (this depends on the mode).
-    if  (Mode == "Discovery"):
-        # If we're in discovery mode, then we need to train both u_NN and N_NN.
-        # Thus, we need to pass both networks' paramaters to the optimizer.
-        Params = list(u_NN.parameters()) + list(N_NN.parameters());
-    elif(Mode == "PINNs"):
-        # If we're in PINNs mode, then we only need to train u_NN.
-        N_NN.requires_grad_(False);
-        Params = u_NN.parameters();
-    else:
-        print(("Mode is %s when it should be either \"Discovery\" or \"PINNs\"." % Mode));
-        print("Aborting. Thrown by Setup_Optimizer");
-        exit();
-
-    # Now pass Params to the Optimizer.
-    if  (Optimizer == "Adam"):
-        return torch.optim.Adam(Params, lr = Learning_Rate);
-    elif(Optimizer == "LBFGS"):
-        return torch.optim.LBFGS(Params, lr = Learning_Rate);
-    else:
-        print(("Optimizer is %s when it should be \"Adam\" or \"LBFGs\"" % Optimizer));
-        print("Aborting. Thrown by Setup_Optimizer");
-        exit();
-
-
-
 def main():
     ############################################################################
-    # Load settings from the settings file.
+    # Load settings from the settings file, print them.
     Settings = Settings_Reader();
-
-    # Print the settings we read.
     print("Loaded the following settings:");
     for (setting, value) in Settings.__dict__.items():
         print(("%-25s = " % setting) + str(value));
@@ -82,7 +41,7 @@ def main():
                             Data_Type           = Settings.Torch_dtype,
                             Device              = Settings.Device,
                             Activation_Function = Settings.u_Activation_Function,
-                            Dropout_Proportion  = Settings.u_Dropout_Proportion);
+                            Dropout_Probability  = Settings.u_Dropout_Probability);
 
     # Set up the neural network to approximate the PDE operator N.
     N_NN = Neural_Network(  Num_Hidden_Layers   = Settings.N_Num_Hidden_Layers,
@@ -92,16 +51,30 @@ def main():
                             Data_Type           = Settings.Torch_dtype,
                             Device              = Settings.Device,
                             Activation_Function = Settings.N_Activation_Function,
-                            Dropout_Proportion  = Settings.N_Dropout_Proportion);
+                            Dropout_Probability  = Settings.N_Dropout_Probability);
 
     # Setup the optimizer.
     Optimizer = None;
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        Optimizer = Setup_Optimizer(u_NN            = u_NN,
-                                    N_NN            = N_NN,
-                                    Mode            = Settings.Mode,
-                                    Learning_Rate   = Learning_Rate,
-                                    Optimizer       = Settings.Optimizer);
+        # Construct Params (this depends on the mode).
+        if  (Mode == "Discovery"):
+            # If we're in discovery mode, then we need to train both u_NN and N_NN.
+            # Thus, we need to pass both networks' paramaters to the optimizer.
+            Params = list(u_NN.parameters()) + list(N_NN.parameters());
+        elif(Mode == "PINNs"):
+            # If we're in PINNs mode, then we only need to train u_NN.
+            N_NN.requires_grad_(False);
+            Params = u_NN.parameters();
+
+        # Now pass Params to the Optimizer.
+        if  (Optimizer == "Adam"):
+            Optimizer = torch.optim.Adam(Params, lr = Learning_Rate);
+        elif(Optimizer == "LBFGS"):
+            Optimizer = torch.optim.LBFGS(Params, lr = Learning_Rate);
+        else:
+            print(("Optimizer is %s when it should be \"Adam\" or \"LBFGs\"" % Optimizer));
+            print("Aborting. Thrown by Setup_Optimizer");
+            exit();
 
     # Check if we're loading anything from file.
     if( Settings.Load_u_Network_State == True or
@@ -114,16 +87,14 @@ def main():
 
         if(Settings.Load_u_Network_State == True):
             u_NN.load_state_dict(Saved_State["u_Network_State"]);
-            u_NN.train();
 
         if(Settings.Load_N_Network_State == True):
             N_NN.load_state_dict(Saved_State["N_Network_State"]);
-            N_NN.train();
 
         if(Settings.Load_Optimize_State  == True):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
-            # Enforce the new learning rate (not the old one).
+            # Enforce the new learning rate (do not use the saved one).
             for param_group in Optimizer.param_groups:
                 param_group['lr'] = Settings.Learning_Rate;
 
@@ -143,21 +114,21 @@ def main():
 
         # Generate Collocation points.
         Data_Container.Train_Colloc_Coords = Generate_Random_Coords(
-                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Settings.Num_Train_Colloc_Points,
-                Data_Type           = Settings.Torch_dtype,
-                Device              = Settings.Device);
+                Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
+                Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
+                Num_Points       = Settings.Num_Train_Colloc_Points,
+                Data_Type        = Settings.Torch_dtype,
+                Device           = Settings.Device);
 
         Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
-                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Settings.Num_Test_Colloc_Points,
-                Data_Type           = Settings.Torch_dtype,
-                Device              = Settings.Device);
+                Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
+                Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
+                Num_Points       = Settings.Num_Test_Colloc_Points,
+                Data_Type        = Settings.Torch_dtype,
+                Device           = Settings.Device);
 
     elif(Settings.Mode == "Extraction"):
-        # In this mode we need to set up the Extraction points.
+        # In Extraction mode, we need to set up the Extraction points.
 
         # Generate Collocation points.
         Data_Container.Extraction_Coords = Generate_Random_Coords(
@@ -209,7 +180,7 @@ def main():
 
             # Periodically print loss updates. Otherwise, just print the Epoch #
             # to indicate that we're still alive.
-            if(t % Epochs_Between_Prints == 0 or t == Epochs - 1):
+            if((t % Epochs_Between_Prints == 0) or t == Epochs - 1):
                 (Losses[Loss_Counter, 0], Losses[Loss_Counter, 1], Losses[Loss_Counter, 2]) = PINNs_Testing(
                     u_NN                        = u_NN,
                     N_NN                        = N_NN,
@@ -332,7 +303,7 @@ def main():
             multi_indices_list = multi_indices_list);
 
     else:
-        print(("Mode is %s while it should be either \"PINNs\", \"Discovery\", or \"Extraction\"." % Settings.Mode));
+        print(("Mode is %s. It should be one of \"PINNs\", \"Discovery\", \"Extraction\"." % Settings.Mode));
         print("Something went wrong. Aborting. Thrown by main.");
         exit();
 
@@ -342,7 +313,7 @@ def main():
 
     if (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         print("Running %d epochs took %fs." % (Epochs, Main_Time));
-        if (Epochs > 0):
+        if(Epochs > 0):
             print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
 
     elif(Settings.Mode == "Extraction"):

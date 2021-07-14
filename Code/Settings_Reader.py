@@ -281,9 +281,9 @@ def Settings_Reader() -> Settings_Container:
     # Network Settings
 
     # Read u's network Architecture
-    Settings.u_Num_Hidden_Layers  = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
-    Settings.u_Neurons_Per_Layer  = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
-    Settings.u_Dropout_Proportion = float(Read_Line_After(File, "Sol Network - Dropout Proportion [float] :").strip());
+    Settings.u_Num_Hidden_Layers   = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
+    Settings.u_Neurons_Per_Layer   = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.u_Dropout_Probability = float(Read_Line_After(File, "Sol Network - Dropout Probability [float] :").strip());
 
     Buffer = Read_Line_After(File, "Sol Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
@@ -298,10 +298,10 @@ def Settings_Reader() -> Settings_Container:
 
 
     # Read N's network Architecture
-    Settings.N_Num_u_derivatives  = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
-    Settings.N_Num_Hidden_Layers  = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
-    Settings.N_Neurons_Per_Layer  = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
-    Settings.N_Dropout_Proportion = float(Read_Line_After(File, "PDE Network - Dropout Proportion [float] :").strip());
+    Settings.N_Num_u_derivatives   = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
+    Settings.N_Num_Hidden_Layers   = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
+    Settings.N_Neurons_Per_Layer   = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.N_Dropout_Probability = float(Read_Line_After(File, "PDE Network - Dropout Probability [float] :").strip());
 
 
     Buffer = Read_Line_After(File, "PDE Network - Activation Function [str] :").strip();

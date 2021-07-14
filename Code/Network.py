@@ -59,20 +59,20 @@ class Neural_Network(torch.nn.Module):
                  Data_Type           : torch.dtype  = torch.float32,
                  Device              : torch.device = torch.device('cpu'),
                  Activation_Function : str          = "Tanh",
-                 Dropout_Proportion  : float        = 0):
+                 Dropout_Probability : float        = 0):
         # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
         # Input_Dim, and out_dim must be positive integers.
-        assert(Num_Hidden_Layers  > 0), "Num_Hidden_Layers must be positive. Got %du" % Num_Hidden_Layers;
-        assert(Neurons_Per_Layer  > 0), "Neurons_Per_Layer must be positive. Got %u" % Neurons_Per_Layer;
-        assert(Input_Dim          > 0), "Input_Dim must be positive. Got %u" % Input_Dim;
-        assert(Output_Dim         > 0), "Output_Dim must be positive. Got %u" % Output_Dim;
-        assert(Dropout_Proportion >= 0 and Dropout_Proportion < 1), \
-                    "Dropout_Proportion must be in [0,1). Got %f" % Dropout_Proportion;
+        assert(Num_Hidden_Layers   > 0), "Num_Hidden_Layers must be positive. Got %du" % Num_Hidden_Layers;
+        assert(Neurons_Per_Layer   > 0), "Neurons_Per_Layer must be positive. Got %u" % Neurons_Per_Layer;
+        assert(Input_Dim           > 0), "Input_Dim must be positive. Got %u" % Input_Dim;
+        assert(Output_Dim          > 0), "Output_Dim must be positive. Got %u" % Output_Dim;
+        assert(Dropout_Probability >= 0 and Dropout_Probability < 1), \
+                    "Dropout_Probability must be in [0,1). Got %f" % Dropout_Probability;
 
         # Call the superclass initializer.
         super(Neural_Network, self).__init__();
 
-        # Define object attributes. Note that there is an optput layer in
+        # Define object attributes. Note that there is an output layer in
         # addition to the hidden layers (which is why Num_Layers is
         # Num_Hidden_Layers + 1)
         self.Input_Dim  : int = Input_Dim;
@@ -80,7 +80,7 @@ class Neural_Network(torch.nn.Module):
         self.Num_Layers : int = Num_Hidden_Layers + 1;
 
         # Define Dropout module.
-        self.Dropout = torch.nn.Dropout(p = Dropout_Proportion);
+        self.Dropout = torch.nn.Dropout(p = Dropout_Probability);
 
         # Define Layers ModuleList.
         self.Layers = torch.nn.ModuleList();
@@ -113,6 +113,7 @@ class Neural_Network(torch.nn.Module):
         # Initialize the weight matricies, bias vectors in the network.
         for i in range(self.Num_Layers):
             torch.nn.init.xavier_uniform_(self.Layers[i].weight);
+            torch.nn.init.zeros_(self.Layers[i].bias);
 
         # Finally, set the Network's activation functions.
         self.Activation_Functions = torch.nn.ModuleList();
@@ -134,7 +135,7 @@ class Neural_Network(torch.nn.Module):
 
     def forward(self, X : torch.Tensor) -> torch.Tensor:
         """ Forward method for the NN class (to enable calling the network).
-        Note that the user should not call this function directly. Rather,
+        Note that the user should NOT call this function directly. Rather,
         they should call it through the __call__ method (using the NN object
         like a function), which is defined in the module class and calls
         forward.
@@ -142,7 +143,7 @@ class Neural_Network(torch.nn.Module):
         ------------------------------------------------------------------------
         Arguments:
 
-        x: A batch of inputs. This should be a B by Input_Dim tensor, whose
+        X: A batch of inputs. This should be a B by Input_Dim tensor, whose
         ith row holds the ith input (this is how the Linear function works).
 
         ------------------------------------------------------------------------

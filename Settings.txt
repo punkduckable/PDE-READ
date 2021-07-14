@@ -111,13 +111,13 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Dropout Proportion [float] :       0.2
+Sol Network - Dropout Probability [float] :      0.2
 Sol Network - Activation Function [str] :        Tanh
 
 PDE Network - PDE Order [int] :                  4
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   100
-PDE Network - Dropout Proportion [float] :       0.2
+PDE Network - Dropout Probability [float] :      0.2
 PDE Network - Activation Function [str] :        Tanh
 
 Optimizer [Adam, LBFGS] :                        Adam
