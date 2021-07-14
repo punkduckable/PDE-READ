@@ -34,16 +34,16 @@
 # PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
 # extraction mode (it will throw an error).
 
-Load Sol Network State [bool] :                  False
-Load PDE Network State [bool] :                  False
-Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         KS_Adam_Tanh
+Load Sol Network State [bool] :                  True
+Load PDE Network State [bool] :                  True
+Load Optimizer State [bool] :                    True
+  Load File Name [str] :                         KdV_LBFGS_Rational
 
-Plot Final Result [bool] :                       True
+Plot Final Result [bool] :                       False
 
 Save State [Bool] :                              True
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         KS_Adam_Tanh_Dropout
+  Save File Name [str] :                         KdV_LBFGS_Rational
 
 
 
@@ -82,9 +82,9 @@ Number of Training Collocation Points [int] :    7000
 Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           5000
+Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    5000
+Number of Training Collocation Points [int] :    10000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
@@ -111,16 +111,16 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Dropout Probability [float] :      0.2
-Sol Network - Activation Function [str] :        Tanh
+Sol Network - Dropout Probability [float] :      0.0
+Sol Network - Activation Function [str] :        Rational
 
-PDE Network - PDE Order [int] :                  4
+PDE Network - PDE Order [int] :                  3
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   100
-PDE Network - Dropout Probability [float] :      0.2
-PDE Network - Activation Function [str] :        Tanh
+PDE Network - Dropout Probability [float] :      0.0
+PDE Network - Activation Function [str] :        Rational
 
-Optimizer [Adam, LBFGS] :                        Adam
+Optimizer [Adam, LBFGS] :                        LBFGS
 
 Floating Point Precision [Single, Double] :      Single
 
@@ -129,15 +129,15 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         1000
-Learning Rate [float] :                          .005
+Number of Epochs [int] :                         20
+Learning Rate [float] :                          .1
 
 
 
 ################################################################################
 # Data
 
-Data File [str] :                           KS.mat
+Data File [str] :                           KdV_sine.mat
 Time Variable Series Label [str] :          t
 Space Variable Series Label [str] :         x
 Solution Series Label [str] :               usol

@@ -216,7 +216,7 @@ def Setup_Axes(
                             Device    = Device).reshape(n_x, n_t);
 
     # Plot the approximate solution + colorbar.
-    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, Apprrox_Sol_on_grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, Approx_Sol_on_grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the true solution + colorbar

@@ -89,7 +89,7 @@ def main():
         if(Settings.Load_Sol_Network_State == True):
             Sol_NN.load_state_dict(Saved_State["Sol_Network_State"]);
 
-        if(Settings.Load_N_Network_State == True):
+        if(Settings.Load_PDE_Network_State == True):
             PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
 
         if(Settings.Load_Optimize_State  == True):
