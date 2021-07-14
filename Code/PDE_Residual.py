@@ -6,8 +6,8 @@ from Network import Neural_Network;
 
 
 
-def Evaluate_u_Derivatives(
-        u_NN            : Neural_Network,
+def Evaluate_Sol_Derivatives(
+        Sol_NN          : Neural_Network,
         num_derivatives : int,
         Coords          : torch.Tensor,
         Data_Type       : torch.dtype = torch.float32,
@@ -20,26 +20,26 @@ def Evaluate_u_Derivatives(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
-    num_derivatives: The number of spatial derivatives of u_NN we need to
+    num_derivatives: The number of spatial derivatives of Sol_NN we need to
     evaluate. num_derivatives - 1 is the highest order derivative we will
     evaluate.
 
     Coords: A two column tensor whose ith row holds the t, x coordinates of the
     ith point we'll evaluate u and its derivatives at.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN should
+    use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN is loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
 
     This returns a two element Tuple! If Coords is a M by 2 tensor, then thie
     first returned argument is a M element tensor whose ith element holds the
-    value of du/dt at the ith coordinate. If N_NN accepts N argumetns, then
+    value of du/dt at the ith coordinate. If PDE_NN accepts N argumetns, then
     the second return variable is a M by N tensor whose i,j element holds the
     value of d^ju/dx^j at the ith coordinate. """
 
@@ -48,7 +48,7 @@ def Evaluate_u_Derivatives(
 
     # Determine how many derivatives of u we'll need to evaluate the PDE.
     # Remember that N is a function of u, du/dx, d^2u/dx^2, d^(n-1)u/dx^(n-1),
-    # where n is the number of inputs that N_NN accepts. Once we know this,
+    # where n is the number of inputs that PDE_NN accepts. Once we know this,
     # and the number of Collocation points, we initialize a tensor to hold the
     # value of u and its first n-1 derivatives at each collocation point.
     # The ith row of this tensor holds the value of u and its first n-1
@@ -60,7 +60,7 @@ def Evaluate_u_Derivatives(
                                                 device = Device);
 
     # Calculate approximate solution at this collocation point.
-    diu_dxi_batch[:, 0] = u_NN(Coords).squeeze();
+    diu_dxi_batch[:, 0] = Sol_NN(Coords).squeeze();
 
     # Compute the derivative of the NN output with respect to t, x at each
     # collocation point. To speed up computations, we batch this computation.
@@ -123,13 +123,13 @@ def Evaluate_u_Derivatives(
 
 
 def PDE_Residual(
-        u_NN      : Neural_Network,
-        N_NN      : Neural_Network,
+        Sol_NN      : Neural_Network,
+        PDE_NN      : Neural_Network,
         Coords    : torch.Tensor,
         Data_Type : torch.dtype = torch.float32,
         Device    : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates the "PDE residual" at a set of coordinates. For
-    brevtiy, let u = u_NN, and N = N_NN. At each coordinate, we compute
+    brevtiy, let u = Sol_NN, and N = PDE_NN. At each coordinate, we compute
             du/dt - N(u, du/dx, d^2u/dx^2,... )
     which we call the residual.
 
@@ -138,17 +138,17 @@ def PDE_Residual(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
-    N_NN: The neural network that approximates the PDE.
+    PDE_NN: The neural network that approximates the PDE.
 
     Coords: A two column tensor whose ith row holds the t, x coordinates of the
     ith point where we want to evaluate the PDE resitual.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -159,14 +159,13 @@ def PDE_Residual(
 
     # Determine how many derivatives of u we'll need to evaluate the PDE.
     # Remember that N is a function of u, du/dx, d^2u/dx^2, d^(n-1)u/dx^(n-1),
-    # where n is the number of inputs that N_NN accepts. Thus, the number of
-    # derivatives is simply the number of inputs for N_NN minus 1. Once we know
+    # where n is the number of inputs that PDE_NN accepts. Thus, the number of
+    # derivatives is simply the number of inputs for PDE_NN minus 1. Once we know
     # this, we evaluate du/dt, u, and the first n-1 spatial derivatives of u at
     # each collocation point.
-    num_derivatives             = N_NN.Input_Dim - 1;
-
-    du_dt_batch, diu_dxi_batch  = Evaluate_u_Derivatives(
-                                        u_NN            = u_NN,
+    num_derivatives             = PDE_NN.Input_Dim - 1;
+    du_dt_batch, diu_dxi_batch  = Evaluate_Sol_Derivatives(
+                                        Sol_NN          = Sol_NN,
                                         num_derivatives = num_derivatives,
                                         Coords          = Coords,
                                         Data_Type       = Data_Type,
@@ -176,8 +175,8 @@ def PDE_Residual(
     # the number of Coords) whose ith row holds the value of N at (u(t_i, x_i),
     # (d/dx)u(t_i, x_i),... (d^(n-1))/dx^(n-1))u(t_i, x_i)). Squeeze to
     # eliminate the extra useless dimension.
-    N_NN_batch = N_NN(diu_dxi_batch).squeeze();
+    PDE_NN_batch = PDE_NN(diu_dxi_batch).squeeze();
 
     # At each Collocation point, evaluate the square of the residuals
     # du/dt - N(u, du/dx,... ).
-    return (du_dt_batch - N_NN_batch);
+    return (du_dt_batch - PDE_NN_batch);

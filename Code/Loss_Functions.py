@@ -9,13 +9,13 @@ from typing         import Tuple;
 
 # Loss from the initial condition.
 def IC_Loss(
-        u_NN      : Neural_Network,
+        Sol_NN    : Neural_Network,
         IC_Coords : torch.Tensor,
         IC_Data   : torch.Tensor,
         Data_Type : torch.dtype = torch.float32,
         Device    : torch.device = torch.device('cpu')) -> torch.Tensor:
-    """ This function evaluates how well u_NN satisfies the initial condition.
-    Specifically, for each point in IC_Coords, we evaluate u_NN. We then
+    """ This function evaluates how well Sol_NN satisfies the initial condition.
+    Specifically, for each point in IC_Coords, we evaluate Sol_NN. We then
     calculate the square of the difference between this and the corresponding
     true solution in IC_Data. We return the mean of these squared differences.
 
@@ -25,7 +25,7 @@ def IC_Loss(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
     IC_Coords: The coordinates where we know the true initial condition. If u
     accepts d spatial variables, then this should be a d+1 column tensor, whose
@@ -35,20 +35,20 @@ def IC_Loss(
     IC_Data: The value of the initial condition at each point in IC_Coords. If
     IC_Coords has N rows, then this should be an N element tensor.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN should
+    use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN is loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
 
     A scalar tensor containing the mean square IC error. """
 
-    # Pass each IC coordinate through u_NN. This yields a N by 1 tensor whose
+    # Pass each IC coordinate through Sol_NN. This yields a N by 1 tensor whose
     # ith element of this stores the value of the approximate solution at the
     # ith IC Coord. We squeeze out the extra dimension.
-    u_approx_batch = u_NN(IC_Coords).squeeze();
+    u_approx_batch = Sol_NN(IC_Coords).squeeze();
 
     # IC_Data holds the true solution at each point.
     u_true_batch = IC_Data;
@@ -61,23 +61,24 @@ def IC_Loss(
 
 # Loss from imposing periodic BCs
 def Periodic_BC_Loss(
-        u_NN               : Neural_Network,
+        Sol_NN             : Neural_Network,
         Lower_Bound_Coords : torch.Tensor,
         Upper_Bound_Coords : torch.Tensor,
         Highest_Order      : int,
         Data_Type          : torch.dtype = torch.float32,
         Device             : torch.device = torch.device('cpu')) -> torch.Tensor:
-    """ This function evaluates how well the learned solution satisfies periodic
-    Boundary conditions. Let N = Highest_Order. We require that the solution
-    and it's first N derivatives satisify periodic boundary conditions (they
-    match at the ends of the spatial domain).
+    """ This function evaluates how well Sol_NN satisfies periodic Boundary
+    conditions. Let N = Highest_Order. We require that the solution and its
+    first N derivatives satisify periodic boundary conditions (they match at the
+    ends of the spatial domain).
 
-    Note: this function only works is u is a function of 1 spatial variable.
+    Note: this function only works if the solution is a function of 1 spatial
+    variable.
 
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
     Lower_Bound_Coords: The t,x coordinates of each point on the lower bound of
     the spatial domain. This should be a 2 column tensor whose ith row holds the
@@ -91,18 +92,17 @@ def Periodic_BC_Loss(
     we want to impose periodic boundary conditions on. If this is 0, then we
     only apply periodic BCs to the solution itself (not any of its derivatives).
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN should
+    use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN is loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
 
     A scalar tensor containing the mean square BC error. """
 
-    # Allocate tensors to hold u and its derivatives at each coordinate. To do
-    # this, we first need to know what data type N_NN and u_NN use.
+    # Allocate tensors to hold u and its derivatives at each coordinate.
     Num_BC_Points : int = Lower_Bound_Coords.shape[0];
     diu_dxi_upper_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type, device = Device);
     diu_dxi_lower_batch = torch.empty((Num_BC_Points, Highest_Order+1), dtype = Data_Type, device = Device);
@@ -114,8 +114,8 @@ def Periodic_BC_Loss(
     # u at each coordinate.
     Upper_Bound_Coords.requires_grad_(True);
     Lower_Bound_Coords.requires_grad_(True);
-    diu_dxi_upper_batch[:, 0] = u_NN(Upper_Bound_Coords).squeeze();
-    diu_dxi_lower_batch[:, 0] = u_NN(Lower_Bound_Coords).squeeze();
+    diu_dxi_upper_batch[:, 0] = Sol_NN(Upper_Bound_Coords).squeeze();
+    diu_dxi_lower_batch[:, 0] = Sol_NN(Lower_Bound_Coords).squeeze();
 
     # Cycle through the derivaitves. For each one, we compute d^ju/dx^j at the
     # two boundaries. To do this, we first compute the gradient of d^ju/dx^j
@@ -157,13 +157,13 @@ def Periodic_BC_Loss(
 
 # Loss from enforcing the PDE at the collocation points.
 def Collocation_Loss(
-        u_NN               : Neural_Network,
-        N_NN               : Neural_Network,
+        Sol_NN             : Neural_Network,
+        PDE_NN             : Neural_Network,
         Collocation_Coords : torch.Tensor,
         Data_Type          : torch.dtype = torch.float32,
         Device             : torch.device = torch.device('cpu')) -> torch.Tensor:
-    """ This function evaluates how well u_NN satisfies the learned PDE at the
-    collocation points. For brevity, let u = u_NN and N = N_NN. At each
+    """ This function evaluates how well Sol_NN satisfies the learned PDE at the
+    collocation points. For brevity, let u = Sol_NN and N = PDE_NN. At each
     collocation point, we compute the following:
                                 du/dt + N(u, du/dx, d^2u/dx^2)
     If u actually satisified the learned PDE, then this whould be zero everywhere.
@@ -173,21 +173,21 @@ def Collocation_Loss(
 
     Note: this function only works is u is a function of 1 spatial variable.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
-
-    Device: The device that u_NN and N_NN are loaded on.
-
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
-    N_NN: The network that approximates the PDE.
+    PDE_NN: The network that approximates the PDE.
 
     Collocation_Coords: a tensor of coordinates of the collocation points. This
     should be a 2 column tensor whose ith row holds the t, x coordinates of the
     ith collocation point.
+
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
+
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -197,8 +197,8 @@ def Collocation_Loss(
     # At each Collocation point, evaluate the square of the residuals
     # du/dt - N(u, du/dx,... ).
     residual_batch = PDE_Residual(
-                        u_NN      = u_NN,
-                        N_NN      = N_NN,
+                        Sol_NN    = Sol_NN,
+                        PDE_NN    = PDE_NN,
                         Coords    = Collocation_Coords,
                         Data_Type = Data_Type,
                         Device    = Device);
@@ -210,7 +210,7 @@ def Collocation_Loss(
 
 # Loss from the training data.
 def Data_Loss(
-        u_NN        : Neural_Network,
+        Sol_NN        : Neural_Network,
         Data_Coords : torch.Tensor,
         Data_Values : torch.Tensor,
         Data_Type   : torch.dtype = torch.float32,
@@ -229,7 +229,7 @@ def Data_Loss(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
     Data_Coords: A tensor of coordinates of the data points. If u takes d
     spatial variables, then this should be a d+1 column tensor whose ith row
@@ -240,10 +240,10 @@ def Data_Loss(
     tesnor whose ith element holds the value of the true solution at the ith
     data point.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN should
+    use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -255,7 +255,7 @@ def Data_Loss(
     # Note that this will output a N by 1 tensor (where N is the number
     # of coordinates). We need it to be a one dimensional tensor, so we squeeze
     # out the last dimension.
-    u_approx_batch = u_NN(Data_Coords).squeeze();
+    u_approx_batch = Sol_NN(Data_Coords).squeeze();
 
     # Compute the square error at each coordinate.
     u_true_batch        = Data_Values;

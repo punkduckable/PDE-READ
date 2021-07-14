@@ -8,8 +8,8 @@ from Loss_Functions import IC_Loss, Periodic_BC_Loss, Data_Loss, Collocation_Los
 
 
 def Discovery_Training(
-        u_NN                : Neural_Network,
-        N_NN                : Neural_Network,
+        Sol_NN              : Neural_Network,
+        PDE_NN              : Neural_Network,
         Collocation_Coords  : torch.Tensor,
         Data_Coords         : torch.Tensor,
         Data_Values         : torch.Tensor,
@@ -26,9 +26,9 @@ def Discovery_Training(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
-    N_NN: Neural network that approximates the PDE.
+    PDE_NN: Neural network that approximates the PDE.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
@@ -45,13 +45,13 @@ def Discovery_Training(
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    optimizer: the optimizer we use to train u_NN and N_NN. It should be
+    optimizer: the optimizer we use to train Sol_NN and PDE_NN. It should be
     loaded with the gradients of both networks.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -59,8 +59,8 @@ def Discovery_Training(
     Nothing! """
 
     # Put the networks in training mode.
-    u_NN.train();
-    N_NN.train();
+    Sol_NN.train();
+    PDE_NN.train();
 
     # Define closure function (needed for LBFGS)
     def Discovery_Closure():
@@ -70,8 +70,8 @@ def Discovery_Training(
 
         # Evaluate the Loss (Note, we enforce a BC of 0)
         Loss = (Collocation_Loss(
-                    u_NN = u_NN,
-                    N_NN = N_NN,
+                    Sol_NN = Sol_NN,
+                    PDE_NN = PDE_NN,
                     Collocation_Coords = Collocation_Coords,
                     Data_Type = Data_Type,
                     Device    = Device)
@@ -79,7 +79,7 @@ def Discovery_Training(
                 +
 
                 Data_Loss(
-                    u_NN = u_NN,
+                    Sol_NN = Sol_NN,
                     Data_Coords = Data_Coords,
                     Data_Values = Data_Values,
                     Data_Type = Data_Type,
@@ -98,8 +98,8 @@ def Discovery_Training(
 
 
 def Discovery_Testing(
-        u_NN                : Neural_Network,
-        N_NN                :  Neural_Network,
+        Sol_NN              : Neural_Network,
+        PDE_NN              :  Neural_Network,
         Collocation_Coords  : torch.Tensor,
         Data_Coords         : torch.Tensor,
         Data_Values         : torch.Tensor,
@@ -116,9 +116,9 @@ def Discovery_Testing(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
-    N_NN: Neural network that approximates the learned PDE.
+    PDE_NN: Neural network that approximates the learned PDE.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
@@ -135,10 +135,10 @@ def Discovery_Testing(
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -147,18 +147,18 @@ def Discovery_Testing(
     the second holds the data loss. """
 
     # Put the networks in evaluation mode
-    u_NN.eval();
-    N_NN.eval();
+    Sol_NN.eval();
+    PDE_NN.eval();
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
     Coloc_Loss : float = Collocation_Loss(
-                            u_NN = u_NN,
-                            N_NN = N_NN,
+                            Sol_NN = Sol_NN,
+                            PDE_NN = PDE_NN,
                             Collocation_Coords = Collocation_Coords,
                             Data_Type = Data_Type,
                             Device    = Device).item();
     Data_loss : float  = Data_Loss(
-                            u_NN = u_NN,
+                            Sol_NN = Sol_NN,
                             Data_Coords = Data_Coords,
                             Data_Values = Data_Values,
                             Data_Type = Data_Type,
@@ -170,8 +170,8 @@ def Discovery_Testing(
 
 
 def PINNs_Training(
-        u_NN                        : Neural_Network,
-        N_NN                        : Neural_Network,
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
         IC_Coords                   : torch.Tensor,
         IC_Data                     : torch.Tensor,
         Lower_Bound_Coords          : torch.Tensor,
@@ -191,9 +191,9 @@ def PINNs_Training(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: Neural network that approximates the solution to the learned PDE.
+    Sol_NN: Neural network that approximates the solution to the learned PDE.
 
-    N_NN: Neural network that approximates the PDE.
+    PDE_NN: Neural network that approximates the PDE.
 
     IC_Coords: A tensor that holds the coordinates of each point that we
     enforce the Initial Condition. If u accepts d spatial coordinates, then this
@@ -219,12 +219,12 @@ def PINNs_Training(
     tensor whose ith row holds the t, x_1,... x_d coordinates the ith
     Collocation point.
 
-    Optimizer: the optimizer we use to train u_NN.
+    Optimizer: the optimizer we use to train Sol_NN.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -232,8 +232,8 @@ def PINNs_Training(
     Nothing! """
 
     # Put the networks in training mode.
-    u_NN.train();
-    N_NN.train();
+    Sol_NN.train();
+    PDE_NN.train();
 
     # Define closure function (needed for LBFGS)
     def PINNs_Closure():
@@ -243,7 +243,7 @@ def PINNs_Training(
 
         # Evaluate the Loss (Note, we enforce a BC of 0)
         Loss = (IC_Loss(
-                    u_NN      = u_NN,
+                    Sol_NN    = Sol_NN,
                     IC_Coords = IC_Coords,
                     IC_Data   = IC_Data,
                     Data_Type = Data_Type,
@@ -252,7 +252,7 @@ def PINNs_Training(
                 +
 
                 Periodic_BC_Loss(
-                    u_NN = u_NN,
+                    Sol_NN = Sol_NN,
                     Lower_Bound_Coords = Lower_Bound_Coords,
                     Upper_Bound_Coords = Upper_Bound_Coords,
                     Highest_Order = Periodic_BCs_Highest_Order,
@@ -262,8 +262,8 @@ def PINNs_Training(
                 +
 
                 Collocation_Loss(
-                    u_NN = u_NN,
-                    N_NN = N_NN,
+                    Sol_NN = Sol_NN,
+                    PDE_NN = PDE_NN,
                     Collocation_Coords = Collocation_Coords,
                     Data_Type = Data_Type,
                     Device    = Device));
@@ -279,8 +279,8 @@ def PINNs_Training(
 
 
 def PINNs_Testing(
-        u_NN                        : Neural_Network,
-        N_NN                        : Neural_Network,
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
         IC_Coords                   : torch.Tensor,
         IC_Data                     : torch.Tensor,
         Lower_Bound_Coords          : torch.Tensor,
@@ -299,9 +299,9 @@ def PINNs_Testing(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: Neural network that approximates the solution to the learned PDE.
+    Sol_NN: Neural network that approximates the solution to the learned PDE.
 
-    N_NN: Neural network that approximates the PDE.
+    PDE_NN: Neural network that approximates the PDE.
 
     IC_Coords: A tensor that holds the coordinates of each point that we
     enforce the Initial Condition. If u accepts d spatial coordinates, then this
@@ -327,10 +327,10 @@ def PINNs_Testing(
     tensor whose ith row holds the t, x_1,... x_d coordinates the ith
     Collocation point.
 
-    Data_Type: The data type that all tensors use. All tensors in u_NN and N_NN
-    should use this data type.
+    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -340,19 +340,19 @@ def PINNs_Testing(
     Collocation loss. """
 
     # Put the networks in evaluation mode
-    u_NN.eval();
-    N_Nn.eval();
+    Sol_NN.eval();
+    PDE_Nn.eval();
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
     IC_Loss_Var : float     = IC_Loss(
-                                u_NN      = u_NN,
+                                Sol_NN    = Sol_NN,
                                 IC_Coords = IC_Coords,
                                 IC_Data   = IC_Data,
                                 Data_Type = Data_Type,
                                 Device    = Device).item();
 
     BC_Loss_Var : float     = Periodic_BC_Loss(
-                                u_NN = u_NN,
+                                Sol_NN = Sol_NN,
                                 Lower_Bound_Coords = Lower_Bound_Coords,
                                 Upper_Bound_Coords = Upper_Bound_Coords,
                                 Highest_Order = Periodic_BCs_Highest_Order,
@@ -360,8 +360,8 @@ def PINNs_Testing(
                                 Device    = Device).item();
 
     Col_Loss_Var : float    = Collocation_Loss(
-                                u_NN = u_NN,
-                                N_NN = N_NN,
+                                Sol_NN = Sol_NN,
+                                PDE_NN = PDE_NN,
                                 Collocation_Coords = Collocation_Coords,
                                 Data_Type = Data_Type,
                                 Device    = Device).item();

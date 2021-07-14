@@ -4,7 +4,7 @@ from typing import Tuple;
 from sklearn import linear_model;
 
 from Network import Neural_Network;
-from PDE_Residual import Evaluate_u_Derivatives;
+from PDE_Residual import Evaluate_Sol_Derivatives;
 
 
 
@@ -273,7 +273,7 @@ def Generate_Library(
     Library : np.array = np.ones((num_rows, num_cols), dtype = np.float64);
 
     # Evaluate u, du/dx,... at each point.
-    (du_dt, diu_dxi) = Evaluate_u_Derivatives(
+    (du_dt, diu_dxi) = Evaluate_Sol_Derivatives(
                             u_NN            = u_NN,
                             num_derivatives = num_derivatives,
                             Coords          = Coords,

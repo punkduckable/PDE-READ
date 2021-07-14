@@ -34,62 +34,63 @@ def main():
     Learning_Rate : float = Settings.Learning_Rate;
 
     # Set up the neural network to approximate the PDE solution.
-    u_NN = Neural_Network(  Num_Hidden_Layers   = Settings.u_Num_Hidden_Layers,
-                            Neurons_Per_Layer   = Settings.u_Neurons_Per_Layer,
-                            Input_Dim           = 2,
-                            Output_Dim          = 1,
-                            Data_Type           = Settings.Torch_dtype,
-                            Device              = Settings.Device,
-                            Activation_Function = Settings.u_Activation_Function,
-                            Dropout_Probability  = Settings.u_Dropout_Probability);
+    Sol_NN = Neural_Network( Num_Hidden_Layers   = Settings.Sol_Num_Hidden_Layers,
+                             Neurons_Per_Layer   = Settings.Sol_Neurons_Per_Layer,
+                             Input_Dim           = 2,
+                             Output_Dim          = 1,
+                             Data_Type           = Settings.Torch_dtype,
+                             Device              = Settings.Device,
+                             Activation_Function = Settings.Sol_Activation_Function,
+                             Dropout_Probability = Settings.Sol_Dropout_Probability);
 
     # Set up the neural network to approximate the PDE operator N.
-    N_NN = Neural_Network(  Num_Hidden_Layers   = Settings.N_Num_Hidden_Layers,
-                            Neurons_Per_Layer   = Settings.N_Neurons_Per_Layer,
-                            Input_Dim           = Settings.N_Num_u_derivatives + 1,
-                            Output_Dim          = 1,
-                            Data_Type           = Settings.Torch_dtype,
-                            Device              = Settings.Device,
-                            Activation_Function = Settings.N_Activation_Function,
-                            Dropout_Probability  = Settings.N_Dropout_Probability);
+    PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
+                             Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
+                             Input_Dim           = Settings.PDE_Num_Sol_derivatives + 1,
+                             Output_Dim          = 1,
+                             Data_Type           = Settings.Torch_dtype,
+                             Device              = Settings.Device,
+                             Activation_Function = Settings.PDE_Activation_Function,
+                             Dropout_Probability = Settings.PDE_Dropout_Probability);
 
     # Setup the optimizer.
     Optimizer = None;
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         # Construct Params (this depends on the mode).
-        if  (Mode == "Discovery"):
-            # If we're in discovery mode, then we need to train both u_NN and N_NN.
-            # Thus, we need to pass both networks' paramaters to the optimizer.
-            Params = list(u_NN.parameters()) + list(N_NN.parameters());
-        elif(Mode == "PINNs"):
-            # If we're in PINNs mode, then we only need to train u_NN.
-            N_NN.requires_grad_(False);
-            Params = u_NN.parameters();
+        if  (Settings.Mode == "Discovery"):
+            # If we're in discovery mode, then we need to train both Sol_NN and
+            # PDE_NN. Thus, we need to pass both networks' paramaters to the
+            # optimizer.
+            Params = list(Sol_NN.parameters()) + list(PDE_NN.parameters());
+        elif(Settings.Mode == "PINNs"):
+            # If we're in PINNs mode, then we only need to train Sol_NN.
+            PDE_NN.requires_grad_(False);
+            Params = Sol_NN.parameters();
 
         # Now pass Params to the Optimizer.
-        if  (Optimizer == "Adam"):
+        if  (Settings.Optimizer == "Adam"):
             Optimizer = torch.optim.Adam(Params, lr = Learning_Rate);
-        elif(Optimizer == "LBFGS"):
+        elif(Settings.Optimizer == "LBFGS"):
             Optimizer = torch.optim.LBFGS(Params, lr = Learning_Rate);
         else:
-            print(("Optimizer is %s when it should be \"Adam\" or \"LBFGs\"" % Optimizer));
+            print(("Optimizer is %s when it should be \"Adam\" or \"LBFGS\"" % Optimizer));
             print("Aborting. Thrown by Setup_Optimizer");
             exit();
 
     # Check if we're loading anything from file.
-    if( Settings.Load_u_Network_State == True or
-        Settings.Load_N_Network_State == True or
-        Settings.Load_Optimize_State  == True):
+    if( Settings.Load_Sol_Network_State == True or
+        Settings.Load_PDE_Network_State == True or
+        Settings.Load_Optimize_State    == True):
 
         # Load the saved checkpoint. Make sure to map it to the correct device.
         Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
         Saved_State = torch.load(Load_File_Path, map_location = Settings.Device);
 
-        if(Settings.Load_u_Network_State == True):
-            u_NN.load_state_dict(Saved_State["u_Network_State"]);
+        if(Settings.Load_Sol_Network_State == True):
+            Sol_NN.load_state_dict(Saved_State["Sol_Network_State"]);
 
         if(Settings.Load_N_Network_State == True):
-            N_NN.load_state_dict(Saved_State["N_Network_State"]);
+            PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
 
         if(Settings.Load_Optimize_State  == True):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
@@ -170,8 +171,8 @@ def main():
 
         for t in range(Epochs):
             PINNs_Training(
-                u_NN                        = u_NN,
-                N_NN                        = N_NN,
+                Sol_NN                      = Sol_NN,
+                PDE_NN                      = PDE_NN,
                 IC_Coords                   = Data_Container.IC_Coords,
                 IC_Data                     = Data_Container.IC_Data,
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
@@ -189,8 +190,8 @@ def main():
                 i : int = Loss_Counter;
 
                 (Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i]) = PINNs_Testing(
-                    u_NN                        = u_NN,
-                    N_NN                        = N_NN,
+                    Sol_NN                      = Sol_NN,
+                    PDE_NN                      = PDE_NN,
                     IC_Coords                   = Data_Container.IC_Coords,
                     IC_Data                     = Data_Container.IC_Data,
                     Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
@@ -201,8 +202,8 @@ def main():
                     Device                      = Settings.Device);
 
                 (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i]) = PINNs_Testing(
-                    u_NN                        = u_NN,
-                    N_NN                        = N_NN,
+                    Sol_NN                      = Sol_NN,
+                    PDE_NN                      = PDE_NN,
                     IC_Coords                   = Data_Container.IC_Coords,
                     IC_Data                     = Data_Container.IC_Data,
                     Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
@@ -241,8 +242,8 @@ def main():
 
         for t in range(Epochs):
             Discovery_Training(
-                u_NN                = u_NN,
-                N_NN                = N_NN,
+                Sol_NN              = Sol_NN,
+                PDE_NN              = PDE_NN,
                 Collocation_Coords  = Data_Container.Train_Colloc_Coords,
                 Data_Coords         = Data_Container.Train_Data_Coords,
                 Data_Values         = Data_Container.Train_Data_Values,
@@ -258,8 +259,8 @@ def main():
 
                 # Evaluate losses on Testing, Training points.
                 (Test_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
-                    u_NN                = u_NN,
-                    N_NN                = N_NN,
+                    Sol_NN              = Sol_NN,
+                    PDE_NN              = PDE_NN,
                     Collocation_Coords  = Data_Container.Test_Colloc_Coords,
                     Data_Coords         = Data_Container.Test_Data_Coords,
                     Data_Values         = Data_Container.Test_Data_Values,
@@ -267,8 +268,8 @@ def main():
                     Device              = Settings.Device);
 
                 (Train_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
-                    u_NN                = u_NN,
-                    N_NN                = N_NN,
+                    Sol_NN              = Sol_NN,
+                    PDE_NN              = PDE_NN,
                     Collocation_Coords  = Data_Container.Train_Colloc_Coords,
                     Data_Coords         = Data_Container.Train_Data_Coords,
                     Data_Values         = Data_Container.Train_Data_Values,
@@ -288,26 +289,26 @@ def main():
 
     elif(Settings.Mode == "Extraction"):
         # Generate the library!
-        (N_NN_batch,
+        (PDE_NN_batch,
          Library,
          num_multi_indices,
          multi_indices_list) = Generate_Library(
-                                    u_NN            = u_NN,
-                                    N_NN            = N_NN,
+                                    Sol_NN          = Sol_NN,
+                                    PDE_NN          = PDE_NN,
                                     Coords          = Data_Container.Extraction_Coords,
-                                    num_derivatives = Settings.N_Num_u_derivatives,
+                                    num_derivatives = Settings.PDE_Num_Sol_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree,
                                     Torch_Data_Type = Settings.Torch_dtype,
                                     Device          = Settings.Device);
 
         #Extracted_PDE = Lasso_Selection(
         #                    A         = Library,
-        #                    b         = N_NN_batch,
+        #                    b         = PDE_NN_batch,
         #                    alpha     = Settings.Least_Squares_Threshold);
 
         Extracted_PDE = Thresholded_Least_Squares(
                             A         = Library,
-                            b         = N_NN_batch,
+                            b         = PDE_NN_batch,
                             threshold = Settings.Least_Squares_Threshold);
 
         Print_Extracted_PDE(
@@ -341,8 +342,8 @@ def main():
 
     if((Settings.Mode == "PINNs" or Settings.Mode == "Discovery") and Settings.Save_To_File == True):
         Save_File_Path : str = "../Saves/" + Settings.Save_File_Name;
-        torch.save({"u_Network_State" : u_NN.state_dict(),
-                    "N_Network_State" : N_NN.state_dict(),
+        torch.save({"Sol_Network_State" : Sol_NN.state_dict(),
+                    "PDE_Network_State" : PDE_NN.state_dict(),
                     "Optimizer_State" : Optimizer.state_dict()},
                     Save_File_Path);
 
@@ -361,11 +362,11 @@ def main():
         fig, Axes = Initialize_Axes();
         Setup_Axes(fig              = fig,
                    Axes             = Axes,
-                   u_NN             = u_NN,
-                   N_NN             = N_NN,
+                   Sol_NN           = Sol_NN,
+                   PDE_NN           = PDE_NN,
                    x_points         = Data_Container.x_points,
                    t_points         = Data_Container.t_points,
-                   u_true_On_Grid   = Data_Container.u_true,
+                   True_Sol_On_Grid = Data_Container.True_Sol,
                    Torch_dtype      = Settings.Torch_dtype,
                    Device           = Settings.Device);
         Print_Time = Print_Timer.Stop();

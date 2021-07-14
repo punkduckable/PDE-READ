@@ -163,18 +163,18 @@ def Settings_Reader() -> Settings_Container:
     # Load Sol network state from File?
     Buffer = Read_Line_After(File, "Load Sol Network State [bool] :").strip();
     if  (Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Load_u_Network_State = True;
+        Settings.Load_Sol_Network_State = True;
     elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Load_u_Network_State = False;
+        Settings.Load_Sol_Network_State = False;
     else:
         raise Read_Error("\"Load Sol Network State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # Load PDE network state from File?
     Buffer = Read_Line_After(File, "Load PDE Network State [bool] :").strip();
     if  (Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Load_N_Network_State = True;
+        Settings.Load_PDE_Network_State = True;
     elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Load_N_Network_State = False;
+        Settings.Load_PDE_Network_State = False;
     else:
         raise Read_Error("\"Load PDE Network State\" should be \"True\" or \"False\". Got " + Buffer);
 
@@ -188,8 +188,8 @@ def Settings_Reader() -> Settings_Container:
         raise Read_Error("\"Load Optimizer State\" should be \"True\" or \"False\". Got " + Buffer);
 
     # If we are loading anything, get load file name.
-    if(     Settings.Load_u_Network_State == True or
-            Settings.Load_N_Network_State == True or
+    if(     Settings.Load_Sol_Network_State == True or
+            Settings.Load_PDE_Network_State == True or
             Settings.Load_Optimize_State  == True):
 
         Settings.Load_File_Name = Read_Line_After(File, "Load File Name [str] :").strip();
@@ -281,36 +281,36 @@ def Settings_Reader() -> Settings_Container:
     # Network Settings
 
     # Read u's network Architecture
-    Settings.u_Num_Hidden_Layers   = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
-    Settings.u_Neurons_Per_Layer   = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
-    Settings.u_Dropout_Probability = float(Read_Line_After(File, "Sol Network - Dropout Probability [float] :").strip());
+    Settings.Sol_Num_Hidden_Layers   = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
+    Settings.Sol_Neurons_Per_Layer   = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.Sol_Dropout_Probability = float(Read_Line_After(File, "Sol Network - Dropout Probability [float] :").strip());
 
     Buffer = Read_Line_After(File, "Sol Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
-        Settings.u_Activation_Function = "Rational";
+        Settings.Sol_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.u_Activation_Function = "Sigmoid";
+        Settings.Sol_Activation_Function = "Sigmoid";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.u_Activation_Function = "Tanh";
+        Settings.Sol_Activation_Function = "Tanh";
     else:
         raise Read_Error("\"Sol Network - Activation Function [str] :\" should be one of" + \
                          "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
 
 
     # Read N's network Architecture
-    Settings.N_Num_u_derivatives   = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
-    Settings.N_Num_Hidden_Layers   = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
-    Settings.N_Neurons_Per_Layer   = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
-    Settings.N_Dropout_Probability = float(Read_Line_After(File, "PDE Network - Dropout Probability [float] :").strip());
+    Settings.PDE_Num_Sol_derivatives = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
+    Settings.PDE_Num_Hidden_Layers   = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
+    Settings.PDE_Neurons_Per_Layer   = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.PDE_Dropout_Probability = float(Read_Line_After(File, "PDE Network - Dropout Probability [float] :").strip());
 
 
     Buffer = Read_Line_After(File, "PDE Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
-        Settings.N_Activation_Function = "Rational";
+        Settings.PDE_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.N_Activation_Function = "Sigmoid";
+        Settings.PDE_Activation_Function = "Sigmoid";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.N_Activation_Function = "Tanh";
+        Settings.PDE_Activation_Function = "Tanh";
     else:
         raise Read_Error("\"PDE Network - Activation Function [str] :\" should be one of" + \
                          "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
