@@ -170,8 +170,8 @@ def Recursive_Multi_Indices(
 
 
 def Generate_Library(
-        u_NN            : Neural_Network,
-        N_NN            : Neural_Network,
+        Sol_NN            : Neural_Network,
+        PDE_NN            : Neural_Network,
         Coords          : torch.Tensor,
         num_derivatives : int,
         Poly_Degree     : int,
@@ -189,7 +189,8 @@ def Generate_Library(
     (the same up to rearrangements of the sub-index ordering).
 
     Why does this give us what we want? Let's consider when Poly_Degree = 2 and
-    num_derivatives = 2. In this case, our library consists of the following:
+    num_derivatives = 2. Let u = Sol_NN. In this case, our library consists of
+    the following:
         degree 0: c,
         degree 1: u, du_dx, d^2u_dx^2
         degree 2: (u)^2, u*du_dx, u*d^2u_dx^2, (du_dx)^2, du_dx*d^2u_dx^2, (d^2u_dx^2)^2
@@ -216,9 +217,9 @@ def Generate_Library(
     ----------------------------------------------------------------------------
     Arguments:
 
-    u_NN: The network that approximates the PDE solution.
+    Sol_NN: The network that approximates the PDE solution.
 
-    N_NN: Neural network that approximates the PDE.
+    PDE_NN: Neural network that approximates the PDE.
 
     Coords: The coordinates of the extraction points (The library will contain
     a row for each element of Coords).
@@ -231,16 +232,16 @@ def Generate_Library(
     example, if we expect to extract a linear PDE, then Poly_Degree should be 1.
     Setting Poly_Degree > 1 allows the algorithm to search for non-linear PDEs.
 
-    Torch_dtype: The data type that all tensors use. All tensors in u_NN and
-    N_NN should use this data type.
+    Torch_dtype: The data type that all tensors use. All tensors in Sol_NN and
+    PDE_NN should use this data type.
 
-    Device: The device that u_NN and N_NN are loaded on.
+    Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
     Returns:
 
     A 4 element tuple. For the first, we evaluate u, u_xx,... at each point in
-    Coords. We then evaluate N_NN at each of these collection of values. This
+    Coords. We then evaluate PDE_NN at each of these collection of values. This
     is the first element of the returned tuple. The second holds the library
     (with a row for each coordinate and a column for each term in the library).
     The third holds a Poly_Degree element array whose ith element holds the
@@ -274,14 +275,14 @@ def Generate_Library(
 
     # Evaluate u, du/dx,... at each point.
     (du_dt, diu_dxi) = Evaluate_Sol_Derivatives(
-                            u_NN            = u_NN,
+                            Sol_NN          = Sol_NN,
                             num_derivatives = num_derivatives,
                             Coords          = Coords,
                             Data_Type       = Torch_dtype,
                             Device          = Device);
 
     # Evaluate n at the output given by diu_dxi.
-    N_NN_batch = N_NN(diu_dxi);
+    PDE_NN_batch = PDE_NN(diu_dxi);
 
     # Now populate the library the multi-index approach described above. Note
     # that the first column corresponds to a constant and should, therefore,
@@ -313,7 +314,7 @@ def Generate_Library(
 
     # All done, the library is now populated! Package everything together and
     # return.
-    return (N_NN_batch.detach().squeeze().numpy().astype(dtype = np.float64),
+    return (PDE_NN_batch.detach().squeeze().numpy().astype(dtype = np.float64),
             Library,
             num_multi_indices,
             multi_indices_list);

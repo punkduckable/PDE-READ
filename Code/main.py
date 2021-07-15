@@ -308,7 +308,7 @@ def main():
                                     Coords          = Extraction_Coords,
                                     num_derivatives = Settings.PDE_Num_Sol_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree,
-                                    Torch_Data_Type = Settings.Torch_dtype,
+                                    Torch_dtype     = Settings.Torch_dtype,
                                     Device          = Settings.Device);
 
         #Extracted_PDE = Lasso_Selection(
