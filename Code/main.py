@@ -101,44 +101,12 @@ def main():
 
 
     ############################################################################
-    # Set up points (Data, IC, BC, Collocation, Extraction).
-
+    # Set up Data
     # If we're in Discovery mode, this will set up the testing and training
     # data points and values. If we're in PINNs mode, this will also set up IC
     # and BC points. This should also give us the upper and lower bounds for the
     # domain.
     Data_Container = Data_Loader(Settings);
-
-    # Set up mode specific points.
-    if  (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        # In these modes, we need to set up the Collocation points.
-
-        # Generate Collocation points.
-        Data_Container.Train_Colloc_Coords = Generate_Random_Coords(
-                Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
-                Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
-                Num_Points       = Settings.Num_Train_Colloc_Points,
-                Data_Type        = Settings.Torch_dtype,
-                Device           = Settings.Device);
-
-        Data_Container.Test_Colloc_Coords = Generate_Random_Coords(
-                Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
-                Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
-                Num_Points       = Settings.Num_Test_Colloc_Points,
-                Data_Type        = Settings.Torch_dtype,
-                Device           = Settings.Device);
-
-    elif(Settings.Mode == "Extraction"):
-        # In Extraction mode, we need to set up the Extraction points.
-
-        # Generate Collocation points.
-        Data_Container.Extraction_Coords = Generate_Random_Coords(
-                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
-                Num_Points          = Settings.Num_Extraction_Points,
-                Data_Type           = Settings.Torch_dtype,
-                Device              = Settings.Device);
-
 
     # Setup is done! Figure out how long it took.
     Setup_Time : float = Setup_Timer.Stop();
@@ -147,13 +115,14 @@ def main():
 
 
     ############################################################################
-    # Loop through the epochs.
+    # Epochs, Extraction
 
     # Start a timer for the Epochs.
     Main_Timer = Timer();
     Main_Timer.Start();
 
     if  (Settings.Mode == "PINNs"):
+        # Setup Loss tracking.
         if(Epochs != 0):
             # Set up array for the different losses. We only print the losses
             # every few Epochs. As a result, the loss arrays only need
@@ -170,6 +139,22 @@ def main():
             Loss_Counter : int = 0;
 
         for t in range(Epochs):
+            # Check if we should generate new Collocation points.
+            if(t % Settings.Epochs_For_New_Coll_Pts == 0):
+                Train_Colloc_Coords = Generate_Random_Coords(
+                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
+                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
+                        Num_Points       = Settings.Num_Train_Colloc_Points,
+                        Data_Type        = Settings.Torch_dtype,
+                        Device           = Settings.Device);
+
+                Test_Colloc_Coords = Generate_Random_Coords(
+                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
+                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
+                        Num_Points       = Settings.Num_Test_Colloc_Points,
+                        Data_Type        = Settings.Torch_dtype,
+                        Device           = Settings.Device);
+
             PINNs_Training(
                 Sol_NN                      = Sol_NN,
                 PDE_NN                      = PDE_NN,
@@ -178,7 +163,7 @@ def main():
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                 Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                 Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                Collocation_Coords          = Data_Container.Train_Colloc_Coords,
+                Collocation_Coords          = Train_Colloc_Coords,
                 Optimizer                   = Optimizer,
                 Data_Type                   = Settings.Torch_dtype,
                 Device                      = Settings.Device);
@@ -197,7 +182,7 @@ def main():
                     Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                     Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                     Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                    Collocation_Coords          = Data_Container.Test_Colloc_Coords,
+                    Collocation_Coords          = Test_Colloc_Coords,
                     Data_Type                   = Settings.Torch_dtype,
                     Device                      = Settings.Device);
 
@@ -209,7 +194,7 @@ def main():
                     Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
                     Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                     Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                    Collocation_Coords          = Data_Container.Train_Colloc_Coords,
+                    Collocation_Coords          = Train_Colloc_Coords,
                     Data_Type                   = Settings.Torch_dtype,
                     Device                      = Settings.Device);
 
@@ -227,6 +212,7 @@ def main():
                 print(("Epoch #%-4d | "   % t));
 
     elif(Settings.Mode == "Discovery"):
+        # Setup Loss tracking.
         if(Epochs != 0):
             # Set up arrays for the different losses. We only measure the loss every
             # few epochs. As a result, the loss arrays only need
@@ -241,10 +227,26 @@ def main():
             Loss_Counter : int = 0;
 
         for t in range(Epochs):
+            # Check if we should generate new Collocation points.
+            if(t % Settings.Epochs_For_New_Coll_Pts == 0):
+                Train_Colloc_Coords = Generate_Random_Coords(
+                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
+                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
+                        Num_Points       = Settings.Num_Train_Colloc_Points,
+                        Data_Type        = Settings.Torch_dtype,
+                        Device           = Settings.Device);
+
+                Test_Colloc_Coords = Generate_Random_Coords(
+                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
+                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
+                        Num_Points       = Settings.Num_Test_Colloc_Points,
+                        Data_Type        = Settings.Torch_dtype,
+                        Device           = Settings.Device);
+
             Discovery_Training(
                 Sol_NN              = Sol_NN,
                 PDE_NN              = PDE_NN,
-                Collocation_Coords  = Data_Container.Train_Colloc_Coords,
+                Collocation_Coords  = Train_Colloc_Coords,
                 Data_Coords         = Data_Container.Train_Data_Coords,
                 Data_Values         = Data_Container.Train_Data_Values,
                 Optimizer           = Optimizer,
@@ -261,16 +263,16 @@ def main():
                 (Test_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
                     Sol_NN              = Sol_NN,
                     PDE_NN              = PDE_NN,
-                    Collocation_Coords  = Data_Container.Test_Colloc_Coords,
+                    Collocation_Coords  = Test_Colloc_Coords,
                     Data_Coords         = Data_Container.Test_Data_Coords,
                     Data_Values         = Data_Container.Test_Data_Values,
                     Data_Type           = Settings.Torch_dtype,
                     Device              = Settings.Device);
 
-                (Train_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
+                (Train_Coll_Loss[i], Train_Data_Loss[i]) = Discovery_Testing(
                     Sol_NN              = Sol_NN,
                     PDE_NN              = PDE_NN,
-                    Collocation_Coords  = Data_Container.Train_Colloc_Coords,
+                    Collocation_Coords  = Train_Colloc_Coords,
                     Data_Coords         = Data_Container.Train_Data_Coords,
                     Data_Values         = Data_Container.Train_Data_Values,
                     Data_Type           = Settings.Torch_dtype,
@@ -280,7 +282,7 @@ def main():
                 print("Epoch #%-4d | Test: \t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
                     % (t, Test_Coll_Loss[i], Test_Data_Loss[i], Test_Coll_Loss[i] + Test_Data_Loss[i]));
                 print("            | Train:\t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
-                    % (Train_Coll_Loss[i], Test_Data_Loss[i], Train_Coll_Loss[i] + Test_Data_Loss[i]));
+                    % (Train_Coll_Loss[i], Train_Data_Loss[i], Train_Coll_Loss[i] + Train_Data_Loss[i]));
 
                 # Increment the counter.
                 Loss_Counter += 1;
@@ -288,6 +290,14 @@ def main():
                 print(("Epoch #%-4d | "   % t));
 
     elif(Settings.Mode == "Extraction"):
+        # Setup Extraction Coords
+        Extraction_Coords = Generate_Random_Coords(
+                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
+                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
+                Num_Points          = Settings.Num_Extraction_Points,
+                Data_Type           = Settings.Torch_dtype,
+                Device              = Settings.Device);
+
         # Generate the library!
         (PDE_NN_batch,
          Library,
@@ -295,7 +305,7 @@ def main():
          multi_indices_list) = Generate_Library(
                                     Sol_NN          = Sol_NN,
                                     PDE_NN          = PDE_NN,
-                                    Coords          = Data_Container.Extraction_Coords,
+                                    Coords          = Extraction_Coords,
                                     num_derivatives = Settings.PDE_Num_Sol_derivatives,
                                     Poly_Degree     = Settings.Extracted_term_degree,
                                     Torch_Data_Type = Settings.Torch_dtype,

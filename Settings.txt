@@ -37,13 +37,13 @@
 Load Sol Network State [bool] :                  True
 Load PDE Network State [bool] :                  True
 Load Optimizer State [bool] :                    True
-  Load File Name [str] :                         KdV_LBFGS_Rational
+  Load File Name [str] :                         KS_Adam_Tanh_Test
 
-Plot Final Result [bool] :                       False
+Plot Final Result [bool] :                       True
 
 Save State [Bool] :                              True
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         KdV_LBFGS_Rational
+  Save File Name [str] :                         KS_Adam_Tanh_Test
 
 
 
@@ -84,7 +84,7 @@ Number of Testing Collocation Points [int] :     500
 # Discovery mode specific settings.
 Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    10000
+Number of Training Collocation Points [int] :    4000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
@@ -112,15 +112,15 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
 Sol Network - Dropout Probability [float] :      0.0
-Sol Network - Activation Function [str] :        Rational
+Sol Network - Activation Function [str] :        Tanh
 
-PDE Network - PDE Order [int] :                  3
+PDE Network - PDE Order [int] :                  4
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   100
 PDE Network - Dropout Probability [float] :      0.0
-PDE Network - Activation Function [str] :        Rational
+PDE Network - Activation Function [str] :        Tanh
 
-Optimizer [Adam, LBFGS] :                        LBFGS
+Optimizer [Adam, LBFGS] :                        Adam
 
 Floating Point Precision [Single, Double] :      Single
 
@@ -129,17 +129,20 @@ Floating Point Precision [Single, Double] :      Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         20
-Learning Rate [float] :                          .1
+Number of Epochs [int] :                         1000
+Learning Rate [float] :                          .001
+
+# PINNs, Discovery mode specific settings
+Epochs between new Collocation Points [int] :    100
 
 
 
 ################################################################################
 # Data
 
-Data File [str] :                           KdV_sine.mat
+Data File [str] :                           KS.mat
 Time Variable Series Label [str] :          t
 Space Variable Series Label [str] :         x
 Solution Series Label [str] :               usol
 
-Noise Proportion [float] :                  .0
+Noise Proportion [float] :                  .00
