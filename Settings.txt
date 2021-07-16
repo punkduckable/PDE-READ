@@ -37,13 +37,13 @@
 Load Sol Network State [bool] :                  True
 Load PDE Network State [bool] :                  True
 Load Optimizer State [bool] :                    True
-  Load File Name [str] :                         KS_Adam_Tanh_Test
+  Load File Name [str] :                         KS_LBFGS_Tanh_Test
 
-Plot Final Result [bool] :                       True
+Plot Final Result [bool] :                       False
 
 Save State [Bool] :                              True
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         KS_Adam_Tanh_Test
+  Save File Name [str] :                         KS_LBFGS_Tanh_Test
 
 
 
@@ -74,7 +74,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # 6, etc.). The latter controls the number of points (in the PDE domain) at
 # which we attempt to extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Discovery
+PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -84,13 +84,13 @@ Number of Testing Collocation Points [int] :     500
 # Discovery mode specific settings.
 Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    4000
+Number of Training Collocation Points [int] :    5000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
 Extracted PDE maximum term degree [int] :        2
 Number of Extraction Points [int] :              20000
-Least Squares Threshold [float] :                .05
+Least Squares Threshold [float] :                .01
 
 Train on CPU or GPU [GPU, CPU] :                 CPU
 
@@ -120,20 +120,20 @@ PDE Network - Neurons per Hidden Layer [int] :   100
 PDE Network - Dropout Probability [float] :      0.0
 PDE Network - Activation Function [str] :        Tanh
 
-Optimizer [Adam, LBFGS] :                        Adam
+Optimizer [Adam, LBFGS] :                        LBFGS
 
-Floating Point Precision [Single, Double] :      Single
+FP Precision [Half, Single, Double] :            Single
 
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         1000
-Learning Rate [float] :                          .001
+Number of Epochs [int] :                         200
+Learning Rate [float] :                          .1
 
 # PINNs, Discovery mode specific settings
-Epochs between new Collocation Points [int] :    100
+Epochs between new Collocation Points [int] :    10
 
 
 
