@@ -1,4 +1,4 @@
-import numpy as np;
+import numpy;
 import torch;
 import matplotlib.pyplot as plt;
 
@@ -129,12 +129,12 @@ def main():
             # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
             Epochs_Between_Prints : int = 10;
             Num_Loss_Measurements : int = (Epochs - 2)//Epochs_Between_Prints + 2;
-            Test_IC_Loss    = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Test_BC_Loss    = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Test_Data_Loss  = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_IC_Loss   = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_BC_Loss   = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_Data_Loss = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Test_IC_Loss    = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Test_BC_Loss    = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Test_Data_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Train_IC_Loss   = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Train_BC_Loss   = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Train_Data_Loss = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
 
             Loss_Counter : int = 0;
 
@@ -219,10 +219,10 @@ def main():
             # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
             Epochs_Between_Prints : int = 10;
             Num_Loss_Measurements : int = (Epochs - 2)//Epochs_Between_Prints + 2;
-            Test_Coll_Loss  = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Test_Data_Loss  = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_Coll_Loss = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_Data_Loss = np.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Test_Coll_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Test_Data_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Train_Coll_Loss = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
+            Train_Data_Loss = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
 
             Loss_Counter : int = 0;
 
