@@ -79,9 +79,9 @@ class Test_Network(unittest.TestCase):
         for i in range(num_Points):
             self.assertLess(abs(NN_x_Actual[i] - NN_x_Predict[i]).item(), Epsilon);
 
-    def test_Rational_ReLU(self):
+    def test_Rational(self):
         # Initialize a rational relu activation function.
-        Rational = Network.Rational_ReLU();
+        Rational = Network.Rational();
 
         # Now initialize a random tensor which requires grad.
         n_Rows : int = random.randint(10, 100);
@@ -160,7 +160,7 @@ class Test_Loss_Functions(unittest.TestCase):
 
         # Now compute the actual IC loss.
         IC_Error_Actual = Loss_Functions.IC_Loss(
-                                u_NN      = u_NN,
+                                Sol_NN    = u_NN,
                                 IC_Coords = IC_Coords,
                                 IC_Data   = IC_Data);
 
@@ -204,7 +204,7 @@ class Test_Loss_Functions(unittest.TestCase):
 
         # Now evaluate the actual BC loss.
         BC_Loss_Actual  = Loss_Functions.Periodic_BC_Loss(
-                                u_NN               = u_NN,
+                                Sol_NN             = u_NN,
                                 Lower_Bound_Coords = Lower_Bound_Coords,
                                 Upper_Bound_Coords = Upper_Bound_Coords,
                                 Highest_Order      = 1);
@@ -240,7 +240,7 @@ class Test_Loss_Functions(unittest.TestCase):
 
         # Now compute actual Data Loss.
         Data_loss_Actual = Loss_Functions.Data_Loss(
-                                u_NN        = u_NN,
+                                Sol_NN      = u_NN,
                                 Data_Coords = Data_Coords,
                                 Data_Values = Data_Values);
 
@@ -250,7 +250,7 @@ class Test_Loss_Functions(unittest.TestCase):
 
 
 class Test_PDE_Residual(unittest.TestCase):
-    def test_Evaluate_u_Derivatives(self):
+    def test_Evaluate_Sol_Derivatives(self):
         # Set up a simple network.
         Hidden_Neurons : int          = random.randint(1, 100);
         u_NN : Network.Neural_Network = One_Initialize_Network(Hidden_Neurons);
@@ -284,8 +284,8 @@ class Test_PDE_Residual(unittest.TestCase):
             d2u_dx2_predict[i] = -2.0*n*torch.tanh(t + x + 1.0)*(1.0 - torch.tanh(t + x + 1.0)**2);
 
         # Now compute actual du_dt, du_dx, d2u_dx2.
-        (du_dt_actual, diu_dxi_actual) = PDE_Residual.Evaluate_u_Derivatives(
-                                                u_NN            = u_NN,
+        (du_dt_actual, diu_dxi_actual) = PDE_Residual.Evaluate_Sol_Derivatives(
+                                                Sol_NN          = u_NN,
                                                 num_derivatives = 2,
                                                 Coords          = Coords);
         u_actual       = diu_dxi_actual[:, 0];
@@ -372,7 +372,7 @@ class Test_Extraction(unittest.TestCase):
         num_indices = Extraction.Recursive_Counter(
                                 num_sub_index_values = n,
                                 degree               = 1);
-        multi_indices = np.empty((num_indices, 1), dtype = np.float);
+        multi_indices = np.empty((num_indices, 1), dtype = np.float32);
         Extraction.Recursive_Multi_Indices(
                         multi_indices        = multi_indices,
                         num_sub_index_values = n,
@@ -396,7 +396,7 @@ class Test_Extraction(unittest.TestCase):
         num_indices = Extraction.Recursive_Counter(
                                 num_sub_index_values = n,
                                 degree               = 2);
-        multi_indices = np.empty((num_indices, 2), dtype = np.float);
+        multi_indices = np.empty((num_indices, 2), dtype = np.float32);
         Extraction.Recursive_Multi_Indices(
                         multi_indices        = multi_indices,
                         num_sub_index_values = n,
@@ -419,7 +419,7 @@ class Test_Extraction(unittest.TestCase):
         num_indices = Extraction.Recursive_Counter(
                                 num_sub_index_values = n,
                                 degree               = 3);
-        multi_indices = np.empty((num_indices, 3), dtype = np.float);
+        multi_indices = np.empty((num_indices, 3), dtype = np.float32);
         Extraction.Recursive_Multi_Indices(
                         multi_indices        = multi_indices,
                         num_sub_index_values = n,
@@ -477,8 +477,8 @@ class Test_Extraction(unittest.TestCase):
 
         # Evaluate the actual library and compare.
         Library_Actual = Extraction.Generate_Library(
-                                        u_NN            = u_NN,
-                                        N_NN            = N_NN,
+                                        Sol_NN          = u_NN,
+                                        PDE_NN          = N_NN,
                                         Coords          = Coords,
                                         num_derivatives = 1,
                                         Poly_Degree     = 2)[1];
