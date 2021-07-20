@@ -255,7 +255,7 @@ def Generate_Library(
 
     # Determine how many multi-indices with k sub-indices exist for each
     # k in {0, 1,... Poly_Degree}.
-    num_multi_indices    = np.empty(Poly_Degree + 1, dtype = np.int);
+    num_multi_indices    = np.empty(Poly_Degree + 1, dtype = np.int64);
     num_multi_indices[0] = 1;
     for i in range(1, Poly_Degree + 1):
         num_multi_indices[i] = Recursive_Counter(
@@ -264,7 +264,7 @@ def Generate_Library(
 
     # Set up a list to hold the multi-index arrays of each degree.
     multi_indices_list = [];
-    multi_indices_list.append(np.array(1, dtype = np.int));
+    multi_indices_list.append(np.array(1, dtype = np.int64));
 
     # Use this information to initialize the Library as a tensor of ones.
     # We need everything to be ones because of how we populate this matrix (see
@@ -290,7 +290,7 @@ def Generate_Library(
     position = 1;
     for degree in range(1, Poly_Degree + 1):
         # Create a buffer to hold the multi-indices of this degree.
-        multi_indices = np.empty((num_multi_indices[degree], degree), dtype = np.int);
+        multi_indices = np.empty((num_multi_indices[degree], degree), dtype = np.int64);
 
         # Find the set of multi indices for this degree!
         Recursive_Multi_Indices(
