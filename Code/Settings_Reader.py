@@ -342,13 +342,15 @@ def Settings_Reader() -> Settings_Container:
 
 
     ############################################################################
-    # Network hyper-parameters
+    # Learning hyper-parameters
 
     Settings.Epochs = int(Read_Line_After(File, "Number of Epochs [int] :").strip());
     Settings.Learning_Rate = float(Read_Line_After(File, "Learning Rate [float] :").strip());
 
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         Settings.Epochs_For_New_Coll_Pts = int(Read_Line_After(File, "Epochs between new Collocation Points [int] :").strip());
+
+    Settings.Epochs_Between_Prints = int(Read_Line_After(File, "Epochs between testing [int] :").strip());
 
 
 

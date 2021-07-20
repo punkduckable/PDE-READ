@@ -127,8 +127,7 @@ def main():
             # Set up array for the different losses. We only print the losses
             # every few Epochs. As a result, the loss arrays only need
             # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
-            Epochs_Between_Prints : int = 10;
-            Num_Loss_Measurements : int = (Epochs - 2)//Epochs_Between_Prints + 2;
+            Num_Loss_Measurements : int = (Epochs - 2)//Settings.Epochs_Between_Prints + 2;
             Test_IC_Loss    = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
             Test_BC_Loss    = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
             Test_Data_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
@@ -170,7 +169,7 @@ def main():
 
             # Periodically print loss updates. Otherwise, just print the Epoch #
             # to indicate that we're still alive.
-            if((t % Epochs_Between_Prints == 0) or t == Epochs - 1):
+            if((t % Settings.Epochs_Between_Prints == 0) or t == Epochs - 1):
                 # Alias the Loss counter for brevity
                 i : int = Loss_Counter;
 
@@ -217,8 +216,7 @@ def main():
             # Set up arrays for the different losses. We only measure the loss every
             # few epochs. As a result, the loss arrays only need
             # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
-            Epochs_Between_Prints : int = 10;
-            Num_Loss_Measurements : int = (Epochs - 2)//Epochs_Between_Prints + 2;
+            Num_Loss_Measurements : int = (Epochs - 2)//Settings.Epochs_Between_Prints + 2;
             Test_Coll_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
             Test_Data_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
             Train_Coll_Loss = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
@@ -255,7 +253,7 @@ def main():
 
             # Periodically print loss updates. Otherwise, just print the Epoch #
             # to indicate that we're still alive.
-            if(t % Epochs_Between_Prints == 0 or t == Epochs - 1):
+            if(t % Settings.Epochs_Between_Prints == 0 or t == Epochs - 1):
                 # Alias the Loss counter for brevity
                 i : int = Loss_Counter;
 

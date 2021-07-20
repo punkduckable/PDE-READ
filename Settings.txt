@@ -74,7 +74,7 @@ allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # 6, etc.). The latter controls the number of points (in the PDE domain) at
 # which we attempt to extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Extraction
+PINNs, Discovery, or Extraction mode [str] :     Discovery
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -84,7 +84,7 @@ Number of Testing Collocation Points [int] :     500
 # Discovery mode specific settings.
 Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    5000
+Number of Training Collocation Points [int] :    10000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
@@ -133,7 +133,9 @@ Number of Epochs [int] :                         200
 Learning Rate [float] :                          .1
 
 # PINNs, Discovery mode specific settings
-Epochs between new Collocation Points [int] :    10
+Epochs between new Collocation Points [int] :    20
+
+Epochs between testing [int] :                   10
 
 
 
