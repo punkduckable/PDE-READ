@@ -30,27 +30,26 @@
 # The Load/Save File Name, as well as the Data File Name can not contain spaces
 # The Data File Name should include the file's file extension.
 #
-# You CAN NOT load the optimizer state if you change from Discovery mode to
-# PINNs mode or vice versa. Further, you CAN NOT load the optimizer state in
-# extraction mode (it will throw an error).
+# The optimizer will NOT be loaded in extraction mode (the setting is ignored
+# in that mode).
 
 Load Sol Network State [bool] :                  True
 Load PDE Network State [bool] :                  True
 Load Optimizer State [bool] :                    True
-  Load File Name [str] :                         KS_LBFGS_Tanh_Test
+  Load File Name [str] :                         KS_LBFGS_Rational
 
 Plot Final Result [bool] :                       False
 
 Save State [Bool] :                              True
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         KS_LBFGS_Tanh_Test
+  Save File Name [str] :                         KS_LBFGS_Rational
 
 
 
 ################################################################################
 # Mode
 # The "PINNs, Discovery, or Extraction mode" controls what the code does. The
-allowed values for this setting are "PINNs", "Discovery", and "Extraction".
+# allowed values for this setting are "PINNs", "Discovery", and "Extraction".
 # Actually, the parser will interpret any word that begins with "p" or "P" as
 # "PINNs", any word that begins with "d" or "D" as "Discovery", and any word
 # that begins with "e" or "E" as "Extraction"... PDE's, get it? ;)
@@ -84,13 +83,13 @@ Number of Testing Collocation Points [int] :     500
 # Discovery mode specific settings.
 Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    10000
-Number of Testing Collocation Points [int] :     1000
+Number of Training Collocation Points [int] :    3500
+Number of Testing Collocation Points [int] :     500
 
 # Extraction mode specific settings.
 Extracted PDE maximum term degree [int] :        2
 Number of Extraction Points [int] :              20000
-Least Squares Threshold [float] :                .01
+Least Squares Threshold [float] :                .2
 
 Train on CPU or GPU [GPU, CPU] :                 CPU
 
@@ -112,13 +111,13 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
 Sol Network - Dropout Probability [float] :      0.0
-Sol Network - Activation Function [str] :        Tanh
+Sol Network - Activation Function [str] :        Rational
 
 PDE Network - PDE Order [int] :                  4
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   100
 PDE Network - Dropout Probability [float] :      0.0
-PDE Network - Activation Function [str] :        Tanh
+PDE Network - Activation Function [str] :        Rational
 
 Optimizer [Adam, LBFGS] :                        LBFGS
 
@@ -129,7 +128,7 @@ FP Precision [Half, Single, Double] :            Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         200
+Number of Epochs [int] :                         100
 Learning Rate [float] :                          .1
 
 # PINNs, Discovery mode specific settings
@@ -147,4 +146,4 @@ Time Variable Series Label [str] :          t
 Space Variable Series Label [str] :         x
 Solution Series Label [str] :               usol
 
-Noise Proportion [float] :                  .00
+Noise Proportion [float] :                  .01

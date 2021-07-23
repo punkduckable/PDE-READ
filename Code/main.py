@@ -92,7 +92,8 @@ def main():
         if(Settings.Load_PDE_Network_State == True):
             PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
 
-        if(Settings.Load_Optimize_State  == True):
+        # We do not load the optimizier if we're in Extraction mode. 
+        if(Settings.Load_Optimize_State  == True and Settings.Mode != "Extraction"):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
             # Enforce the new learning rate (do not use the saved one).
