@@ -170,8 +170,8 @@ def Recursive_Multi_Indices(
 
 
 def Generate_Library(
-        Sol_NN            : Neural_Network,
-        PDE_NN            : Neural_Network,
+        Sol_NN          : Neural_Network,
+        PDE_NN          : Neural_Network,
         Coords          : torch.Tensor,
         num_derivatives : int,
         Poly_Degree     : int,
@@ -271,18 +271,39 @@ def Generate_Library(
     # below).
     num_rows : int = Coords.shape[0];
     num_cols : int = num_multi_indices.sum();
-    Library : np.array = np.ones((num_rows, num_cols), dtype = np.float64);
+    Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
 
-    # Evaluate u, du/dx,... at each point.
-    (du_dt, diu_dxi) = Evaluate_Sol_Derivatives(
-                            Sol_NN          = Sol_NN,
-                            num_derivatives = num_derivatives,
-                            Coords          = Coords,
-                            Data_Type       = Torch_dtype,
-                            Device          = Device);
+    # Evaluate u, du/dx,... at each point. Do this in batches to reduce memory
+    # usage.
+    du_dt   = torch.empty((num_rows), dtype = Torch_dtype);
+    diu_dxi = torch.empty((num_rows, num_sub_index_values), dtype = Torch_dtype);
+
+    # Main loop
+    Batch_Size : int = 1000;
+    for i in range(0, num_rows - Batch_Size, Batch_Size):
+        (du_dt_Batch, diu_dxi_Batch) = Evaluate_Sol_Derivatives(
+                                Sol_NN          = Sol_NN,
+                                num_derivatives = num_derivatives,
+                                Coords          = Coords[i:(i + Batch_Size)],
+                                Data_Type       = Torch_dtype,
+                                Device          = Device);
+
+        du_dt[i:(i + Batch_Size)]   = du_dt_Batch.detach();
+        diu_dxi[i:(i + Batch_Size)] = diu_dxi_Batch.detach();
+
+    # Clean up loop.
+    (du_dt_Batch, diu_dxi_Batch) = Evaluate_Sol_Derivatives(
+                                        Sol_NN          = Sol_NN,
+                                        num_derivatives = num_derivatives,
+                                        Coords          = Coords[(i + Batch_Size):],
+                                        Data_Type       = Torch_dtype,
+                                        Device          = Device);
+
+    du_dt[(i + Batch_Size):]   = du_dt_Batch.detach();
+    diu_dxi[(i + Batch_Size):] = diu_dxi_Batch.detach();
 
     # Evaluate n at the output given by diu_dxi.
-    PDE_NN_batch = PDE_NN(diu_dxi);
+    PDE_NN_At_Coords = PDE_NN(diu_dxi).detach().squeeze().numpy().astype(dtype = np.float32);
 
     # Now populate the library the multi-index approach described above. Note
     # that the first column corresponds to a constant and should, therefore,
@@ -304,7 +325,7 @@ def Generate_Library(
             # Cycle through the sub-indices of this multi-index.
             for j in range(degree):
                 Library[:, position] = (Library[:, position]*
-                                        diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy().astype(dtype = np.float64));
+                                        diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy().astype(dtype = np.float32));
 
             # Increment position
             position += 1;
@@ -314,7 +335,7 @@ def Generate_Library(
 
     # All done, the library is now populated! Package everything together and
     # return.
-    return (PDE_NN_batch.detach().squeeze().numpy().astype(dtype = np.float64),
+    return (PDE_NN_At_Coords,
             Library,
             num_multi_indices,
             multi_indices_list);

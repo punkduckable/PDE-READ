@@ -297,7 +297,7 @@ def main():
                 Device              = Settings.Device);
 
         # Generate the library!
-        (PDE_NN_batch,
+        (PDE_NN_At_Coords,
          Library,
          num_multi_indices,
          multi_indices_list) = Generate_Library(
@@ -311,12 +311,12 @@ def main():
 
         #Extracted_PDE = Lasso_Selection(
         #                    A         = Library,
-        #                    b         = PDE_NN_batch,
+        #                    b         = PDE_NN_At_Coords,
         #                    alpha     = Settings.Least_Squares_Threshold);
 
         Extracted_PDE = Thresholded_Least_Squares(
                             A         = Library,
-                            b         = PDE_NN_batch,
+                            b         = PDE_NN_At_Coords,
                             threshold = Settings.Least_Squares_Threshold);
 
         Print_Extracted_PDE(
