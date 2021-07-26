@@ -365,4 +365,5 @@ def Settings_Reader() -> Settings_Container:
     Settings.Noise_Proportion      = float(Read_Line_After(File, "Noise Proportion [float] :").strip());
 
     # All done! Return the settings!
+    File.close();
     return Settings;
