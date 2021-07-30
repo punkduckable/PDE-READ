@@ -36,13 +36,13 @@
 Load Sol Network State [bool] :                  True
 Load PDE Network State [bool] :                  True
 Load Optimizer State [bool] :                    True
-  Load File Name [str] :                         KS_LBFGS_Rational
+  Load File Name [str] :                         KdV_LBFGS_Tanh_Noise_5
 
 Plot Final Result [bool] :                       False
 
-Save State [Bool] :                              True
+Save State [Bool] :                              False
 Save Plot [Bool] :                               False
-  Save File Name [str] :                         KS_LBFGS_Rational
+  Save File Name [str] :                         wdjedkadks
 
 
 
@@ -73,7 +73,7 @@ Save Plot [Bool] :                               False
 # 6, etc.). The latter controls the number of points (in the PDE domain) at
 # which we attempt to extract the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Discovery
+PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -110,14 +110,12 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Dropout Probability [float] :      0.0
-Sol Network - Activation Function [str] :        Rational
+Sol Network - Activation Function [str] :        Tanh
 
-PDE Network - PDE Order [int] :                  4
+PDE Network - PDE Order [int] :                  3
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   100
-PDE Network - Dropout Probability [float] :      0.0
-PDE Network - Activation Function [str] :        Rational
+PDE Network - Activation Function [str] :        Tanh
 
 Optimizer [Adam, LBFGS] :                        LBFGS
 
@@ -128,8 +126,8 @@ FP Precision [Half, Single, Double] :            Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         100
-Learning Rate [float] :                          .1
+Number of Epochs [int] :                         1000
+Learning Rate [float] :                          .005
 
 # PINNs, Discovery mode specific settings
 Epochs between new Collocation Points [int] :    20
@@ -146,4 +144,4 @@ Time Variable Series Label [str] :          t
 Space Variable Series Label [str] :         x
 Solution Series Label [str] :               usol
 
-Noise Proportion [float] :                  .01
+Noise Proportion [float] :                  .1

@@ -283,7 +283,6 @@ def Settings_Reader() -> Settings_Container:
     # Read u's network Architecture
     Settings.Sol_Num_Hidden_Layers   = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
     Settings.Sol_Neurons_Per_Layer   = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
-    Settings.Sol_Dropout_Probability = float(Read_Line_After(File, "Sol Network - Dropout Probability [float] :").strip());
 
     Buffer = Read_Line_After(File, "Sol Network - Activation Function [str] :").strip();
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
@@ -301,7 +300,6 @@ def Settings_Reader() -> Settings_Container:
     Settings.PDE_Num_Sol_derivatives = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
     Settings.PDE_Num_Hidden_Layers   = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
     Settings.PDE_Neurons_Per_Layer   = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
-    Settings.PDE_Dropout_Probability = float(Read_Line_After(File, "PDE Network - Dropout Probability [float] :").strip());
 
 
     Buffer = Read_Line_After(File, "PDE Network - Activation Function [str] :").strip();

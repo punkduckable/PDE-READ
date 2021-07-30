@@ -83,7 +83,7 @@ if(__name__ == "__main__"):
     Sol_NN.load_state_dict(Saved_State["Sol_Network_State"]);
 
     # Pick time to evaluate solution at.
-    t : float = 5.0;
+    t : float = 4.0;
 
     # Now, construct input coordinates.
     Position_Coords = Complex_Grid.view(-1, 1);

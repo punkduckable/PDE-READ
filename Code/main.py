@@ -40,8 +40,7 @@ def main():
                              Output_Dim          = 1,
                              Data_Type           = Settings.Torch_dtype,
                              Device              = Settings.Device,
-                             Activation_Function = Settings.Sol_Activation_Function,
-                             Dropout_Probability = Settings.Sol_Dropout_Probability);
+                             Activation_Function = Settings.Sol_Activation_Function);
 
     # Set up the neural network to approximate the PDE operator N.
     PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
@@ -50,8 +49,7 @@ def main():
                              Output_Dim          = 1,
                              Data_Type           = Settings.Torch_dtype,
                              Device              = Settings.Device,
-                             Activation_Function = Settings.PDE_Activation_Function,
-                             Dropout_Probability = Settings.PDE_Dropout_Probability);
+                             Activation_Function = Settings.PDE_Activation_Function);
 
     # Setup the optimizer.
     Optimizer = None;
@@ -92,7 +90,7 @@ def main():
         if(Settings.Load_PDE_Network_State == True):
             PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
 
-        # We do not load the optimizier if we're in Extraction mode. 
+        # We do not load the optimizier if we're in Extraction mode.
         if(Settings.Load_Optimize_State  == True and Settings.Mode != "Extraction"):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 

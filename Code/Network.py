@@ -58,16 +58,13 @@ class Neural_Network(torch.nn.Module):
                  Output_Dim          : int          = 1,    # Dimension of the output
                  Data_Type           : torch.dtype  = torch.float32,
                  Device              : torch.device = torch.device('cpu'),
-                 Activation_Function : str          = "Tanh",
-                 Dropout_Probability : float        = 0):
+                 Activation_Function : str          = "Tanh"):
         # Note: Fo the code below to work, Num_Hidden_Layers, Neurons_Per_Layer,
         # Input_Dim, and out_dim must be positive integers.
         assert(Num_Hidden_Layers   > 0), "Num_Hidden_Layers must be positive. Got %du" % Num_Hidden_Layers;
         assert(Neurons_Per_Layer   > 0), "Neurons_Per_Layer must be positive. Got %u" % Neurons_Per_Layer;
         assert(Input_Dim           > 0), "Input_Dim must be positive. Got %u" % Input_Dim;
         assert(Output_Dim          > 0), "Output_Dim must be positive. Got %u" % Output_Dim;
-        assert(Dropout_Probability >= 0 and Dropout_Probability < 1), \
-                    "Dropout_Probability must be in [0,1). Got %f" % Dropout_Probability;
 
         # Call the superclass initializer.
         super(Neural_Network, self).__init__();
@@ -78,9 +75,6 @@ class Neural_Network(torch.nn.Module):
         self.Input_Dim  : int = Input_Dim;
         self.Output_Dim : int = Output_Dim;
         self.Num_Layers : int = Num_Hidden_Layers + 1;
-
-        # Define Dropout module.
-        self.Dropout = torch.nn.Dropout(p = Dropout_Probability);
 
         # Define Layers ModuleList.
         self.Layers = torch.nn.ModuleList();
@@ -151,9 +145,9 @@ class Neural_Network(torch.nn.Module):
 
         A tensor containing the value of the network ealuated at X. """
 
-        # Pass X through the hidden layers (each of which has dropout).
+        # Pass X through the hidden layers.
         for i in range(0, self.Num_Layers - 1):
-            X = self.Dropout(self.Activation_Functions[i](self.Layers[i](X)));
+            X = self.Activation_Functions[i](self.Layers[i](X));
 
         # Pass through the last layer and return (there is no activation
         # function in the last layer)
