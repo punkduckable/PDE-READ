@@ -260,7 +260,6 @@ def Settings_Reader() -> Settings_Container:
     if (Settings.Mode == "Extraction"):
         Settings.Extracted_term_degree   = int(Read_Line_After(File, "Extracted PDE maximum term degree [int] :").strip());
         Settings.Num_Extraction_Points   = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
-        Settings.Least_Squares_Threshold = float(Read_Line_After(File, "Least Squares Threshold [float] :").strip());
 
     # Should we try to learn on a GPU?
     Buffer = Read_Line_After(File, "Train on CPU or GPU [GPU, CPU] :").strip();

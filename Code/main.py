@@ -307,22 +307,7 @@ def main():
                                     Poly_Degree     = Settings.Extracted_term_degree,
                                     Torch_dtype     = Settings.Torch_dtype,
                                     Device          = Settings.Device);
-
-        """Extracted_PDE = Lasso_Selection(
-                            A         = Library,
-                            b         = PDE_NN_At_Coords,
-                            alpha     = Settings.Least_Squares_Threshold);
-
-        Extracted_PDE = Thresholded_Least_Squares(
-                            A         = Library,
-                            b         = PDE_NN_At_Coords,
-                            threshold = Settings.Least_Squares_Threshold);
-
-        Print_Extracted_PDE(
-            Extracted_PDE      = Extracted_PDE,
-            num_multi_indices  = num_multi_indices,
-            multi_indices_list = multi_indices_list);"""
-
+        
         (X, Residual) = Recursive_Feature_Elimination(
                             A = Library,
                             b = PDE_NN_At_Coords);

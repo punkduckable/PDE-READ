@@ -36,7 +36,7 @@
 Load Sol Network State [bool] :                  True
 Load PDE Network State [bool] :                  True
 Load Optimizer State [bool] :                    True
-  Load File Name [str] :                         KdV_LBFGS_Tanh_Noise_5
+  Load File Name [str] :                         KdV_LBFGS_Rational_10
 
 Plot Final Result [bool] :                       False
 
@@ -89,7 +89,6 @@ Number of Testing Collocation Points [int] :     500
 # Extraction mode specific settings.
 Extracted PDE maximum term degree [int] :        2
 Number of Extraction Points [int] :              20000
-Least Squares Threshold [float] :                .2
 
 Train on CPU or GPU [GPU, CPU] :                 CPU
 
@@ -110,12 +109,12 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Activation Function [str] :        Tanh
+Sol Network - Activation Function [str] :        Rational
 
 PDE Network - PDE Order [int] :                  3
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   100
-PDE Network - Activation Function [str] :        Tanh
+PDE Network - Activation Function [str] :        Rational
 
 Optimizer [Adam, LBFGS] :                        LBFGS
 
@@ -139,7 +138,7 @@ Epochs between testing [int] :                   10
 ################################################################################
 # Data
 
-Data File [str] :                           KS.mat
+Data File [str] :                           KdV_sine.mat
 Time Variable Series Label [str] :          t
 Space Variable Series Label [str] :         x
 Solution Series Label [str] :               usol
