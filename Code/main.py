@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt;
 
 from Network         import Neural_Network;
 from Test_Train      import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Extraction      import Generate_Library, Thresholded_Least_Squares, Print_Extracted_PDE, Lasso_Selection;
+from Extraction      import Generate_Library, Print_Extracted_PDE, Recursive_Feature_Elimination;
 from Plotter         import Initialize_Axes, Setup_Axes;
 from Settings_Reader import Settings_Reader, Settings_Container;
 from Data_Setup      import Data_Loader, Data_Container, Generate_Random_Coords;
@@ -308,10 +308,10 @@ def main():
                                     Torch_dtype     = Settings.Torch_dtype,
                                     Device          = Settings.Device);
 
-        #Extracted_PDE = Lasso_Selection(
-        #                    A         = Library,
-        #                    b         = PDE_NN_At_Coords,
-        #                    alpha     = Settings.Least_Squares_Threshold);
+        """Extracted_PDE = Lasso_Selection(
+                            A         = Library,
+                            b         = PDE_NN_At_Coords,
+                            alpha     = Settings.Least_Squares_Threshold);
 
         Extracted_PDE = Thresholded_Least_Squares(
                             A         = Library,
@@ -321,7 +321,20 @@ def main():
         Print_Extracted_PDE(
             Extracted_PDE      = Extracted_PDE,
             num_multi_indices  = num_multi_indices,
-            multi_indices_list = multi_indices_list);
+            multi_indices_list = multi_indices_list);"""
+
+        (X, Residual) = Recursive_Feature_Elimination(
+                            A = Library,
+                            b = PDE_NN_At_Coords);
+
+        Num_Cols : int = Library.shape[1];
+        for i in range(Num_Cols):
+            print("After %u steps, the Residual was %lf and we extracted the following PDE:" % (i, Residual[i]));
+            Print_Extracted_PDE(
+                Extracted_PDE      = X[:, i],
+                num_multi_indices  = num_multi_indices,
+                multi_indices_list = multi_indices_list);
+
 
     else:
         print(("Mode is %s. It should be one of \"PINNs\", \"Discovery\", \"Extraction\"." % Settings.Mode));

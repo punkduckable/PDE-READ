@@ -1,5 +1,6 @@
 import numpy as np;
 import torch;
+import math;
 from typing import Tuple;
 from sklearn import linear_model;
 
@@ -440,6 +441,73 @@ def Thresholded_Least_Squares(
 
 
 
+def Recursive_Feature_Elimination(
+        A             : np.array,
+        b             : np.array) -> Tuple[np.array, np.array]:
+
+    # First, determine the number of columns of A. This will determine how many
+    # itterations we need.
+    Num_Rows : int = A.shape[0];
+    Num_Cols : int = A.shape[1];
+
+    # Scale each column of L to have unit L2 norm. This guaranstees that the
+    # componnet of the solution with the smallest magnitude is the least
+    # salient, in the sense that removing it will lead to the smallest increase
+    # in residual.
+    A_Column_L2_Norms      = np.empty(Num_Cols, dtype = np.float32);
+    A_Scalled              = np.empty((Num_Rows, Num_Cols), dtype = np.float32);
+    for j in range(Num_Cols):
+        # Sum up the squares of the entries of the jth column of A.
+        Sum = 0;
+        for i in range(Num_Rows):
+            Sum += A[i, j]*A[i, j];
+
+        # Determine L2 column norm, scale that column of A.
+        A_Column_L2_Norms[j] = math.sqrt(Sum);
+        A_Scalled[:, j] = A[:, j]/A_Column_L2_Norms[j];
+
+    # Initialize the residual, feature lists.
+    X                   = np.zeros((Num_Cols, Num_Cols), dtype = np.float32);
+    Remaining_Features  = np.ones(Num_Cols, dtype = np.bool);
+    Residual            = np.empty(Num_Cols, dtype = np.float32);
+
+    # Recursively eliminate features based on the magnitude of the weights.
+    for j in range(Num_Cols):
+        # First, compute the least squares solution, store it in the ith row
+        # of X.
+        X[Remaining_Features, j] = np.linalg.lstsq(A_Scalled[:, Remaining_Features], b, rcond = None)[0];
+
+        # Now, determine the smallest remaining component of the solution.
+        for p in range(Num_Cols):
+            if(Remaining_Features[p] == True):
+                break;
+
+        Index_Smallest = p;
+        for q in range(Num_Cols):
+            if(Remaining_Features[q] == True and (abs(X[q, j]) < abs(X[Index_Smallest, j]))):
+                Index_Smallest = q;
+
+        Remaining_Features[Index_Smallest] = False;
+
+        # Now evaluate the Residual (L2 norm)
+        Diff = b - A_Scalled @ X[:, j];
+        Residual[j] = math.sqrt(np.sum(np.multiply(Diff, Diff)).item());
+
+    # Now, we need to scale the components of X by the corresponding norms of
+    # the columns of A. Why? We solved A_Scalled*x ~= b in a least square sense.
+    # The jth column of A_Scalled is the jth column of A divided by the L2 norm
+    # of that column. Thus, if x' is the vector whose jth component is the jth
+    # component of x times the L2 norm of the jth column of A, then x'
+    # satisifies Ax' ~= b (in a least squares sense)
+    print(A_Column_L2_Norms);
+    for j in range(Num_Cols):
+        for i in range(Num_Cols):
+            X[i, j] /= A_Column_L2_Norms[i];
+
+    return X, Residual;
+
+
+
 def Print_Extracted_PDE(
         Extracted_PDE      : np.array,
         num_multi_indices  : np.array,
@@ -466,7 +534,6 @@ def Print_Extracted_PDE(
 
 
     # Start the printout.
-    print("Extracted the following PDE:");
     print("du/dt =", end = '');
 
     if (Extracted_PDE[0] != 0):
