@@ -346,6 +346,7 @@ def Generate_Library(
 def Recursive_Feature_Elimination(
         A             : np.array,
         b             : np.array) -> Tuple[np.array, np.array]:
+    """ Add a description!!!"""
 
     # First, determine the number of columns of A. This will determine how many
     # itterations we need.
@@ -357,7 +358,7 @@ def Recursive_Feature_Elimination(
     # salient, in the sense that removing it will lead to the smallest increase
     # in residual.
     A_Column_L2_Norms      = np.empty(Num_Cols, dtype = np.float32);
-    A_Scalled              = np.empty((Num_Rows, Num_Cols), dtype = np.float32);
+    A_Scaled              = np.empty((Num_Rows, Num_Cols), dtype = np.float32);
     for j in range(Num_Cols):
         # Sum up the squares of the entries of the jth column of A.
         Sum = 0;
@@ -366,18 +367,20 @@ def Recursive_Feature_Elimination(
 
         # Determine L2 column norm, scale that column of A.
         A_Column_L2_Norms[j] = math.sqrt(Sum);
-        A_Scalled[:, j] = A[:, j]/A_Column_L2_Norms[j];
+        A_Scaled[:, j] = A[:, j]/A_Column_L2_Norms[j];
 
-    # Initialize the residual, feature lists.
+    # Initialize the residual, feature lists. There's an extra element in the
+    # Residual Array to hold the Residual with all features removed (which is
+    # the L2 norm of b).
     X                   = np.zeros((Num_Cols, Num_Cols), dtype = np.float32);
     Remaining_Features  = np.ones(Num_Cols, dtype = np.bool);
-    Residual            = np.empty(Num_Cols, dtype = np.float32);
+    Residual            = np.empty(Num_Cols + 1, dtype = np.float32);
 
     # Recursively eliminate features based on the magnitude of the weights.
     for j in range(Num_Cols):
         # First, compute the least squares solution, store it in the ith row
         # of X.
-        X[Remaining_Features, j] = np.linalg.lstsq(A_Scalled[:, Remaining_Features], b, rcond = None)[0];
+        X[Remaining_Features, j] = np.linalg.lstsq(A_Scaled[:, Remaining_Features], b, rcond = None)[0];
 
         # Now, determine the smallest remaining component of the solution.
         for p in range(Num_Cols):
@@ -391,22 +394,80 @@ def Recursive_Feature_Elimination(
 
         Remaining_Features[Index_Smallest] = False;
 
-        # Now evaluate the Residual (L2 norm)
-        Diff = b - A_Scalled @ X[:, j];
-        Residual[j] = math.sqrt(np.sum(np.multiply(Diff, Diff)).item());
+        # Now evaluate the Residual (L2 norm of b - Ax)
+        Diff = b - A_Scaled @ X[:, j];
+        Sum = 0;
+        for i in range(Num_Rows):
+            Sum += Diff[i]*Diff[i];
+        Residual[j] = math.sqrt(Sum);
+
+    # Finally, evaluate the residual with all features removed.
+    Sum = 0;
+    for i in range(Num_Rows):
+        Sum += b[i]*b[i];
+    Residual[Num_Cols] = math.sqrt(Sum);
 
     # Now, we need to scale the components of X by the corresponding norms of
-    # the columns of A. Why? We solved A_Scalled*x ~= b in a least square sense.
-    # The jth column of A_Scalled is the jth column of A divided by the L2 norm
+    # the columns of A. Why? We solved A_Scaled*x ~= b in a least square sense.
+    # The jth column of A_Scaled is the jth column of A divided by the L2 norm
     # of that column. Thus, if x' is the vector whose jth component is the jth
     # component of x times the L2 norm of the jth column of A, then x'
     # satisifies Ax' ~= b (in a least squares sense)
-    print(A_Column_L2_Norms);
     for j in range(Num_Cols):
         for i in range(Num_Cols):
             X[i, j] /= A_Column_L2_Norms[i];
 
     return X, Residual;
+
+
+
+def Rank_Candidate_Solutions(
+        X : np.array,
+        Residual : np.array):
+    """ Add a description!!!"""
+
+    # First, determine the relative change in residual after each step.
+    Num_Cols = Residual.size - 1;
+    Residual_Change = np.empty(Num_Cols, dtype = np.float32);
+    for i in range(Num_Cols):
+        Residual_Change[i] = (Residual[i + 1] - Residual[i])/Residual[i];
+
+    # Initialize an array to keep track of which components of Residual_Change
+    # are the largest.
+    Index_Rankings = np.empty(Num_Cols, dtype = np.int64);
+    for i in range(Num_Cols):
+        Index_Rankings[i] = i;
+
+    # Now, figure out how to sort the elements of Residual_Change.
+    for i in range(Num_Cols):
+        # First, determine the index with the smallest remaining value of
+        # Residual_Change.
+        Index_Smallest = i;
+        for j in range(i, Num_Cols):
+            if(Residual_Change[j] < Residual_Change[Index_Smallest]):
+                Index_Smallest = j;
+
+        # Now stap the ith and Index_Smallest components of Residual_Change.
+        # Make note of the change in Index_Rankings.
+        temp = Residual_Change[i];
+        Residual_Change[i] = Residual_Change[Index_Smallest];
+        Residual_Change[Index_Smallest] = temp;
+
+        temp = Index_Rankings[i];
+        Index_Rankings[i] = Index_Rankings[Index_Smallest];
+        Index_Rankings[Index_Smallest] = temp;
+
+    # Now, reorder the columns of X, components of Residual according to
+    # Index_Rankings.
+    X_Ranked        = np.empty_like(X, dtype = np.float32);
+    Residual_Ranked = np.empty(Num_Cols, dtype = np.float32);
+
+    for j in range(Num_Cols):
+        X_Ranked[:, j]     = X[:, Index_Rankings[j]];
+        Residual_Ranked[j] = Residual[Index_Rankings[j]];
+
+    # All done!
+    return (X_Ranked, Residual_Ranked);
 
 
 

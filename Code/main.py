@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt;
 
 from Network         import Neural_Network;
 from Test_Train      import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
-from Extraction      import Generate_Library, Print_Extracted_PDE, Recursive_Feature_Elimination;
+from Extraction      import Generate_Library, Print_Extracted_PDE, Recursive_Feature_Elimination, Rank_Candidate_Solutions;
 from Plotter         import Initialize_Axes, Setup_Axes;
 from Settings_Reader import Settings_Reader, Settings_Container;
 from Data_Setup      import Data_Loader, Data_Container, Generate_Random_Coords;
@@ -307,16 +307,23 @@ def main():
                                     Poly_Degree     = Settings.Extracted_term_degree,
                                     Torch_dtype     = Settings.Torch_dtype,
                                     Device          = Settings.Device);
-        
+
+        # Recursively find a sequence of candidate least squares solutions.
         (X, Residual) = Recursive_Feature_Elimination(
                             A = Library,
                             b = PDE_NN_At_Coords);
 
+        # Rank the solutions according to the change in residual.
+        (X_Ranked, Residual_Ranked) = Rank_Candidate_Solutions(
+                                            X        = X,
+                                            Residual = Residual);
+
+        # Pint the 5 most likely PDEs.
         Num_Cols : int = Library.shape[1];
-        for i in range(Num_Cols):
-            print("After %u steps, the Residual was %lf and we extracted the following PDE:" % (i, Residual[i]));
+        for i in range(Num_Cols - 5, Num_Cols):
+            print("With a residual of %lf, the #%u most likely PDE is the following:" % (Residual_Ranked[i], Num_Cols - i));
             Print_Extracted_PDE(
-                Extracted_PDE      = X[:, i],
+                Extracted_PDE      = X_Ranked[:, i],
                 num_multi_indices  = num_multi_indices,
                 multi_indices_list = multi_indices_list);
 
