@@ -314,14 +314,16 @@ def main():
                             b = PDE_NN_At_Coords);
 
         # Rank the solutions according to the change in residual.
-        (X_Ranked, Residual_Ranked) = Rank_Candidate_Solutions(
-                                            X        = X,
-                                            Residual = Residual);
+        (X_Ranked,
+         Residual_Ranked,
+         Residual_Change) = Rank_Candidate_Solutions(
+                                X        = X,
+                                Residual = Residual);
 
         # Pint the 5 most likely PDEs.
         Num_Cols : int = Library.shape[1];
         for i in range(Num_Cols - 5, Num_Cols):
-            print("With a residual of %lf, the #%u most likely PDE is the following:" % (Residual_Ranked[i], Num_Cols - i));
+            print(("The #%u most likely PDE gives a residual of %.4lf (%.2lf%% better than the next sparsest PDE)." % (Num_Cols - i, Residual_Ranked[i], Residual_Change[i]*100)));
             Print_Extracted_PDE(
                 Extracted_PDE      = X_Ranked[:, i],
                 num_multi_indices  = num_multi_indices,

@@ -1,7 +1,7 @@
 import numpy as np;
 import torch;
 import math;
-from typing import Tuple;
+from typing import Tuple, List;
 from sklearn import linear_model;
 
 from Network import Neural_Network;
@@ -177,7 +177,10 @@ def Generate_Library(
         num_derivatives : int,
         Poly_Degree     : int,
         Torch_dtype     : torch.dtype = torch.float32,
-        Device          : torch.device = torch.device('cpu')) -> np.array:
+        Device          : torch.device = torch.device('cpu')) -> Tuple[np.array,
+                                                                       np.array,
+                                                                       np.array,
+                                                                       List]:
     """ This function populates the library matrix in the SINDY algorithm. How
     this works (and why it works the way that it does) is a tad involved.... so
     buckle up, here comes a (rather verbose) explanation:
@@ -346,7 +349,53 @@ def Generate_Library(
 def Recursive_Feature_Elimination(
         A             : np.array,
         b             : np.array) -> Tuple[np.array, np.array]:
-    """ Add a description!!!"""
+    """ This function attempts to solve Ax = b in a least square sense. However,
+    it recursively eliminates the least important feature (component of x),
+    giving a sequence of progressively sparser least squares canididate
+    solutions. At each step, we record the candidiate solution and the L2
+    residual (||Ax - b||_2). At each step, we try to identify the feature that,
+    if removed, would add the least to the residual. In an ideal world, we could
+    identify this feature using the following algorithm:
+        for each feature x_k, find the least squares solution to Ax = b without
+        the kth feature (with the kth column of A removed), evaluate the
+        residual. Pick the feature which correspons to the smallest residual.
+    Doing this, however, would require O(n^2) least square solutions, which can
+    get very expensive very quickly. Thus, instead, we use an approimation. In
+    particular, we define the "least important feature" as the one whose
+    magnitude is the smallest. This criterion is mathematically justified if
+    each of A's columns has unit L2 norm. In this case, the residual is a smooth
+    quadratic function of each feature. Since the least squares solution is the
+    global minima of the Residual, we have
+        R(x - x_k e_k ) - R(x) = (1/2)(d^2R(x)/dx_k^2)(x_k^2)
+    This tells us how much the residual would change if removed the kth feature,
+    but held the others fixed. In reality, the residual from removing the kth
+    feature is given by the residual of the least squares solution with the kth
+    feature removed. In general, this solution is not x - x_k e_k. However,
+    the above gives us a rough approximation of the residual of the least
+    squares solution without the kth feature. A little math shows that
+    (d^2R(x)/dx_k^2) is the square of the L2 norm of the kth column of A. If
+    each column of A has unit L2 norm, then the above reduces to (1/2)(x_k^2),
+    meaning that the least important feature really is the one with the smallest
+    magnitude.
+
+    This function first scales the columns of A to have unit L2 norm. It then
+    solves Ax = b in the least squares sense, selects the feature with the
+    smallest magnitude, and then repeats with that feature removed.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    A : The 'A' in Ax = b
+
+    b : The 'b' in Ax = b.
+
+    ----------------------------------------------------------------------------
+    Returns :
+
+    A two element tuple. The first element holds a matrix, X. If A is an n by m
+    matrix, then X is an m by m matrix whose jth column holds the jth candidiate
+    solution vector. The second element is a vector, Residual, whose jth element
+    holds the residual of the jth canididate solution. """
 
     # First, determine the number of columns of A. This will determine how many
     # itterations we need.
@@ -422,9 +471,31 @@ def Recursive_Feature_Elimination(
 
 
 def Rank_Candidate_Solutions(
-        X : np.array,
-        Residual : np.array):
-    """ Add a description!!!"""
+        X        : np.array,
+        Residual : np.array) -> Tuple[np.array, np.array, np.array]:
+    """ This function ranks the candidiate solutions given by
+    "Recursive_Feature_Elimination" based on how much the residual increases
+    (in a relative sense) when we remove the least important term from each
+    candidiate solution.
+
+    ----------------------------------------------------------------------------
+    Arguments :
+
+    X, Residual : the outputs of Recursive_Feature_Elimination.
+
+    ----------------------------------------------------------------------------
+    Returns :
+
+    A three element tuple. The first element holds X_Ranked, a copy of X whose
+    columns are ranked according to how likely they are to be the true solution.
+    If X is an m by m matix, then X_ranked is as well. The 0 column of X_Ranked
+    is the least likely solution, while the last column of X_ranked is the most
+    likely solution. The second element is Residual_Ranked, a reordered version
+    of Residual, such  that the jth element of Residual_Ranked gives the
+    residual of the solution specified in the jth column of X_ranked. The third
+    element is a vector, Residual_Change, whose jth element specifies how much
+    the residual increases (as a percentage) when we remove the least important
+    feature from the solution specified in the jth column of X_ranked. """
 
     # First, determine the relative change in residual after each step.
     Num_Cols = Residual.size - 1;
@@ -467,7 +538,7 @@ def Rank_Candidate_Solutions(
         Residual_Ranked[j] = Residual[Index_Rankings[j]];
 
     # All done!
-    return (X_Ranked, Residual_Ranked);
+    return (X_Ranked, Residual_Ranked, Residual_Change);
 
 
 
