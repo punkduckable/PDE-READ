@@ -166,12 +166,13 @@ def main():
                 Data_Type                   = Settings.Torch_dtype,
                 Device                      = Settings.Device);
 
-            # Periodically print loss updates. Otherwise, just print the Epoch #
-            # to indicate that we're still alive.
+            # Periodically print loss updates. In all other Epochs, print the
+            # epoch number to indiciate that the code is still running.
             if((t % Settings.Epochs_Between_Prints == 0) or t == Epochs - 1):
                 # Alias the Loss counter for brevity
                 i : int = Loss_Counter;
 
+                # Determine losses on the testing, training data. 
                 (Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i]) = PINNs_Testing(
                     Sol_NN                      = Sol_NN,
                     PDE_NN                      = PDE_NN,

@@ -17,7 +17,7 @@ def Discovery_Training(
         Data_Type           : torch.dtype = torch.float32,
         Device              : torch.device = torch.device('cpu')) -> None:
     """ This function runs one epoch of training when in "Discovery" mode. In
-    this mode, we enforce the leaned PDE at the Collocation_Points, and the
+    this mode, we enforce the leaned PDE at the Collocation_Points and the
     Data_Values at the Data_Points.
 
     Note: This function works regardless of how many spatial variables u depends
@@ -28,7 +28,7 @@ def Discovery_Training(
 
     Sol_NN: The network that approximates the PDE solution.
 
-    PDE_NN: Neural network that approximates the PDE.
+    PDE_NN: The network that approximates the PDE.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
@@ -38,20 +38,19 @@ def Discovery_Training(
     Data_Coords: A tensor holding the coordinates of the points at which we
     compare the approximate solution to the true one. If u accepts d spatial
     coordinates, then this should be a d+1 column tensor whose ith row holds the
-    t, x_1,... x_d coordinates of the ith Data point.
+    t, x_1,... x_d coordinates of the ith Datapoint.
 
     Data_Values: A tensor holding the value of the true solution at the data
     points. If Data_Coords has N rows, then this should be an N element tensor
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    optimizer: the optimizer we use to train Sol_NN and PDE_NN. It should be
-    loaded with the gradients of both networks.
+    optimizer: the optimizer we use to train Sol_NN and PDE_NN. It should have
+    been initialized with both network's parameters.
 
-    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
-    PDE_NN should use this data type.
+    Data_Type: The data type of all tensors in Sol_NN, PDE_NN.
 
-    Device: The device that Sol_NN and PDE_NN are loaded on.
+    Device: The device for Sol_NN and PDE_NN.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -118,7 +117,7 @@ def Discovery_Testing(
 
     Sol_NN: The network that approximates the PDE solution.
 
-    PDE_NN: Neural network that approximates the learned PDE.
+    PDE_NN: The network that approximates the PDE.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
@@ -128,17 +127,16 @@ def Discovery_Testing(
     Data_Coords: A tensor holding the coordinates of the points at which we
     compare the approximate solution to the true one. If u accepts d spatial
     coordinates, then this should be a d+1 column tensor whose ith row holds the
-    t, x_1,... x_d coordinates of the ith Data point.
+    t, x_1,... x_d coordinates of the ith Datapoint.
 
     Data_Values: A tensor holding the value of the true solution at the data
     points. If Data_Coords has N rows, then this should be an N element tensor
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
-    PDE_NN should use this data type.
+    Data_Type: The data type of all tensors in Sol_NN, PDE_NN.
 
-    Device: The device that Sol_NN and PDE_NN are loaded on.
+    Device: The device for Sol_NN and PDE_NN.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -181,9 +179,9 @@ def PINNs_Training(
         Optimizer                   : torch.optim.Optimizer,
         Data_Type                   : torch.dtype = torch.float32,
         Device                      : torch.device = torch.device('cpu')) -> None:
-    """ This function runs one epoch of training when in "PINNs" mode. In
-    this mode, we enforce the leaned PDE at the Collocation_Points, impose
-    Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
+    """ This function runs one epoch of training when in "PINNs" mode. In this
+    mode, we enforce the leaned PDE at the Collocation_Points, the Initial
+    Conditions (ICs), and the Periodic Boundary Conditions (BCs).
 
     Note: This function works regardless of how many spatial variables u depends
     on so long as Collocation_Loss and Periodic_BC_Loss do too.
@@ -191,9 +189,9 @@ def PINNs_Training(
     ----------------------------------------------------------------------------
     Arguments:
 
-    Sol_NN: Neural network that approximates the solution to the learned PDE.
+    Sol_NN: The network that approximates the PDE solution.
 
-    PDE_NN: Neural network that approximates the PDE.
+    PDE_NN: The network that approximates the PDE.
 
     IC_Coords: A tensor that holds the coordinates of each point that we
     enforce the Initial Condition. If u accepts d spatial coordinates, then this
@@ -221,10 +219,9 @@ def PINNs_Training(
 
     Optimizer: the optimizer we use to train Sol_NN.
 
-    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
-    PDE_NN should use this data type.
+    Data_Type: The data type of all tensors in Sol_NN, PDE_NN.
 
-    Device: The device that Sol_NN and PDE_NN are loaded on.
+    Device: The device for Sol_NN and PDE_NN.
 
     ----------------------------------------------------------------------------
     Returns:
@@ -289,9 +286,9 @@ def PINNs_Testing(
         Collocation_Coords          : torch.Tensor,
         Data_Type                   : torch.dtype = torch.float32,
         Device                      : torch.device = torch.device('cpu')) -> Tuple[float, float, float]:
-    """ This function runs one epoch of testing when in "PINNs" mode. In
-    this mode, we enforce the leaned PDE at the Collocation_Points, impose
-    Initial Conditions (ICs), and Periodic Boundary Condtions (BCs).
+    """ This function runs one epoch of testing when in "PINNs" mode. In this
+    mode, we enforce the leaned PDE at the Collocation_Points, the Initial
+    Conditions (ICs), and the Periodic Boundary Conditions (BCs).
 
     Note: This function works regardless of how many spatial variables u depends
     on so long as Collocation_Loss and Periodic_BC_Loss do too.
@@ -299,9 +296,9 @@ def PINNs_Testing(
     ----------------------------------------------------------------------------
     Arguments:
 
-    Sol_NN: Neural network that approximates the solution to the learned PDE.
+    Sol_NN: The network that approximates the PDE solution.
 
-    PDE_NN: Neural network that approximates the PDE.
+    PDE_NN: The network that approximates the PDE.
 
     IC_Coords: A tensor that holds the coordinates of each point that we
     enforce the Initial Condition. If u accepts d spatial coordinates, then this
@@ -319,23 +316,22 @@ def PINNs_Testing(
     Uppder_Bound_Coords: A tensor that holds the coordinates of each grid point
     on the lower spatial bound of the domain.
 
-    Periodic_BCs_Highest_Order: If this is set to N, then we will enforce
-    periodic BCs on the solution and its first N-1 derivatives.
+    Periodic_BCs_Highest_Order: If this is N, then we will enforce periodic BCs
+    on the solution and its first N-1 derivatives.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
     tensor whose ith row holds the t, x_1,... x_d coordinates the ith
     Collocation point.
 
-    Data_Type: The data type that all tensors use. All tensors in Sol_NN and
-    PDE_NN should use this data type.
+    Data_Type: The data type of all tensors in Sol_NN, PDE_NN.
 
-    Device: The device that Sol_NN and PDE_NN are loaded on.
+    Device: The device for Sol_NN and PDE_NN.
 
     ----------------------------------------------------------------------------
     Returns:
 
-    A tuple of three floats. The 0 element holds the Iniitial Condition loss,
+    A tuple of three floats. The 0 element holds the Initial Condition loss,
     the 1 element holds the Boundary Condition loss, the 2 element holds the
     Collocation loss. """
 
