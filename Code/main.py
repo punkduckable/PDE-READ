@@ -15,7 +15,7 @@ from Timing          import Timer;
 def main():
     ############################################################################
     # Load settings, print them.
-    
+
     Settings = Settings_Reader();
     print("Loaded the following settings:");
     for (setting, value) in Settings.__dict__.items():
@@ -30,11 +30,11 @@ def main():
     Setup_Timer = Timer();
     Setup_Timer.Start();
 
-    # Initialize Network hyperparameters.
+    # Set Network hyperparameters.
     Epochs        : int   = Settings.Epochs;
     Learning_Rate : float = Settings.Learning_Rate;
 
-    # Set up the neural network to approximate the PDE solution.
+    # Initialize the Solution, PDE networks.
     Sol_NN = Neural_Network( Num_Hidden_Layers   = Settings.Sol_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.Sol_Neurons_Per_Layer,
                              Input_Dim           = 2,
@@ -43,7 +43,6 @@ def main():
                              Device              = Settings.Device,
                              Activation_Function = Settings.Sol_Activation_Function);
 
-    # Set up the neural network to approximate the PDE operator N.
     PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
                              Input_Dim           = Settings.PDE_Num_Sol_derivatives + 1,
