@@ -385,9 +385,9 @@ def Recursive_Feature_Elimination(
     ----------------------------------------------------------------------------
     Arguments:
 
-    A : The 'A' in Ax = b
+    A: The 'A' in Ax = b
 
-    b : The 'b' in Ax = b.
+    b: The 'b' in Ax = b.
 
     ----------------------------------------------------------------------------
     Returns :
@@ -481,7 +481,7 @@ def Rank_Candidate_Solutions(
     ----------------------------------------------------------------------------
     Arguments :
 
-    X, Residual : the outputs of Recursive_Feature_Elimination.
+    X, Residual: the outputs of Recursive_Feature_Elimination.
 
     ----------------------------------------------------------------------------
     Returns :

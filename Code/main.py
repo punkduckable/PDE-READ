@@ -14,7 +14,8 @@ from Timing          import Timer;
 
 def main():
     ############################################################################
-    # Load settings from the settings file, print them.
+    # Load settings, print them.
+    
     Settings = Settings_Reader();
     print("Loaded the following settings:");
     for (setting, value) in Settings.__dict__.items():

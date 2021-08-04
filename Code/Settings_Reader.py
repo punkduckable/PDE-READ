@@ -16,51 +16,46 @@ class Settings_Container:
 
 
 def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = False) -> int:
-    """ This function searches for Phrase_In within Line_In. If found, it
-    returns the index of the first character in Line_In after the first instance
-    of Phrase_In within Line_In.
+    """ This function searches for the substring Phrase_In within Line_In.
 
     ----------------------------------------------------------------------------
     Arguments:
 
-    Line_In: A string that contains the line of text. The program searches for
-    Phrase_In within Line_In.
+    Line_In: A string. The program searches for the substring Phrase_In within
+    Line_In.
 
     Phrase_In: A string containing the phrase we're searching for.
 
     Case_Sensitive: Controls if the search is case sensitive or not. (see
-    Read_Line_After's doc string for more detials).
+    Read_Line_After's docstring for more details).
 
     ----------------------------------------------------------------------------
     Returns:
 
-    If we can find Phrase_In within Line_In, then this returns the index of the
-    first character in Line_In after the first instance of Phrase_In within
-    Line_In. If we can't find Phrase_In within Line_In, then this function
-    returns -1. """
+    If Phrase_In is a substring of Line_In, then this returns the index of the
+    first character after the first instance of Phrase_In within Line_In. If
+    Phrase_In is NOT a substring of Line_In, then this function returns -1. """
 
-    # First, get the number of characters in Line, Phrase. We will use these as
-    # loop bounds.
+    # First, get the number of characters in Line/Phrase.
     Num_Chars_Line : int = len(Line_In);
     Num_Chars_Phrase : int = len(Phrase_In);
 
-    # If we should ignore case, then map Phrase, Line to lower case versions of
-    # themselves. Note that we perform this operation on a copy of the input
-    # Line/Phrase so that we don't modify the passes variables.
-    Line = Line_In;
+    # If we're ignoring case, then map Phrase, Line to lower case versions of
+    # themselves. Note: We don't want to modify the original variables. Since
+    # Python passes by references, we store this result in a copy of Line/Phrase
     Phrase = Phrase_In;
     if(Case_Sensitive == False):
         Line = Line.lower();
         Phrase = Phrase.lower();
 
-    # If Phrase is in Line, then the first character of Phrase must occur before
-    # the Num_Chars_Line - Num_Chars_Phrase character of Line (think about it).
-    # Thus, we only need to loop up to the Num_Chars_Line - Num_Chars_Phrase
-    # character of Line.
+    # If Phrase is a substring of Line, then the first character of Phrase must
+    # occur before the (Num_Chars_Line - Num_Chars_Phrase) character of Line.
+    # Thus, we only need to check the first (Num_Chars_Line - Num_Chars_Phrase)
+    # characters of Line.
     for i in range(Num_Chars_Line - Num_Chars_Phrase + 1):
-        # Check if ith character of Line_Copy matches the 0th character of Phrase. If
-        # so, check for a match. This happens if for each j in 0,...
-        # Num_Chars_Phrase - 1, Line[i + j] == Phrase[j] (think about it).
+        # Check if ith character of Line_Copy matches the 0th character of
+        # Phrase. If so, check if for each j in {0,... Num_Chars_Phrase - 1},
+        # Line[i + j] == Phrase[j] (think about it).
         if(Line[i] == Phrase[0]):
             Match : Bool = True;
 
@@ -71,52 +66,52 @@ def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = F
                     Match = False;
                     break;
 
-            # If Match is still True, then i+ Num_Chars_Phrase is the index of
-            # the first character in Line beyond Phrase.
+            # If Match is still True, then Phrase is a substring of Line and
+            # i + Num_Chars_Phrase is the index of the first character in Line
+            # after Phrase.
             if(Match == True):
                 return i + Num_Chars_Phrase;
 
-    # If we get here, then we made it through Line without finding Phrase. Thus,
-    # Phrase is not in Line. We return -1 to indiciate that.
+    # If we're here, then Phrase is NOT a substring of Line. Return -1 to
+    # indiciate that.
     return -1;
 
 
 
 def Read_Line_After(File, Phrase : str, Case_Sensitive = False) -> str:
-    """ This function tries to find Phrase in a line of File. In particular,
-    it searches through the lines of File until it finds an instance of Phrase.
-    When it finds Phrase in one of File's lines, it returns everything after
-    the Phrase in that line. If it can't find the Phase in one of File's lines,
-    it raises an exception.
+    """ This function tries to find a line of File that contains Phrase as a
+    substring. Note that we start searching at the current position of the file
+    pointer. We do not search from the start of File.
 
     ----------------------------------------------------------------------------
     Arguments:
 
-    File: The file in which we want to search for Phrase.
+    File: The file we want to search for Phrase.
 
     Phrase: The Phrase we want to find.
 
     Case_Sensitive: Controls if the search is case sensitive or not. If
     True, then we search for an exact match (including case) of Phrase in one of
     File's lines. If not, then we try to find a line of File which contains the
-    same letters (in the same order) as Phrase.
+    same letters in the same order as Phrase.
 
     ----------------------------------------------------------------------------
     Returns:
 
-    Everything after Phrase in the first line of File that contains Phrase.
-    Thus, if the Phrase is "cat is", and one of File's lines is "the cat is fat"
-    , then this will return " fat". """
+    If Phrase is a substring of a line of File, then this function returns
+    everything in that line after the first occurrence of Phrase. If it can't
+    find Phrase in one of File's lines, it raises an exception. If the Phrase is
+    "cat is", and one of File's lines is "the cat is fat", then this will return
+    " fat". """
 
-    # Cycle through the lines of the file until we find one that matches
-    # the phrase.
+    # Search the lines of File for one that contains Phrase as a substring.
     while(True):
         # Get the next line
         Line = File.readline();
 
         # Python doesn't use end of file characters. However, readline will
-        # only retun an empty string if we're at the end of file. Thus, we can
-        # use this as our "end of file" check
+        # retun an empty string if and only if we're at the end of File. Thus,
+        # we can use this as our "end of file" check
         if(Line == ""):
             raise Read_Error("Could not find \"" + Phrase + "\" in File.");
 
@@ -124,11 +119,10 @@ def Read_Line_After(File, Phrase : str, Case_Sensitive = False) -> str:
         if (Line[0] == "#"):
             continue;
 
-        # Search for the phrase in Line. If it's in the line, this will
-        # return the index of the first character after phrase in Line.
-        # If Phrase is not in Line, this will return -1, indiciating that
-        # we should check the next line. Otherwise, we should return everything
-        # in Line after the returned Index.
+        # Check if Phrase is a substring of Line. If so, this will return the
+        # index of the first character after phrase in Line. In this case,
+        # return everything in Line after that index. If Phrase is not in
+        # Line. In this case, move on to the next line.
         Index : int = Index_After_Phrase(Line, Phrase, Case_Sensitive);
         if(Index == -1):
             continue;
@@ -148,8 +142,8 @@ def Settings_Reader() -> Settings_Container:
     ----------------------------------------------------------------------------
     Returns:
 
-    A Settings_Container object which contains all of the setings read in
-    from Settings.txt. The main function uses these to set up the program. """
+    A Settings_Container object that contains all the settings we read from
+    Settings.txt. The main function uses these to set up the program. """
 
     # Open file, initialze a Settings object.
     File = open("../Settings.txt", "r");
