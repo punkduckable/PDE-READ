@@ -43,6 +43,7 @@ def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = F
     # If we're ignoring case, then map Phrase, Line to lower case versions of
     # themselves. Note: We don't want to modify the original variables. Since
     # Python passes by references, we store this result in a copy of Line/Phrase
+    Line   = Line_In;
     Phrase = Phrase_In;
     if(Case_Sensitive == False):
         Line = Line.lower();
