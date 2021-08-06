@@ -71,8 +71,7 @@ def Periodic_BC_Loss(
     first N derivatives satisfy periodic boundary conditions (they match at the
     ends of the spatial domain).
 
-    Note: this function only works if Sol_NN is a function of 1 spatial
-    variable.
+    Note: This function only works if Sol_NN is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -167,8 +166,7 @@ def Collocation_Loss(
     square of the quantity above at each Collocation point. We return the mean
     of these squared errors.
 
-    Note: this function only works if Sol_NN is a function of 1 spatial
-    variable.
+    Note: This function only works if Sol_NN is a function of 1 spatial variable.
 
     ----------------------------------------------------------------------------
     Arguments:
