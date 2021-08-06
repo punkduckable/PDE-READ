@@ -20,8 +20,8 @@ def Discovery_Training(
     this mode, we enforce the leaned PDE at the Collocation_Points and the
     Data_Values at the Data_Points.
 
-    Note: This function works regardless of how many spatial variables u depends
-    on so long as Collocation_Loss does too.
+    Note: This function works regardless of how many spatial variables Sol_NN
+    depends on so long as Collocation_Loss does too.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -109,8 +109,8 @@ def Discovery_Testing(
     of the solution with respect to the inputs! Thus, we need torch to build a
     computational graph.
 
-    Note: This function works regardless of how many spatial variables u depends
-    on so long as Collocation_Loss does too.
+    Note: This function works regardless of how many spatial variables Sol_NN
+    depends on so long as Collocation_Loss does too.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -183,8 +183,8 @@ def PINNs_Training(
     mode, we enforce the leaned PDE at the Collocation_Points, the Initial
     Conditions (ICs), and the Periodic Boundary Conditions (BCs).
 
-    Note: This function works regardless of how many spatial variables u depends
-    on so long as Collocation_Loss and Periodic_BC_Loss do too.
+    Note: This function works regardless of how many spatial variables Sol_NN
+    depends on so long as Collocation_Loss and Periodic_BC_Loss do too.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -290,8 +290,8 @@ def PINNs_Testing(
     mode, we enforce the leaned PDE at the Collocation_Points, the Initial
     Conditions (ICs), and the Periodic Boundary Conditions (BCs).
 
-    Note: This function works regardless of how many spatial variables u depends
-    on so long as Collocation_Loss and Periodic_BC_Loss do too.
+    Note: This function works regardless of how many spatial variables Sol_NN
+    depends on so long as Collocation_Loss and Periodic_BC_Loss do too.
 
     ----------------------------------------------------------------------------
     Arguments:
