@@ -122,8 +122,8 @@ def Evaluate_Sol_Derivatives(
 
 
 def PDE_Residual(
-        Sol_NN      : Neural_Network,
-        PDE_NN      : Neural_Network,
+        Sol_NN    : Neural_Network,
+        PDE_NN    : Neural_Network,
         Coords    : torch.Tensor,
         Data_Type : torch.dtype = torch.float32,
         Device    : torch.device = torch.device('cpu')) -> torch.Tensor:
