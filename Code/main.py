@@ -341,7 +341,12 @@ def main():
     Main_Time = Main_Timer.Stop();
 
     if (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        print("Running %d epochs took %fs." % (Epochs, Main_Time));
+        # In these modes, training can take hours. Thus, it's usually more
+        # useful to report the time in minutes, seconds. 
+        Minutes : int   = int(Main_Time) // 60;
+        Seconds : float = Main_Time - 60*Minutes; 
+
+        print("Running %d epochs took %um,%f.2s (%fs)." % (Epochs, Minutes, Seconds, Main_Time));
         if(Epochs > 0):
             print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
 
