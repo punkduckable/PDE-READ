@@ -346,7 +346,7 @@ def main():
         Minutes : int   = int(Main_Time) // 60;
         Seconds : float = Main_Time - 60*Minutes; 
 
-        print("Running %d epochs took %um,%f.2s (%fs)." % (Epochs, Minutes, Seconds, Main_Time));
+        print("Running %d epochs took %um, %.2fs (%fs)." % (Epochs, Minutes, Seconds, Main_Time));
         if(Epochs > 0):
             print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
 
