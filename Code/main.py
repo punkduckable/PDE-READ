@@ -172,7 +172,7 @@ def main():
                 # Alias the Loss counter for brevity
                 i : int = Loss_Counter;
 
-                # Determine losses on the testing, training data. 
+                # Determine losses on the testing, training data.
                 (Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i]) = PINNs_Testing(
                     Sol_NN                      = Sol_NN,
                     PDE_NN                      = PDE_NN,
@@ -342,11 +342,11 @@ def main():
 
     if (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         # In these modes, training can take hours. Thus, it's usually more
-        # useful to report the time in minutes, seconds. 
+        # useful to report the time in minutes, seconds.
         Minutes : int   = int(Main_Time) // 60;
-        Seconds : float = Main_Time - 60*Minutes; 
+        Seconds : float = Main_Time - 60*Minutes;
 
-        print("Running %d epochs took %um, %.2fs (%fs)." % (Epochs, Minutes, Seconds, Main_Time));
+        print("Running %d epochs took %um,%.2fs (%fs)." % (Epochs, Minutes, Seconds, Main_Time));
         if(Epochs > 0):
             print("That's an average of %fs per epoch!" % (Main_Time/Epochs));
 

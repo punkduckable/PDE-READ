@@ -294,8 +294,12 @@ def Generate_Library(
     Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
 
     # Evaluate u, du/dx,... at each point. We use batches to reduce memory load.
-    du_dt   = torch.empty((num_rows), dtype = Torch_dtype);
-    diu_dxi = torch.empty((num_rows, num_sub_index_values), dtype = Torch_dtype);
+    du_dt   = torch.empty(  (num_rows),
+                            dtype  = Torch_dtype,
+                            device = Device);
+    diu_dxi = torch.empty(  (num_rows, num_sub_index_values),
+                            dtype  = Torch_dtype,
+                            device = Device);
 
     # Main loop
     Batch_Size : int = 1000;
@@ -322,7 +326,7 @@ def Generate_Library(
     diu_dxi[(i + Batch_Size):] = diu_dxi_Batch.detach();
 
     # Evaluate PDE_NN at the output given by diu_dxi.
-    PDE_NN_At_Coords = PDE_NN(diu_dxi).detach().squeeze().numpy().astype(dtype = np.float32);
+    PDE_NN_At_Coords = PDE_NN(diu_dxi).detach().cpu().squeeze().numpy().astype(dtype = np.float32);
 
     # Now populate the library using the multi-index approach described above.
     # Note that the first column corresponds to a constant and thus should
@@ -344,7 +348,7 @@ def Generate_Library(
             # Cycle through the sub-indices of this multi-index.
             for j in range(k):
                 Library[:, position] = (Library[:, position]*
-                                        diu_dxi[:, multi_indices[i, j]].detach().squeeze().numpy().astype(dtype = np.float32));
+                                        diu_dxi[:, multi_indices[i, j]].detach().cpu().squeeze().numpy().astype(dtype = np.float32));
 
             # Increment position
             position += 1;
