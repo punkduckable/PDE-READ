@@ -111,7 +111,7 @@ def Initialize_Axes() -> Tuple[plt.figure, np.array]:
 
     # True solution subplot.
     Axes2 = fig.add_subplot(2, 2, 2);
-    Axes2.set_title("True Solution");
+    Axes2.set_title("True Solution with Noise");
 
     # Difference between the true and approximate solutions.
     Axes3 = fig.add_subplot(2, 2, 3);
