@@ -107,19 +107,27 @@ def Initialize_Axes() -> Tuple[plt.figure, np.array]:
 
     # Approximate solution subplot.
     Axes1 = fig.add_subplot(2, 2, 1);
-    Axes1.set_title("Neural Network Approximation");
+    Axes1.set_title("Training data set with noise");
+    Axes1.set_xlabel("time (s)");
+    Axes1.set_ylabel("position (m)");
 
     # True solution subplot.
     Axes2 = fig.add_subplot(2, 2, 2);
-    Axes2.set_title("True Solution with Noise");
+    Axes2.set_title("Neural Network Approximation");
+    Axes2.set_xlabel("time (s)");
+    Axes2.set_ylabel("position (m)");
 
     # Difference between the true and approximate solutions.
     Axes3 = fig.add_subplot(2, 2, 3);
     Axes3.set_title("Absolute Error");
+    Axes3.set_xlabel("time (s)");
+    Axes3.set_ylabel("position (m)");
 
     # Residual subplot.
     Axes4 = fig.add_subplot(2, 2, 4);
     Axes4.set_title("PDE Residual");
+    Axes4.set_xlabel("time (s)");
+    Axes4.set_ylabel("position (m)");
 
     # Package the axes objects into an array.
     Axes = np.array([Axes1, Axes2, Axes3, Axes4]);
@@ -216,11 +224,11 @@ def Setup_Axes(
                             Device    = Device).reshape(n_x, n_t);
 
     # Plot the approximate solution + color bar.
-    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, Approx_Sol_on_grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the true solution + color bar
-    ColorMap1 = Axes[1].contourf(grid_t_coords, grid_x_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap1 = Axes[1].contourf(grid_t_coords, grid_x_coords, Approx_Sol_on_grid, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the Error between the true and approximate solution + color bar.
