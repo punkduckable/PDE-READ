@@ -1,5 +1,5 @@
-% KS equation: D_t U = 2.5(D_x^2 U) - .625(D_x^4 U) - 5(D_x U)(U)
-% with U(x, 0) = -cos(pi*x/5);
+% KS equation: D_t U = -(D_x^2 U) - (D_x^4 U) - (D_x U)(U)
+% with U(x, 0) = -cos(pi*x/10);
 
 
 % Set up the problem domain. I want this to run on
@@ -7,7 +7,7 @@
 x_l     = -5;
 x_h     = 5;
 t_l     = 0;
-t_h     = 5;
+t_h     = 10;
 Nt      = 251;
 Domain  = [x_l, x_h];
 T_span  = linspace(t_l, t_h, Nt);
@@ -18,9 +18,9 @@ T_span  = linspace(t_l, t_h, Nt);
 %       N(u)    = (U)(D_x U).
 %       Init(x) = -sin(pi*x/10)
 S           = spinop(Domain, T_span);
-S.lin       = @(u) -2.5*diff(u,2) - 0.625*diff(u,4);
-S.nonlin    = @(u) -2.5*diff(u.^2);
-S.init      = chebfun(@(x) -cos(pi*x/5), Domain, 'vectorize');
+S.lin       = @(u) -1.0*diff(u,2) - 1.0*diff(u,4);
+S.nonlin    = @(u) -0.5*diff(u.^2);
+S.init      = chebfun(@(x) -cos(pi*x/10), Domain, 'vectorize');
 
 
 % Solve!
