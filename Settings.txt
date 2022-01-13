@@ -12,7 +12,7 @@
 
 
 ################################################################################
-# Save, Load, Plot Settings
+# Save, Load Settings
 # The "Floating Point Precision" setting does not need to match that of the
 # saved state. Thus, for example, you can load a save that used singles into a
 # network that uses doubles.
@@ -26,13 +26,10 @@
 Load Sol Network State [bool] :                  False
 Load PDE Network State [bool] :                  False
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         KdV_Adam_Rational_30
-
-Plot Final Result [bool] :                       False
+  Load File Name [str] :                         Burgers_Tanh_50
 
 Save State [Bool] :                              True
-Save Plot [Bool] :                               False
-  Save File Name [str] :                         KdV_Adam_Rational_30
+  Save File Name [str] :                         Burgers_Tanh_50
 
 
 
@@ -70,7 +67,7 @@ Number of Training Collocation Points [int] :    7000
 Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           10000
+Number of Data Training Points [int] :           5000
 Number of Data Testing Points [int] :            1000
 Number of Training Collocation Points [int] :    5000
 Number of Testing Collocation Points [int] :     1000
@@ -96,12 +93,12 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Activation Function [str] :        Rational
+Sol Network - Activation Function [str] :        Tanh
 
-PDE Network - PDE Order [int] :                  3
+PDE Network - PDE Order [int] :                  2
 PDE Network - Number of Hidden Layers [int] :    2
-PDE Network - Neurons per Hidden Layer [int] :   100
-PDE Network - Activation Function [str] :        Rational
+PDE Network - Neurons per Hidden Layer [int] :   50
+PDE Network - Activation Function [str] :        Tanh
 
 Optimizer [Adam, LBFGS] :                        Adam
 
@@ -112,11 +109,11 @@ FP Precision [Half, Single, Double] :            Single
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         2000
+Number of Epochs [int] :                         1000
 Learning Rate [float] :                          .001
 
 # PINNs, Discovery mode specific settings
-Epochs between new Collocation Points [int] :    20
+Epochs between new Collocation Points [int] :    1
 
 Epochs between testing [int] :                   10
 
@@ -125,9 +122,5 @@ Epochs between testing [int] :                   10
 ################################################################################
 # Data
 
-Data File [str] :                           KdV_sine.mat
-Time Variable Series Label [str] :          t
-Space Variable Series Label [str] :         x
-Solution Series Label [str] :               usol
-
-Noise Proportion [float] :                  .3
+Data File [str] :                           burgers_sine.mat
+Noise Proportion [float] :                  .5

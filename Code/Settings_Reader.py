@@ -189,15 +189,6 @@ def Settings_Reader() -> Settings_Container:
 
         Settings.Load_File_Name = Read_Line_After(File, "Load File Name [str] :").strip();
 
-    # Should we plot the final results?
-    Buffer = Read_Line_After(File, "Plot Final Result [bool] :").strip();
-    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Plot_Final_Results = True;
-    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Plot_Final_Results = False;
-    else:
-        raise Read_Error("\"Plot Final Result\" should be \"True\" or \"False\". Got " + Buffer);
-
     # Should we save the network/optimizer state to file?
     Buffer = Read_Line_After(File, "Save State [bool] :").strip();
     if(Buffer[0] == 'T' or Buffer[0] == 't'):
@@ -207,17 +198,8 @@ def Settings_Reader() -> Settings_Container:
     else:
         raise Read_Error("\"Save State\" should be \"True\" or \"False\". Got " + Buffer);
 
-    # Should we save the plot?
-    Buffer = Read_Line_After(File, "Save Plot [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Save_Plot = True;
-    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Save_Plot = False;
-    else:
-        raise Read_Error("\"Save Plot\" should be \"True\" or \"False\". Got " + Buffer);
-
     # If we want to save anything, get save file name.
-    if(Settings.Save_To_File == True or Settings.Save_Plot == True):
+    if(Settings.Save_To_File == True):
         Settings.Save_File_Name = Read_Line_After(File, "Save File Name [str] :").strip();
 
 
@@ -350,10 +332,6 @@ def Settings_Reader() -> Settings_Container:
     # Data
 
     Settings.Data_File_Name        = Read_Line_After(File, "Data File [str] :").strip();
-    Settings.Time_Series_Label     = Read_Line_After(File, "Time Variable Series Label [str] :").strip();
-    Settings.Space_Series_Label    = Read_Line_After(File, "Space Variable Series Label [str] :").strip();
-    Settings.Solution_Series_Label = Read_Line_After(File, "Solution Series Label [str] :").strip();
-
     Settings.Noise_Proportion      = float(Read_Line_After(File, "Noise Proportion [float] :").strip());
 
     # All done! Return the settings!

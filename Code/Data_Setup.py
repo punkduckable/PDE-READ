@@ -48,12 +48,12 @@ def Data_Loader(Settings : Settings_Container):
 
     # Fetch spatial, temporal coordinates and the true solution. We cast these
     # to singles (32 bit fp) since that's what the rest of the code uses.
-    t_points    = data_in[Settings.Time_Series_Label] .flatten()[:].astype(dtype = Settings.Numpy_dtype);
-    x_points    = data_in[Settings.Space_Series_Label].flatten()[:].astype(dtype = Settings.Numpy_dtype);
-    True_Sol_In = (np.real(data_in[Settings.Solution_Series_Label])).astype(dtype = Settings.Numpy_dtype);
+    t_points    = data_in['t'].reshape(-1).astype(dtype = Settings.Numpy_dtype);
+    x_points    = data_in['x'].reshape(-1).astype(dtype = Settings.Numpy_dtype);
+    Data_Set = (np.real(data_in['usol'])).astype(dtype = Settings.Numpy_dtype);
 
     # Add noise to true solution.
-    True_Sol_In += (Settings.Noise_Proportion)*np.std(True_Sol_In)*np.random.randn(*True_Sol_In.shape);
+    Noisy_Data_Set = Data_Set + (Settings.Noise_Proportion)*np.std(Data_Set)*np.random.randn(*Data_Set.shape);
 
     # Generate the grid of (t, x) coordinates where we'll enforce the "true
     # solution". Each row of these arrays corresponds to a particular position.
@@ -66,7 +66,7 @@ def Data_Loader(Settings : Settings_Container):
 
     # Generate data coordinates, corresponding Data Values.
     All_Data_Coords = np.hstack((flattened_grid_t_coords, flattened_grid_x_coords));
-    All_Data_Values = True_Sol_In.flatten();
+    All_Data_Values = Noisy_Data_Set.flatten();
 
     # Determine the upper and lower spatial/temporal bounds. t is easy, x is
     # not. x_points only includes the lower spatial bound of the domain. The
@@ -83,9 +83,6 @@ def Data_Loader(Settings : Settings_Container):
     # items depending on what mode we're in. For now, fill the container with
     # everything that's ready to ship.
     Container = Data_Container();
-    Container.t_points         = t_points;
-    Container.x_points         = x_points;
-    Container.True_Sol         = True_Sol_In;
     Container.Dim_Lower_Bounds = np.array((t_lower, x_lower), dtype = Settings.Numpy_dtype);
     Container.Dim_Upper_Bounds = np.array((t_upper, x_upper), dtype = Settings.Numpy_dtype);
 
@@ -95,8 +92,8 @@ def Data_Loader(Settings : Settings_Container):
 
         ############################################################################
         # Initial Conditions
-        # Since each column of True_Sol_In corresponds to a particular time, the
-        # initial condition is just the 0 column of True_Sol_In. We also need
+        # Since each column of Noisy_Data_Set corresponds to a particular time, the
+        # initial condition is just the 0 column of Noisy_Data_Set. We also need
         # the corresponding coordinates.
 
         # Get number of spatial, temporal coordinates.
@@ -108,9 +105,9 @@ def Data_Loader(Settings : Settings_Container):
         IC_Coords = np.zeros((n_x, 2), dtype = Settings.Numpy_dtype);
         IC_Coords[:, 1] = x_points;
 
-        # Since each column of True_Sol_In corresponds to a particular time, the
-        # 0 column of True_Sol_In holds the initial condition.
-        IC_Data = True_Sol_In[:, 0];
+        # Since each column of Noisy_Data_Set corresponds to a particular time, the
+        # 0 column of Noisy_Data_Set holds the initial condition.
+        IC_Data = Noisy_Data_Set[:, 0];
 
 
 

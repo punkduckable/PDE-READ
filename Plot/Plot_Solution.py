@@ -1,38 +1,56 @@
-import numpy as np;
+import numpy;
 import torch;
 import matplotlib.pyplot as plt;
-from typing import Tuple;
+from   typing import Tuple;
 
-from Network import Neural_Network;
+from Settings_Reader    import Settings_Reader, Settings_Container;
+from Plot_Dataset       import Data_Container, Load_Dataset;
+
+# Nonsense to add Code diectory to the python search path.
+import os;
+import sys;
+
+# Get path to parent directory
+parent_dir  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
+
+# Add the Code directory to the python path.
+Code_path   = os.path.join(parent_dir, "Code");
+sys.path.append(Code_path);
+
+from Network        import Neural_Network;
 from Loss_Functions import PDE_Residual;
 
 
 
 def Evaluate_Approx_Sol(
         Sol_NN  : Neural_Network,
-        Coords  : torch.Tensor) -> np.array:
-    """ This function evaluates the approximate solution at each row of
-    Point_Coords. The only function that should call this is Setup_Axes. """
+        Coords  : torch.Tensor) -> numpy.array:
+    """ This function evaluates the approximate solution on the coordinate
+    in Coords. Coords should be a B by 2 tensor, where B is the batch size.
+    The ith row of Coords should house the (t, x) coordinates of the ith
+    coordinate.
+
+    Note: Plot_Solution is the only function that should call this one. """
 
     # To limit memory usage, we evaluate the network in batches. The ith row of
     # Coords should hold the ith coordinate where we want to evaluate the
     # network. Thus, the number of Coordinates is the number of rows in Coords.
-    Batch_Size : int = 5000;
+    Batch_Size : int = 1024;
     Num_Coords : int = Coords.shape[0];
 
     # Initialize an array to hold the value of the network at each coordinate.
-    Approx_Sol = np.empty(Num_Coords, dtype = np.float32);
+    Approx_Sol : numpy.array = numpy.empty(Num_Coords, dtype = numpy.float32);
 
     # main loop.
     for i in range(0, Num_Coords - Batch_Size, Batch_Size):
         # Evaluate Sol_NN at this batch of coordinates.
-        Batch_u = Sol_NN(Coords[i:(i + Batch_Size)]).squeeze();
+        Batch_u : torch.Tensor = Sol_NN(Coords[i:(i + Batch_Size), :]).view(-1);
 
-        # Store these results in the appropriate components of nApprox_Sol.
+        # Store these results in the appropriate components of Approx_Sol.
         Approx_Sol[i:(i + Batch_Size)] = Batch_u.detach().numpy();
 
     # Clean up loop.
-    Batch_u = Sol_NN(Coords[(i + Batch_Size):]).squeeze();
+    Batch_u : torch.Tensor        = Sol_NN(Coords[(i + Batch_Size):, :]).view(-1);
     Approx_Sol[(i + Batch_Size):] = Batch_u.detach().numpy();
 
     # All done! return!
@@ -43,49 +61,47 @@ def Evaluate_Approx_Sol(
 def Evaluate_Residual(
         Sol_NN          : Neural_Network,
         PDE_NN          : Neural_Network,
-        Coords          : torch.Tensor,
-        Data_Type       : torch.dtype,
-        Device          : torch.device):
-    """ This function evaluates the PDE residual at each row of Coords. The only
-    function that should call this is Setup_Axes. """
+        Coords          : torch.Tensor):
+    """ This function evaluates the PDE residual at each coordinate in Coords.
+    Coords should be a B by 2 tensor, where B is the batch size.
+    The ith row of Coords should house the (t, x) coordinates of the ith
+    coordinate.
+
+    Note: Plot_Solution is the only function that should call this one. """
 
     # To limit memory usage, we evaluate the Residual in batches. The ith row of
     # Coords should hold the ith coordinate where we want to evaluate the
     # network. Thus, the number of Coordinates is the number of rows of Coords.
-    Batch_Size : int = 2000;
+    Batch_Size : int = 1024;
     Num_Coords : int = Coords.shape[0];
 
     # Initialize an array to hold the PDE residual at each coordinate.
-    Residual = np.empty(Num_Coords, dtype = np.float32);
+    Residual : numpy.array = numpy.empty(Num_Coords, dtype = numpy.float32);
 
     # Main loop
     for i in range(0, Num_Coords - Batch_Size, Batch_Size):
         # Evaluate the PDE Residual for this batch of coordinates.
-        Batch_Residual = PDE_Residual(
+        Batch_Residual : torch.Tensor = PDE_Residual(
                             Sol_NN    = Sol_NN,
                             PDE_NN    = PDE_NN,
-                            Coords    = Coords[i:(i+Batch_Size)],
-                            Data_Type = Data_Type,
-                            Device    = Device);
+                            Coords    = Coords[i:(i+Batch_Size), :]).view(-1);
 
         # Store these in the appropriate components of Residual.
         Residual[i:(i + Batch_Size)] = Batch_Residual.detach().numpy();
 
     # Clean up loop.
-    Batch_Residual = PDE_Residual(
+    Batch_Residual : torch.Tensor = PDE_Residual(
                         Sol_NN    = Sol_NN,
                         PDE_NN    = PDE_NN,
-                        Coords    = Coords[(i+Batch_Size):],
-                        Data_Type = Data_Type,
-                        Device    = Device)
+                        Coords    = Coords[(i+Batch_Size):, :]).view(-1);
     Residual[(i + Batch_Size):] = Batch_Residual.detach().numpy();
 
-    # All done!
+    # All done! Return!
     return Residual;
 
 
 
-def Initialize_Axes() -> Tuple[plt.figure, np.array]:
+def Initialize_Axes() -> Tuple[plt.figure, numpy.array]:
     """ This function sets up the figure, axes objects for plotting. There are
     many settings to tweak, so I thought the code would be cleaner if I hid
     those details in this function.
@@ -119,7 +135,7 @@ def Initialize_Axes() -> Tuple[plt.figure, np.array]:
 
     # Difference between the true and approximate solutions.
     Axes3 = fig.add_subplot(2, 2, 3);
-    Axes3.set_title("Absolute Error");
+    Axes3.set_title("Error with noise-free dataset");
     Axes3.set_xlabel("time (s)");
     Axes3.set_ylabel("position (m)");
 
@@ -130,7 +146,7 @@ def Initialize_Axes() -> Tuple[plt.figure, np.array]:
     Axes4.set_ylabel("position (m)");
 
     # Package the axes objects into an array.
-    Axes = np.array([Axes1, Axes2, Axes3, Axes4]);
+    Axes = numpy.array([Axes1, Axes2, Axes3, Axes4]);
 
     # Set settings that are the same for each Axes object.
     for i in range(4):
@@ -146,16 +162,12 @@ def Initialize_Axes() -> Tuple[plt.figure, np.array]:
 
 
 
-def Setup_Axes(
+def Plot_Solution(
         fig                 : plt.figure,
-        Axes                : np.ndarray,
+        Axes                : numpy.ndarray,
         Sol_NN              : Neural_Network,
         PDE_NN              : Neural_Network,
-        x_points            : np.array,
-        t_points            : np.array,
-        True_Sol_On_Grid    : np.array,
-        Torch_dtype         : torch.dtype = torch.float32,
-        Device              : torch.device = torch.device('cpu')) -> None:
+        Data                : Data_Container) -> None:
     """ This function makes four plots. One for the approximate solution, one
     for the true solution, one for their difference, and one for the PDE
     residual. x_points and t_points specify the domain of all four plots.
@@ -175,18 +187,14 @@ def Setup_Axes(
 
     PDE_NN: The network that approximates the PDE.
 
-    x_points, t_points: The set of possible x and t values, respectively. We
-    use these to construct the grid of points that we plot on.
-
-    True_Sol_at_Points: A NumPy array containing the true solution at each
-    grid point (t, x coordinate). If t_points and x_points have n_t and n_x
-    elements, respectively, then True_Sol_at_Points should be an n_x by n_t
-    array whose i,j element holds the value of the true solution at t_points[j],
-    x_points[i].
-
-    Torch_dtype: All tensors in Sol_NN and PDE_NN should use this data type.
-
-    Device: The device that Sol_NN and PDE_NN are loaded on.
+    Data: This is a Data_Container object. It should contain four members (all
+    of which are numpy arrays): x_points, t_points, Data_Set, and Noisy_Data_Set.
+    x_points, t_points contain the set of possible x and t values, respectively.
+    Data_Set and Noisy_Data_Set should contain the true solution with and
+    without noise at each grid point (t, x coordinate). If t_points and x_points
+    have n_t and n_x elements, respectively, then Data_Set and Noisy_Data_Set
+    should be an n_x by n_t array whose i,j element holds the value of the true
+    solution at t_points[j], x_points[i].
 
     ----------------------------------------------------------------------------
     Returns:
@@ -196,16 +204,16 @@ def Setup_Axes(
     # First, construct the set of possible coordinates. grid_t_coords and
     # grid_x_coords are 2d NumPy arrays. Each row of these arrays corresponds to
     # a specific position. Each column corresponds to a specific time.
-    grid_t_coords, grid_x_coords = np.meshgrid(t_points, x_points);
+    grid_t_coords, grid_x_coords = numpy.meshgrid(Data.t_points, Data.x_points);
 
     # Flatten t_coords, x_coords. use them to generate grid point coodinates.
     flattened_grid_x_coords = grid_x_coords.reshape(-1, 1);
     flattened_grid_t_coords = grid_t_coords.reshape(-1, 1);
-    Grid_Point_Coords = torch.from_numpy(np.hstack((flattened_grid_t_coords, flattened_grid_x_coords))).to(dtype = Torch_dtype, device = Device);
+    Grid_Point_Coords = torch.from_numpy(numpy.hstack((flattened_grid_t_coords, flattened_grid_x_coords)));
 
     # Get number of x and t values, respectively.
-    n_x = len(x_points);
-    n_t = len(t_points);
+    n_x = len(Data.x_points);
+    n_t = len(Data.t_points);
 
     # Put networks into evaluation mode.
     Sol_NN.eval();
@@ -215,16 +223,14 @@ def Setup_Axes(
     # PDE residual at each coordinate. We need to reshape these into n_x by n_t
     # grids because that's what matplotlib's contour function wants.
     Approx_Sol_on_grid = Evaluate_Approx_Sol(Sol_NN, Grid_Point_Coords).reshape(n_x, n_t);
-    Error_On_Grid      = np.abs(Approx_Sol_on_grid - True_Sol_On_Grid);
+    Error_On_Grid      = numpy.abs(Approx_Sol_on_grid - Data.Data_Set);
     Residual_on_Grid   = Evaluate_Residual(
                             Sol_NN    = Sol_NN,
                             PDE_NN    = PDE_NN,
-                            Coords    = Grid_Point_Coords,
-                            Data_Type = Torch_dtype,
-                            Device    = Device).reshape(n_x, n_t);
+                            Coords    = Grid_Point_Coords).reshape(n_x, n_t);
 
     # Plot the approximate solution + color bar.
-    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, True_Sol_On_Grid, levels = 50, cmap = plt.cm.jet);
+    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, Data.Noisy_Data_Set, levels = 50, cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the true solution + color bar
@@ -242,3 +248,44 @@ def Setup_Axes(
     # Set tight layout (to prevent overlapping... I have no idea why this isn't
     # a default setting. Matplotlib, you are special kind of awful).
     fig.tight_layout();
+
+
+
+if __name__ == "__main__":
+    # First, read the settings
+    (Settings, _) = Settings_Reader();
+
+    # Next, load the dataset.
+    Data = Load_Dataset(
+                Data_Set_File_Name  = Settings.Data_Set_File_Name,
+                Noise_Level         = Settings.Noise_Level);
+
+    # Now, setup the networks.
+    Sol_NN = Neural_Network( Num_Hidden_Layers   = Settings.Sol_Num_Hidden_Layers,
+                             Neurons_Per_Layer   = Settings.Sol_Neurons_Per_Layer,
+                             Input_Dim           = 2,
+                             Output_Dim          = 1,
+                             Activation_Function = Settings.Sol_Activation_Function);
+
+    PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
+                             Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
+                             Input_Dim           = Settings.PDE_Num_Sol_derivatives + 1,
+                             Output_Dim          = 1,
+                             Activation_Function = Settings.PDE_Activation_Function);
+
+    Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
+    Saved_State = torch.load(Load_File_Path);
+    Sol_NN.load_state_dict(Saved_State["Sol_Network_State"]);
+    PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
+
+    # Finally, make the plot.
+    fig, Axes = Initialize_Axes();
+    Plot_Solution(      fig              = fig,
+                        Axes             = Axes,
+                        Sol_NN           = Sol_NN,
+                        PDE_NN           = PDE_NN,
+                        Data             = Data);
+
+    # Show the plot and save it!
+    plt.show();
+    fig.savefig(fname = "../Figures/%s" % Settings.Load_File_Name);
