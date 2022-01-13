@@ -1,22 +1,17 @@
-% Set up the spatial domain. 
+% Set up the problem domain. I want this to work on the domain 
+% (x, t) in [0, 10] x [0, 10]
 x_min   = 0;
 x_max   = 10;
-n_x     = 201;
-x_range = linspace(x_min, x_max, n_x);
-x_range = x_range(1:end - 1);
 domain = [x_min x_max];
 
-% Set up time domain. 
 t_min = 0;
 t_max = 10;
 n_t   = 201;
-t_range = linspace(t_min, t_max, n_t);
+tspan = linspace(t_min, t_max, n_t);
 
 % Set up Heat equation operator
 L = chebop(domain);
 L.op = @(u) .05*diff(u, 2);
-
-% Set periorid BCs
 L.bc = 'periodic';
 
 % Set initial condition 
@@ -27,15 +22,22 @@ u0 = chebfun(@(x) sin(5*(x - x_min)*(2*pi/(x_max - x_min))), domain);
 disp("Solving...");
 u = expm(L, t_range, u0);
 
-% Save
-disp("Saving...");
+% Write usol to array
+disp("Writing sol to array...");
 usol = zeros(n_x - 1, n_t);
+n_x     = 201;
+x_range = linspace(x_min, x_max, n_x);
+x_range = x_range(1:end - 1);
+
 for i_t = 1:n_t
    usol(:, i_t) = u{i_t}(x_range);
 end
+
+% Save!
+disp("Saving...");
 t = t_range;
 x = x_range;
-save('heat_sine.mat','t','x','usol') 
+save('Heat_Sine.mat','t','x','usol') 
 
 % Plot.
 disp("Plotting...");

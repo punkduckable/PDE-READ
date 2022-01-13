@@ -71,8 +71,8 @@ def main():
         elif(Settings.Optimizer == "LBFGS"):
             Optimizer = torch.optim.LBFGS(Params, lr = Learning_Rate);
         else:
-            print(("Optimizer is %s when it should be \"Adam\" or \"LBFGS\"" % Optimizer));
-            print("Aborting. Thrown by Setup_Optimizer");
+            print(("Optimizer is %s when it should be \"Adam\" or \"LBFGS\"" % Settings.Optimizer));
+            print("Aborting.");
             exit();
 
     # Check if we're loading anything from file.
