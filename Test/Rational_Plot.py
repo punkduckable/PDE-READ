@@ -79,7 +79,7 @@ if(__name__ == "__main__"):
                         Activation_Function = "Rational");
 
     # Load in saved network.
-    Saved_State = torch.load("../Saves/Burgers_LBFGS_Rational");
+    Saved_State = torch.load("../Saves/Burgers_Adam_Rational_100");
     Sol_NN.load_state_dict(Saved_State["Sol_Network_State"]);
 
     # Pick time to evaluate solution at.
