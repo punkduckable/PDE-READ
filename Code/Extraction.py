@@ -4,8 +4,8 @@ import math;
 from typing import Tuple, List;
 from sklearn import linear_model;
 
-from Network import Neural_Network;
-from PDE_Residual import Evaluate_Sol_Derivatives;
+from Network        import Neural_Network;
+from PDE_Residual   import Evaluate_Sol_Derivatives;
 
 
 
@@ -182,7 +182,6 @@ def Generate_Library(
         Coords          : torch.Tensor,
         num_derivatives : int,
         Poly_Degree     : int,
-        Torch_dtype     : torch.dtype = torch.float32,
         Device          : torch.device = torch.device('cpu')) -> Tuple[np.array,
                                                                        np.array,
                                                                        np.array,
@@ -253,8 +252,6 @@ def Generate_Library(
     example, if we expect to extract a linear PDE, then Poly_Degree should be 1.
     Setting Poly_Degree > 1 allows the algorithm to search for non-linear PDEs.
 
-    Torch_dtype: The data type that all tensors in Sol_NN and PDE_NN use.
-
     Device: The device that Sol_NN and PDE_NN are loaded on.
 
     ----------------------------------------------------------------------------
@@ -295,10 +292,10 @@ def Generate_Library(
 
     # Evaluate u, du/dx,... at each point. We use batches to reduce memory load.
     du_dt   = torch.empty(  (num_rows),
-                            dtype  = Torch_dtype,
+                            dtype  = torch.float32,
                             device = Device);
     diu_dxi = torch.empty(  (num_rows, num_sub_index_values),
-                            dtype  = Torch_dtype,
+                            dtype  = torch.float32,
                             device = Device);
 
     # Main loop
@@ -308,7 +305,7 @@ def Generate_Library(
                                 Sol_NN          = Sol_NN,
                                 num_derivatives = num_derivatives,
                                 Coords          = Coords[i:(i + Batch_Size)],
-                                Data_Type       = Torch_dtype,
+                                Data_Type       = torch.float32,
                                 Device          = Device);
 
         du_dt[i:(i + Batch_Size)]   = du_dt_Batch.detach();
@@ -319,7 +316,7 @@ def Generate_Library(
                                         Sol_NN          = Sol_NN,
                                         num_derivatives = num_derivatives,
                                         Coords          = Coords[(i + Batch_Size):],
-                                        Data_Type       = Torch_dtype,
+                                        Data_Type       = torch.float32,
                                         Device          = Device);
 
     du_dt[(i + Batch_Size):]   = du_dt_Batch.detach();

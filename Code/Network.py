@@ -1,5 +1,6 @@
 import numpy as np;
 import torch;
+import math;
 
 
 
@@ -56,6 +57,16 @@ class Rational(torch.nn.Module):
         return N_X/D_X;
 
 
+class Sin(torch.nn.Module):
+    """ This class defines a functor which implements the sin function. When
+    you use the __call__ method for this class (which is defined in the Module
+    superclass), it calls the forward method, which applies the sin function
+    element-wise to the input. I wrote this simply to implement a sin activation
+    function. """
+    def forward(self, input : torch.Tensor) -> torch.Tensor:
+        return torch.sin(input);
+
+
 
 class Neural_Network(torch.nn.Module):
     def __init__(self,
@@ -70,17 +81,16 @@ class Neural_Network(torch.nn.Module):
         # Input_Dim, and Output_Dim must be positive integers.
         assert(Num_Hidden_Layers   > 0), "Num_Hidden_Layers must be positive. Got %du" % Num_Hidden_Layers;
         assert(Neurons_Per_Layer   > 0), "Neurons_Per_Layer must be positive. Got %u" % Neurons_Per_Layer;
-        assert(Input_Dim           > 0), "Input_Dim must be positive. Got %u" % Input_Dim;
+        assert(Input_Dim           > 0), "Input_Dim must be positive. Got %u"  % Input_Dim;
         assert(Output_Dim          > 0), "Output_Dim must be positive. Got %u" % Output_Dim;
 
         super(Neural_Network, self).__init__();
 
         # Define object attributes. Note that there is an output layer in
-        # addition to the hidden layers (which is why Num_Layers is
-        # Num_Hidden_Layers + 1).
-        self.Input_Dim  : int = Input_Dim;
-        self.Output_Dim : int = Output_Dim;
-        self.Num_Layers : int = Num_Hidden_Layers + 1;
+        # addition to the hidden layers.
+        self.Input_Dim          : int = Input_Dim;
+        self.Output_Dim         : int = Output_Dim;
+        self.Num_Hidden_Layers  : int = Num_Hidden_Layers;
 
         # Initialize the Layers. We hold all layers in a ModuleList.
         self.Layers = torch.nn.ModuleList();
@@ -112,18 +122,45 @@ class Neural_Network(torch.nn.Module):
                                 bias         = True ).to(dtype = Data_Type, device = Device));
 
         # Initialize the weight matrices, bias vectors in the network.
-        for i in range(self.Num_Layers):
-            torch.nn.init.xavier_uniform_(self.Layers[i].weight);
-            torch.nn.init.zeros_(self.Layers[i].bias);
+        if(Activation_Function == "Tanh" or Activation_Function == "Rational"):
+            Gain : float = 0;
+            if  (Activation_Function == "Tanh"):
+                Gain = 5./3.;
+            elif(Activation_Function == "Rational"):
+                Gain = 1.41;
+
+            for i in range(self.Num_Hidden_Layers + 1):
+                torch.nn.init.xavier_normal_(self.Layers[i].weight, gain = Gain);
+                torch.nn.init.zeros_(self.Layers[i].bias);
+
+        elif(Activation_Function == "Sin"):
+            # I initialize my first weight matrix to be full of zeros. This is
+            # NOT what the SIREN paper says to do. However, I found that
+            # following their initialization scheme causes the derivatives of my
+            # network to explode. Zeroing out the first weight matrix
+            # initializes U as the zero map, but eliminates blowup.
+            torch.nn.init.constant_(self.Layers[0].weight, 0);
+            torch.nn.init.zeros_(   self.Layers[0].bias);
+
+            # The SIREN paper suggests initializing the elements of every weight
+            # matrix (except for the first one) by sampling a uniform
+            # distribution over [-c/root(n), c/root(n)], where c > root(6),
+            # and n is the number of neurons in the layer. I use c = 3 > root(6).
+            #
+            # Further, for simplicity, I initialize each bias vector to be zero.
+            a : float = 3./math.sqrt(Neurons_Per_Layer);
+            for i in range(1, self.Num_Hidden_Layers + 1):
+                torch.nn.init.uniform_( self.Layers[i].weight, -a, a);
+                torch.nn.init.zeros_(   self.Layers[i].bias);
 
         # Finally, set the Network's activation functions.
         self.Activation_Functions = torch.nn.ModuleList();
         if  (Activation_Function == "Tanh"):
             for i in range(Num_Hidden_Layers):
                 self.Activation_Functions.append(torch.nn.Tanh());
-        elif(Activation_Function == "Sigmoid"):
+        elif(Activation_Function == "Sin"):
             for i in range(Num_Hidden_Layers):
-                self.Activation_Functions.append(torch.nn.Sigmoid());
+                self.Activation_Functions.append(Sin());
         elif(Activation_Function == "Rational"):
             for i in range(Num_Hidden_Layers):
                 self.Activation_Functions.append(Rational(Data_Type = Data_Type, Device = Device));
@@ -154,9 +191,8 @@ class Neural_Network(torch.nn.Module):
         applied to the ith row of X. """
 
         # Pass X through the hidden layers. Each has an activation function.
-        for i in range(0, self.Num_Layers - 1):
+        for i in range(0, self.Num_Hidden_Layers):
             X = self.Activation_Functions[i](self.Layers[i](X));
 
-        # Pass through the last layer (which has no activation function) and
-        # return.
-        return self.Layers[self.Num_Layers - 1](X);
+        # Pass through the last layer (with no activation function) and return.
+        return self.Layers[self.Num_Hidden_Layers](X);

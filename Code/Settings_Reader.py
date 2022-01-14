@@ -3,11 +3,12 @@ import numpy;
 
 
 
+################################################################################
+# Classes
+
 class Read_Error(Exception):
     # Raised if we can't find a Phrase in a File.
     pass;
-
-
 
 class Settings_Container:
     # A container for data read in from the settings file.
@@ -15,7 +16,13 @@ class Settings_Container:
 
 
 
-def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = False) -> int:
+################################################################################
+# Fucntions
+
+def Index_After_Phrase(
+        Line_In   : str,
+        Phrase_In : str,
+        Case_Sensitive : bool = False) -> int:
     """ This function searches for the substring Phrase_In within Line_In.
 
     ----------------------------------------------------------------------------
@@ -37,7 +44,7 @@ def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = F
     Phrase_In is NOT a substring of Line_In, then this function returns -1. """
 
     # First, get the number of characters in Line/Phrase.
-    Num_Chars_Line : int = len(Line_In);
+    Num_Chars_Line   : int = len(Line_In);
     Num_Chars_Phrase : int = len(Phrase_In);
 
     # If we're ignoring case, then map Phrase, Line to lower case versions of
@@ -50,19 +57,19 @@ def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = F
         Phrase = Phrase.lower();
 
     # If Phrase is a substring of Line, then the first character of Phrase must
-    # occur before the (Num_Chars_Line - Num_Chars_Phrase) character of Line.
-    # Thus, we only need to check the first (Num_Chars_Line - Num_Chars_Phrase)
-    # characters of Line.
-    for i in range(Num_Chars_Line - Num_Chars_Phrase + 1):
-        # Check if ith character of Line_Copy matches the 0th character of
-        # Phrase. If so, check if for each j in {0,... Num_Chars_Phrase - 1},
-        # Line[i + j] == Phrase[j] (think about it).
+    # occur in the first (Num_Chars_Line - Num_Chars_Phrase) characters of
+    # Line. Thus, we only need to check the first (Num_Chars_Line -
+    # Num_Chars_Phrase) characters of Line.
+    for i in range(0, Num_Chars_Line - Num_Chars_Phrase - 1):
+        # Check if ith character of Line matches the 0 character of Phrase. If
+        # so, check if  Line[i + j] == Phrase[j] for each for each j in {0,...
+        # Num_Chars_Phrase - 1}.
         if(Line[i] == Phrase[0]):
             Match : Bool = True;
 
             for j in range(1, Num_Chars_Phrase):
-                # If Line[i + j] != Phrase[j], then we do not have a match, we
-                # should move onto the next character of Line.
+                # If Line[i + j] != Phrase[j], then we do not have a match and
+                # we should move onto the next character of Line.
                 if(Line[i + j] != Phrase[j]):
                     Match = False;
                     break;
@@ -79,7 +86,11 @@ def Index_After_Phrase(Line_In : str, Phrase_In : str, Case_Sensitive : bool = F
 
 
 
-def Read_Line_After(File, Phrase : str, Case_Sensitive = False) -> str:
+def Read_Line_After(
+        File,
+        Phrase         : str,
+        Comment_Char   : str = '#',
+        Case_Sensitive : bool = False) -> str:
     """ This function tries to find a line of File that contains Phrase as a
     substring. Note that we start searching at the current position of the file
     pointer. We do not search from the start of File.
@@ -89,7 +100,13 @@ def Read_Line_After(File, Phrase : str, Case_Sensitive = False) -> str:
 
     File: The file we want to search for Phrase.
 
-    Phrase: The Phrase we want to find.
+    Phrase: The Phrase we want to find. This should not include any instances
+    of the comment char.
+
+    Comment_Char: The character that denotes the start of a comment. If a line
+    contains an instance of the Comment_Char, then we will remove everything in
+    the line after the first instance of the Comment_Char before searching for
+    a match.
 
     Case_Sensitive: Controls if the search is case sensitive or not. If
     True, then we search for an exact match (including case) of Phrase in one of
@@ -116,9 +133,16 @@ def Read_Line_After(File, Phrase : str, Case_Sensitive = False) -> str:
         if(Line == ""):
             raise Read_Error("Could not find \"" + Phrase + "\" in File.");
 
-        # If the line is a comment (starts with '#'), then ignore it.
-        if (Line[0] == "#"):
+        # If the line is a comment, then ignore it.
+        if (Line[0] == Comment_Char):
             continue;
+
+        # Check for in-line comments.
+        Line_Length = len(Line);
+        for i in range(1, Line_Length):
+            if(Line[i] == Comment_Char):
+                Line = Line[:i-1];
+                break;
 
         # Check if Phrase is a substring of Line. If so, this will return the
         # index of the first character after phrase in Line. In this case,
@@ -129,6 +153,69 @@ def Read_Line_After(File, Phrase : str, Case_Sensitive = False) -> str:
             continue;
         else:
             return Line[Index:];
+
+
+
+def Read_Bool_Setting(File, Setting_Name : str) -> bool:
+    """ Reads a boolean setting from File.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File: The file we want to read the setting from.
+
+    Setting_Name: The name of the setting we're reading. We need this in case
+    of an error, so that we can print the appropiate error message.
+
+    ----------------------------------------------------------------------------
+    Return:
+
+    The value of the boolean setting. """
+
+    # Read the setting. This will yield a string.
+    Buffer = Read_Line_After(File, Setting_Name).strip();
+
+    # Check if the setting is present. If not, the Buffer will be empty.
+    if  (len(Buffer) == 0):
+        raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
+
+    # Attempt to parse the result. Throw an error if we can't.
+    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
+        return True;
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
+        return False;
+    else:
+        raise Read_Error("Invalid Setting Value: \"%s\" should be \"True\" or \"False\". Got " % Setting_Name + Buffer);
+
+
+
+def Read_Setting(File, Setting_Name : str) -> str:
+    """ Reads a non-boolean setting from File.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File: The file we want to read the setting from.
+
+    Setting_Name: The name of the setting we're reading. We need this in case
+    of an error, so that we can print the appropiate error message.
+
+    ----------------------------------------------------------------------------
+    Return:
+
+    The value of the non-boolean setting as a string (you may need to type cast
+    the returned value) """
+
+    # Read the setting. This will yield a string.
+    Buffer = Read_Line_After(File, Setting_Name).strip();
+
+    # Check if the setting is present. If not, the Buffer will be empty.
+    if  (len(Buffer) == 0):
+        raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
+
+    # Return!
+    return Buffer;
+
 
 
 
@@ -156,52 +243,27 @@ def Settings_Reader() -> Settings_Container:
     # Save, Load, Plot Settings
 
     # Load Sol network state from File?
-    Buffer = Read_Line_After(File, "Load Sol Network State [bool] :").strip();
-    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Load_Sol_Network_State = True;
-    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Load_Sol_Network_State = False;
-    else:
-        raise Read_Error("\"Load Sol Network State\" should be \"True\" or \"False\". Got " + Buffer);
+    Settings.Load_Sol_Network_State = Read_Bool_Setting(File, "Load Sol Network State [bool] :");
 
     # Load PDE network state from File?
-    Buffer = Read_Line_After(File, "Load PDE Network State [bool] :").strip();
-    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Load_PDE_Network_State = True;
-    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Load_PDE_Network_State = False;
-    else:
-        raise Read_Error("\"Load PDE Network State\" should be \"True\" or \"False\". Got " + Buffer);
+    Settings.Load_PDE_Network_State = Read_Bool_Setting(File, "Load PDE Network State [bool] :");
 
     # Load optimizer state from file?
-    Buffer = Read_Line_After(File, "Load Optimizer State [bool] :").strip();
-    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Load_Optimize_State = True;
-    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Load_Optimize_State = False;
-    else:
-        raise Read_Error("\"Load Optimizer State\" should be \"True\" or \"False\". Got " + Buffer);
+    Settings.Load_Optimizer_State   = Read_Bool_Setting(File, "Load Optimizer State [bool] :");
 
     # If we are loading anything, get load file name.
     if(     Settings.Load_Sol_Network_State == True or
             Settings.Load_PDE_Network_State == True or
-            Settings.Load_Optimize_State  == True):
+            Settings.Load_Optimizer_State   == True):
 
-        Settings.Load_File_Name = Read_Line_After(File, "Load File Name [str] :").strip();
+        Settings.Load_File_Name     = Read_Setting(File, "Load File Name [str] :");
 
     # Should we save the network/optimizer state to file?
-    Buffer = Read_Line_After(File, "Save State [bool] :").strip();
-    if(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Save_To_File = True;
-    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
-        Settings.Save_To_File = False;
-    else:
-        raise Read_Error("\"Save State\" should be \"True\" or \"False\". Got " + Buffer);
+    Settings.Save_To_File           = Read_Bool_Setting(File, "Save State [bool] :");
 
     # If we want to save anything, get save file name.
     if(Settings.Save_To_File == True):
-        Settings.Save_File_Name = Read_Line_After(File, "Save File Name [str] :").strip();
-
+        Settings.Save_File_Name     = Read_Setting(File, "Save File Name [str] :");
 
 
 
@@ -209,7 +271,7 @@ def Settings_Reader() -> Settings_Container:
     # Mode
 
     # PINNS, PDE Discovery, or PDE Extraction mode?
-    Buffer = Read_Line_After(File, "PINNs, Discovery, or Extraction mode [str] :").strip();
+    Buffer = Read_Setting(File, "PINNs, Discovery, or Extraction mode [str] :");
     if  (Buffer[0] == 'P' or Buffer[0] == 'p'):
         Settings.Mode = "PINNs";
     elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
@@ -222,24 +284,24 @@ def Settings_Reader() -> Settings_Container:
 
     # PINNs mode specific settings
     if(Settings.Mode == "PINNs"):
-        Settings.Periodic_BCs_Highest_Order   = int(Read_Line_After(File, "Periodic BCs highest order [int] :").strip());
-        Settings.Num_Train_Colloc_Points = int(Read_Line_After(File, "Number of Training Collocation Points [int] :").strip());
-        Settings.Num_Test_Colloc_Points  = int(Read_Line_After(File, "Number of Testing Collocation Points [int] :").strip());
+        Settings.Periodic_BCs_Highest_Order = int(Read_Setting(File, "Periodic BCs highest order [int] :"));
+        Settings.Num_Train_Colloc_Points    = int(Read_Setting(File, "Number of Training Collocation Points [int] :"));
+        Settings.Num_Test_Colloc_Points     = int(Read_Setting(File, "Number of Testing Collocation Points [int] :"));
 
     # Discovery mode specific settings
     if(Settings.Mode == "Discovery"):
-        Settings.Num_Train_Data_Points   = int(Read_Line_After(File, "Number of Data Training Points [int] :").strip());
-        Settings.Num_Test_Data_Points    = int(Read_Line_After(File, "Number of Data Testing Points [int] :").strip());
-        Settings.Num_Train_Colloc_Points = int(Read_Line_After(File, "Number of Training Collocation Points [int] :").strip());
-        Settings.Num_Test_Colloc_Points  = int(Read_Line_After(File, "Number of Testing Collocation Points [int] :").strip());
+        Settings.Num_Train_Data_Points   = int(Read_Setting(File, "Number of Data Training Points [int] :"));
+        Settings.Num_Test_Data_Points    = int(Read_Setting(File, "Number of Data Testing Points [int] :"));
+        Settings.Num_Train_Colloc_Points = int(Read_Setting(File, "Number of Training Collocation Points [int] :"));
+        Settings.Num_Test_Colloc_Points  = int(Read_Setting(File, "Number of Testing Collocation Points [int] :"));
 
     # Extraction mode specific settings.
     if (Settings.Mode == "Extraction"):
-        Settings.Extracted_term_degree   = int(Read_Line_After(File, "Extracted PDE maximum term degree [int] :").strip());
-        Settings.Num_Extraction_Points   = int(Read_Line_After(File, "Number of Extraction Points [int] :").strip());
+        Settings.Extracted_Term_Degree   = int(Read_Setting(File, "Extracted PDE maximum term degree [int] :"));
+        Settings.Num_Extraction_Points   = int(Read_Setting(File, "Number of Extraction Points [int] :"));
 
     # Should we try to learn on a GPU?
-    Buffer = Read_Line_After(File, "Train on CPU or GPU [GPU, CPU] :").strip();
+    Buffer = Read_Setting(File, "Train on CPU or GPU [GPU, CPU] :");
     if(Buffer[0] == 'G' or Buffer[0] == 'g'):
         if(torch.cuda.is_available() == True):
             Settings.Device = torch.device('cuda');
@@ -257,82 +319,69 @@ def Settings_Reader() -> Settings_Container:
     # Network Settings
 
     # Read u's network Architecture
-    Settings.Sol_Num_Hidden_Layers   = int(Read_Line_After(File, "Sol Network - Number of Hidden Layers [int] :").strip());
-    Settings.Sol_Neurons_Per_Layer   = int(Read_Line_After(File, "Sol Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.Sol_Num_Hidden_Layers   = int(Read_Setting(File, "Sol Network - Number of Hidden Layers [int] :"));
+    Settings.Sol_Neurons_Per_Layer   = int(Read_Setting(File, "Sol Network - Neurons per Hidden Layer [int] :"));
 
-    Buffer = Read_Line_After(File, "Sol Network - Activation Function [str] :").strip();
+    Buffer = Read_Setting(File, "Sol Network - Activation Function [str] :");
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
         Settings.Sol_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.Sol_Activation_Function = "Sigmoid";
+        Settings.Sol_Activation_Function = "Sin";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
         Settings.Sol_Activation_Function = "Tanh";
     else:
         raise Read_Error("\"Sol Network - Activation Function [str] :\" should be one of" + \
-                         "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
+                         "\"Tanh\", \"Sin\", or \"Rational\" Got " + Buffer);
 
 
     # Read N's network Architecture
-    Settings.PDE_Num_Sol_derivatives = int(Read_Line_After(File, "PDE Network - PDE Order [int] :").strip());
-    Settings.PDE_Num_Hidden_Layers   = int(Read_Line_After(File, "PDE Network - Number of Hidden Layers [int] :").strip());
-    Settings.PDE_Neurons_Per_Layer   = int(Read_Line_After(File, "PDE Network - Neurons per Hidden Layer [int] :").strip());
+    Settings.PDE_Num_Sol_derivatives = int(Read_Setting(File, "PDE Network - PDE Order [int] :"));
+    Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int] :"));
+    Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int] :"));
 
 
-    Buffer = Read_Line_After(File, "PDE Network - Activation Function [str] :").strip();
+    Buffer = Read_Setting(File, "PDE Network - Activation Function [str] :");
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
         Settings.PDE_Activation_Function = "Rational";
     elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.PDE_Activation_Function = "Sigmoid";
+        Settings.PDE_Activation_Function = "Sin";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
         Settings.PDE_Activation_Function = "Tanh";
     else:
         raise Read_Error("\"PDE Network - Activation Function [str] :\" should be one of" + \
-                         "\"Tanh\", \"Sigmoid\", or \"Rational\" Got " + Buffer);
+                         "\"Tanh\", \"Sin\", or \"Rational\" Got " + Buffer);
 
     # Read optimizer.
-    Buffer = Read_Line_After(File, "Optimizer [Adam, LBFGS] :").strip();
+    Buffer = Read_Setting(File, "Optimizer [Adam, LBFGS, SGD] :");
     if  (Buffer[0] == 'A' or Buffer[0] == 'a'):
         Settings.Optimizer = "Adam";
     elif(Buffer[0] == 'L' or Buffer[0] == 'l'):
         Settings.Optimizer = "LBFGS";
+    elif(Buffer[0] == 'S' or Buffer[0] == 's'):
+        Settings.Optimizer = "SGD";
     else:
         raise Read_Error("\"Optimizer [Adam, LBFGS] :\" should be \"Adam\" or \"LBFGS\". Got " + Buffer);
-
-    # Read floating point precision
-    Buffer = Read_Line_After(File, "FP Precision [Half, Single, Double] :").strip();
-    if  (Buffer[0] == 'S' or Buffer[0] == 's'):
-        Settings.Torch_dtype = torch.float32;
-        Settings.Numpy_dtype = numpy.float32;
-    elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
-        Settings.Torch_dtype = torch.float64;
-        Settings.Numpy_dtype = numpy.float64;
-    elif(Buffer[0] == 'H' or Buffer[0] == 'h'):
-        Settings.Torch_dtype = torch.float16;
-        Settings.Numpy_dtype = numpy.float16;
-    else:
-        raise Read_Error("\"Floating Point Precision [Single, Double] :\" should be \"Single\" or \"Double\". Got " + Buffer);
-
 
 
 
     ############################################################################
     # Learning hyper-parameters
 
-    Settings.Epochs = int(Read_Line_After(File, "Number of Epochs [int] :").strip());
-    Settings.Learning_Rate = float(Read_Line_After(File, "Learning Rate [float] :").strip());
+    Settings.Epochs                 = int(  Read_Setting(File, "Number of Epochs [int] :"));
+    Settings.Learning_Rate          = float(Read_Setting(File, "Learning Rate [float] :"));
+    Settings.Epochs_Between_Prints  = int(  Read_Setting(File, "Epochs between testing [int] :"));
 
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        Settings.Epochs_For_New_Coll_Pts = int(Read_Line_After(File, "Epochs between new Collocation Points [int] :").strip());
+        Settings.Epochs_For_New_Coll_Pts = int(Read_Setting(File, "Epochs between new Collocation Points [int] :"));
 
-    Settings.Epochs_Between_Prints = int(Read_Line_After(File, "Epochs between testing [int] :").strip());
 
 
 
     ############################################################################
     # Data
 
-    Settings.Data_File_Name        = Read_Line_After(File, "Data File [str] :").strip();
-    Settings.Noise_Proportion      = float(Read_Line_After(File, "Noise Proportion [float] :").strip());
+    Settings.Data_File_Name        = Read_Setting(File, "Data File [str] :");
+    Settings.Noise_Proportion      = float(Read_Setting(File, "Noise Proportion [float] :"));
 
     # All done! Return the settings!
     File.close();

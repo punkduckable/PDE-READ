@@ -37,7 +37,7 @@ def main():
                              Neurons_Per_Layer   = Settings.Sol_Neurons_Per_Layer,
                              Input_Dim           = 2,
                              Output_Dim          = 1,
-                             Data_Type           = Settings.Torch_dtype,
+                             Data_Type           = torch.float32,
                              Device              = Settings.Device,
                              Activation_Function = Settings.Sol_Activation_Function);
 
@@ -45,7 +45,7 @@ def main():
                              Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
                              Input_Dim           = Settings.PDE_Num_Sol_derivatives + 1,
                              Output_Dim          = 1,
-                             Data_Type           = Settings.Torch_dtype,
+                             Data_Type           = torch.float32,
                              Device              = Settings.Device,
                              Activation_Function = Settings.PDE_Activation_Function);
 
@@ -65,18 +65,20 @@ def main():
 
         # Now pass Params to the Optimizer.
         if  (Settings.Optimizer == "Adam"):
-            Optimizer = torch.optim.Adam(Params, lr = Learning_Rate);
+            Optimizer = torch.optim.Adam(   Params, lr = Learning_Rate);
         elif(Settings.Optimizer == "LBFGS"):
-            Optimizer = torch.optim.LBFGS(Params, lr = Learning_Rate);
+            Optimizer = torch.optim.LBFGS(  Params, lr = Learning_Rate);
+        elif(Settings.Optimizer == "SGD"):
+            Optimizer = torch.optim.SGD(    Params, lr = Learning_Rate);
         else:
-            print(("Optimizer is %s when it should be \"Adam\" or \"LBFGS\"" % Settings.Optimizer));
+            print(("Optimizer is %s when it should be \"Adam\", \"LBFGS\", or \"SGD\"" % Settings.Optimizer));
             print("Aborting.");
             exit();
 
     # Check if we're loading anything from file.
     if( Settings.Load_Sol_Network_State == True or
         Settings.Load_PDE_Network_State == True or
-        Settings.Load_Optimize_State    == True):
+        Settings.Load_Optimizer_State   == True):
 
         # Load the saved checkpoint. Make sure to map it to the correct device.
         Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
@@ -89,7 +91,7 @@ def main():
             PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
 
         # We do not load the optimizier if we're in Extraction mode.
-        if(Settings.Load_Optimize_State  == True and Settings.Mode != "Extraction"):
+        if(Settings.Load_Optimizer_State == True and Settings.Mode != "Extraction"):
             Optimizer.load_state_dict(Saved_State["Optimizer_State"]);
 
             # Enforce the new learning rate (do not use the saved one).
@@ -141,14 +143,14 @@ def main():
                         Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
                         Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
                         Num_Points       = Settings.Num_Train_Colloc_Points,
-                        Data_Type        = Settings.Torch_dtype,
+                        Data_Type        = torch.float32,
                         Device           = Settings.Device);
 
                 Test_Colloc_Coords = Generate_Random_Coords(
                         Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
                         Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
                         Num_Points       = Settings.Num_Test_Colloc_Points,
-                        Data_Type        = Settings.Torch_dtype,
+                        Data_Type        = torch.float32,
                         Device           = Settings.Device);
 
             PINNs_Training(
@@ -161,7 +163,7 @@ def main():
                 Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
                 Collocation_Coords          = Train_Colloc_Coords,
                 Optimizer                   = Optimizer,
-                Data_Type                   = Settings.Torch_dtype,
+                Data_Type                   = torch.float32,
                 Device                      = Settings.Device);
 
             # Periodically print loss updates. In all other Epochs, print the
@@ -180,7 +182,7 @@ def main():
                     Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                     Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
                     Collocation_Coords          = Test_Colloc_Coords,
-                    Data_Type                   = Settings.Torch_dtype,
+                    Data_Type                   = torch.float32,
                     Device                      = Settings.Device);
 
                 (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i]) = PINNs_Testing(
@@ -192,7 +194,7 @@ def main():
                     Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
                     Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
                     Collocation_Coords          = Train_Colloc_Coords,
-                    Data_Type                   = Settings.Torch_dtype,
+                    Data_Type                   = torch.float32,
                     Device                      = Settings.Device);
 
                 # Print losses!
@@ -229,16 +231,17 @@ def main():
                         Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
                         Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
                         Num_Points       = Settings.Num_Train_Colloc_Points,
-                        Data_Type        = Settings.Torch_dtype,
+                        Data_Type        = torch.float32,
                         Device           = Settings.Device);
 
                 Test_Colloc_Coords = Generate_Random_Coords(
                         Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
                         Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
                         Num_Points       = Settings.Num_Test_Colloc_Points,
-                        Data_Type        = Settings.Torch_dtype,
+                        Data_Type        = torch.float32,
                         Device           = Settings.Device);
 
+            # Now train!
             Discovery_Training(
                 Sol_NN              = Sol_NN,
                 PDE_NN              = PDE_NN,
@@ -246,7 +249,7 @@ def main():
                 Data_Coords         = Data_Container.Train_Data_Coords,
                 Data_Values         = Data_Container.Train_Data_Values,
                 Optimizer           = Optimizer,
-                Data_Type           = Settings.Torch_dtype,
+                Data_Type           = torch.float32,
                 Device              = Settings.Device);
 
             # Periodically print loss updates. Otherwise, just print the Epoch #
@@ -262,7 +265,7 @@ def main():
                     Collocation_Coords  = Test_Colloc_Coords,
                     Data_Coords         = Data_Container.Test_Data_Coords,
                     Data_Values         = Data_Container.Test_Data_Values,
-                    Data_Type           = Settings.Torch_dtype,
+                    Data_Type           = torch.float32,
                     Device              = Settings.Device);
 
                 (Train_Coll_Loss[i], Train_Data_Loss[i]) = Discovery_Testing(
@@ -271,7 +274,7 @@ def main():
                     Collocation_Coords  = Train_Colloc_Coords,
                     Data_Coords         = Data_Container.Train_Data_Coords,
                     Data_Values         = Data_Container.Train_Data_Values,
-                    Data_Type           = Settings.Torch_dtype,
+                    Data_Type           = torch.float32,
                     Device              = Settings.Device);
 
                 # Print losses!
@@ -291,7 +294,7 @@ def main():
                 Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
                 Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
                 Num_Points          = Settings.Num_Extraction_Points,
-                Data_Type           = Settings.Torch_dtype,
+                Data_Type           = torch.float32,
                 Device              = Settings.Device);
 
         # Generate the library!
@@ -303,8 +306,7 @@ def main():
                                     PDE_NN          = PDE_NN,
                                     Coords          = Extraction_Coords,
                                     num_derivatives = Settings.PDE_Num_Sol_derivatives,
-                                    Poly_Degree     = Settings.Extracted_term_degree,
-                                    Torch_dtype     = Settings.Torch_dtype,
+                                    Poly_Degree     = Settings.Extracted_Term_Degree,
                                     Device          = Settings.Device);
 
         # Recursively find a sequence of candidate least squares solutions.

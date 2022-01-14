@@ -26,10 +26,10 @@
 Load Sol Network State [bool] :                  False
 Load PDE Network State [bool] :                  False
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Tanh_50
+  Load File Name [str] :                         Burgers_Sine_SGD
 
 Save State [Bool] :                              True
-  Save File Name [str] :                         Burgers_Tanh_50
+  Save File Name [str] :                         Burgers_Sine_SGD
 
 
 
@@ -89,20 +89,18 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 # Architecture settings below must match those of the saved network. (same
 # number of layers and neurons per layer).
 #
-# Each Network's Activation function must be in {Rational, Tanh, Sigmoid}
+# Each Network's Activation function must be in {Rational, Tanh, Sin}
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Activation Function [str] :        Tanh
+Sol Network - Activation Function [str] :        Sin
 
 PDE Network - PDE Order [int] :                  2
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   50
-PDE Network - Activation Function [str] :        Tanh
+PDE Network - Activation Function [str] :        Sin
 
-Optimizer [Adam, LBFGS] :                        Adam
-
-FP Precision [Half, Single, Double] :            Single
+Optimizer [Adam, LBFGS, SGD] :                   SGD
 
 
 
@@ -112,15 +110,15 @@ FP Precision [Half, Single, Double] :            Single
 Number of Epochs [int] :                         1000
 Learning Rate [float] :                          .001
 
+Epochs between testing [int] :                   10
+
 # PINNs, Discovery mode specific settings
 Epochs between new Collocation Points [int] :    1
-
-Epochs between testing [int] :                   10
 
 
 
 ################################################################################
 # Data
 
-Data File [str] :                           burgers_sine.mat
-Noise Proportion [float] :                  .5
+Data File [str] :                           Burgers_Sine.mat
+Noise Proportion [float] :                  .0
