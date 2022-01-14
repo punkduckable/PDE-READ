@@ -18,7 +18,7 @@ Tspan   = linspace(t_l, t_h, Nt);
 S           = spinop(Domain, Tspan);
 S.lin       = @(u) -(0.1)*diff(u, 2) - (0.0001)*diff(u, 4);
 S.nonlin    = @(u) (0.1)*diff(u.^3, 2);
-S.init      = chebfun(@(x) 0.7*sin(4*pi*x)^5 - 0.5*sin(2*pi*x), Domain, 'vectorize');
+S.init      = chebfun(@(x) 0.2*sin(4*pi*x)^5 - 0.8*sin(pi*x), Domain, 'vectorize');
 
 % Solve!
 disp("Solving...");
