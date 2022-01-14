@@ -1,0 +1,38 @@
+################################################################################
+# Solution Plot Settings.
+
+# Where are the state_dict's for the networks we want to plot? (The plot we
+# generate will have the same name)
+Load File Name [str]:                            Burgers_Tanh_50
+
+# What is the architecture of the solution network? (this must match the
+# architecture of the saved network or pytorch will throw an error)
+Sol Network - Number of Hidden Layers [int]:     5
+Sol Network - Neurons per Hidden Layer [int]:    50
+Sol Network - Activation Function [str]:         Tanh
+
+# What about the PDE network?
+PDE Network - PDE Order [int]:                   2
+PDE Network - Number of Hidden Layers [int]:     2
+PDE Network - Neurons per Hidden Layer [int]:    50
+PDE Network - Activation Function [str]:         Tanh
+
+# Which dataset did the networks train on?
+Data Set File Name [str]:                        burgers_sine.mat
+
+# How much noise should we add to the dataset?
+Noise Level [float]:                             .3
+
+
+
+################################################################################
+# Data Set Plot Settings
+
+# Which dataset do you want to load?
+Data Set File Name [str]:                        burgers_sine.mat
+
+# What do you want to call this dataset?
+Data Set Name [str]:                            Burgers Sine data set (30% noise)
+
+# How much noise do you want to corrupt it with?
+Noise Level [float]:                             0.3

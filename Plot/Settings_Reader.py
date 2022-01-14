@@ -1,11 +1,10 @@
 import torch;
 import numpy;
-
+from typing import Tuple;
 
 
 ################################################################################
 # Classes
-
 class Read_Error(Exception):
     # Raised if we can't find a Phrase in a File.
     pass;
@@ -218,8 +217,7 @@ def Read_Setting(File, Setting_Name : str) -> str:
 
 
 
-
-def Settings_Reader() -> Settings_Container:
+def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
     """ This function reads the settings in Settings.txt.
 
     ----------------------------------------------------------------------------
@@ -230,159 +228,71 @@ def Settings_Reader() -> Settings_Container:
     ----------------------------------------------------------------------------
     Returns:
 
-    A Settings_Container object that contains all the settings we read from
-    Settings.txt. The main function uses these to set up the program. """
+    A Tuple of Settings_Container objects. The first contains all settings for
+    plotting the solution, while the second contains all the settings for
+    plotting a dataset. """
 
     # Open file, initialze a Settings object.
-    File = open("../Settings.txt", "r");
-    Settings = Settings_Container();
+    File              = open("./Settings.txt", "r");
+    Solution_Settings = Settings_Container();
+    Dataset_Settings  = Settings_Container();
 
 
 
     ############################################################################
-    # Save, Load, Plot Settings
+    # Plot Solution Settings.
 
-    # Load Sol network state from File?
-    Settings.Load_Sol_Network_State = Read_Bool_Setting(File, "Load Sol Network State [bool] :");
+    # Where are the networks saved?
+    Solution_Settings.Load_File_Name         = Read_Setting(File, "Load File Name [str]:");
 
-    # Load PDE network state from File?
-    Settings.Load_PDE_Network_State = Read_Bool_Setting(File, "Load PDE Network State [bool] :");
+    # Sol network architecture.
+    Solution_Settings.Sol_Num_Hidden_Layers  = int(Read_Setting(File, "Sol Network - Number of Hidden Layers [int]:"));
+    Solution_Settings.Sol_Neurons_Per_Layer  = int(Read_Setting(File, "Sol Network - Neurons per Hidden Layer [int]:"));
 
-    # Load optimizer state from file?
-    Settings.Load_Optimizer_State   = Read_Bool_Setting(File, "Load Optimizer State [bool] :");
-
-    # If we are loading anything, get load file name.
-    if(     Settings.Load_Sol_Network_State == True or
-            Settings.Load_PDE_Network_State == True or
-            Settings.Load_Optimizer_State   == True):
-
-        Settings.Load_File_Name     = Read_Setting(File, "Load File Name [str] :");
-
-    # Should we save the network/optimizer state to file?
-    Settings.Save_To_File           = Read_Bool_Setting(File, "Save State [bool] :");
-
-    # If we want to save anything, get save file name.
-    if(Settings.Save_To_File == True):
-        Settings.Save_File_Name     = Read_Setting(File, "Save File Name [str] :");
-
-
-
-    ############################################################################
-    # Mode
-
-    # PINNS, PDE Discovery, or PDE Extraction mode?
-    Buffer = Read_Setting(File, "PINNs, Discovery, or Extraction mode [str] :");
-    if  (Buffer[0] == 'P' or Buffer[0] == 'p'):
-        Settings.Mode = "PINNs";
-    elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
-        Settings.Mode = "Discovery";
-    elif(Buffer[0] == 'E' or Buffer[0] == 'e'):
-        Settings.Mode = "Extraction";
-    else:
-        raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be" + \
-                         "\"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
-
-    # PINNs mode specific settings
-    if(Settings.Mode == "PINNs"):
-        Settings.Periodic_BCs_Highest_Order = int(Read_Setting(File, "Periodic BCs highest order [int] :"));
-        Settings.Num_Train_Colloc_Points    = int(Read_Setting(File, "Number of Training Collocation Points [int] :"));
-        Settings.Num_Test_Colloc_Points     = int(Read_Setting(File, "Number of Testing Collocation Points [int] :"));
-
-    # Discovery mode specific settings
-    if(Settings.Mode == "Discovery"):
-        Settings.Num_Train_Data_Points   = int(Read_Setting(File, "Number of Data Training Points [int] :"));
-        Settings.Num_Test_Data_Points    = int(Read_Setting(File, "Number of Data Testing Points [int] :"));
-        Settings.Num_Train_Colloc_Points = int(Read_Setting(File, "Number of Training Collocation Points [int] :"));
-        Settings.Num_Test_Colloc_Points  = int(Read_Setting(File, "Number of Testing Collocation Points [int] :"));
-
-    # Extraction mode specific settings.
-    if (Settings.Mode == "Extraction"):
-        Settings.Extracted_Term_Degree   = int(Read_Setting(File, "Extracted PDE maximum term degree [int] :"));
-        Settings.Num_Extraction_Points   = int(Read_Setting(File, "Number of Extraction Points [int] :"));
-
-    # Should we try to learn on a GPU?
-    Buffer = Read_Setting(File, "Train on CPU or GPU [GPU, CPU] :");
-    if(Buffer[0] == 'G' or Buffer[0] == 'g'):
-        if(torch.cuda.is_available() == True):
-            Settings.Device = torch.device('cuda');
-        else:
-            Settings.Device = torch.device('cpu');
-            print("You requested a GPU, but cuda is not available on this machine. Switching to CPU");
-    elif(Buffer[0] == 'C' or Buffer[0] == 'c'):
-        Settings.Device = torch.device('cpu');
-    else:
-        raise Read_Error("\"Train on CPU or GPU\" should be \"CPU\" or \"GPU\". Got " + Buffer);
-
-
-
-    ############################################################################
-    # Network Settings
-
-    # Read u's network Architecture
-    Settings.Sol_Num_Hidden_Layers   = int(Read_Setting(File, "Sol Network - Number of Hidden Layers [int] :"));
-    Settings.Sol_Neurons_Per_Layer   = int(Read_Setting(File, "Sol Network - Neurons per Hidden Layer [int] :"));
-
-    Buffer = Read_Setting(File, "Sol Network - Activation Function [str] :");
+    Buffer = Read_Setting(File, "Sol Network - Activation Function [str]:");
     if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
-        Settings.Sol_Activation_Function = "Rational";
-    elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.Sol_Activation_Function = "Sin";
+        Solution_Settings.Sol_Activation_Function = "Rational";
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.Sol_Activation_Function = "Tanh";
-    else:
-        raise Read_Error("\"Sol Network - Activation Function [str] :\" should be one of" + \
-                         "\"Tanh\", \"Sin\", or \"Rational\" Got " + Buffer);
-
-
-    # Read N's network Architecture
-    Settings.PDE_Num_Sol_derivatives = int(Read_Setting(File, "PDE Network - PDE Order [int] :"));
-    Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int] :"));
-    Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int] :"));
-
-
-    Buffer = Read_Setting(File, "PDE Network - Activation Function [str] :");
-    if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
-        Settings.PDE_Activation_Function = "Rational";
-    elif(Buffer[0] == 'S' or Buffer[0] == 'S'):
-        Settings.PDE_Activation_Function = "Sin";
-    elif(Buffer[0] == 'T' or Buffer[0] == 't'):
-        Settings.PDE_Activation_Function = "Tanh";
-    else:
-        raise Read_Error("\"PDE Network - Activation Function [str] :\" should be one of" + \
-                         "\"Tanh\", \"Sin\", or \"Rational\" Got " + Buffer);
-
-    # Read optimizer.
-    Buffer = Read_Setting(File, "Optimizer [Adam, LBFGS, SGD] :");
-    if  (Buffer[0] == 'A' or Buffer[0] == 'a'):
-        Settings.Optimizer = "Adam";
-    elif(Buffer[0] == 'L' or Buffer[0] == 'l'):
-        Settings.Optimizer = "LBFGS";
+        Solution_Settings.Sol_Activation_Function = "Tanh";
     elif(Buffer[0] == 'S' or Buffer[0] == 's'):
-        Settings.Optimizer = "SGD";
+        Solution_Settings.Sol_Activation_Function = "Sigmoid";
     else:
-        raise Read_Error("\"Optimizer [Adam, LBFGS] :\" should be \"Adam\" or \"LBFGS\". Got " + Buffer);
+        raise Read_Error("\"Sol Network - Activation Function [str]:\" should be" + \
+                         "\"Tanh\", \"Rational\", or \"Sigmoid\" Got " + Buffer);
+
+    # PDE network architecture.
+    Solution_Settings.PDE_Num_Sol_derivatives = int(Read_Setting(File, "PDE Network - PDE Order [int]:"));
+    Solution_Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int]:"));
+    Solution_Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int]:"));
+
+    Buffer = Read_Setting(File, "PDE Network - Activation Function [str]:");
+    if  (Buffer[0] == 'R' or Buffer[0] == 'r'):
+        Solution_Settings.PDE_Activation_Function = "Rational";
+    elif(Buffer[0] == 'T' or Buffer[0] == 't'):
+        Solution_Settings.PDE_Activation_Function = "Tanh";
+    elif(Buffer[0] == 'S' or Buffer[0] == 's'):
+        Solution_Settings.PDE_Activation_Function = "Sigmoid";
+    else:
+        raise Read_Error("\"Sol Network - Activation Function [str]:\" should be" + \
+                         "\"Tanh\", \"Rational\", or \"Sigmoid\" Got " + Buffer);
+
+    # File that houses the dataset.
+    Solution_Settings.Data_Set_File_Name = Read_Setting(File, "Data Set File Name [str]:");
+
+    # Noise level.
+    Solution_Settings.Noise_Level    = float(Read_Setting(File, "Noise Level [float]:"));
 
 
 
     ############################################################################
-    # Learning hyper-parameters
+    # Data Set Plot Settings.
 
-    Settings.Epochs                 = int(  Read_Setting(File, "Number of Epochs [int] :"));
-    Settings.Learning_Rate          = float(Read_Setting(File, "Learning Rate [float] :"));
-    Settings.Epochs_Between_Prints  = int(  Read_Setting(File, "Epochs between testing [int] :"));
-
-    if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        Settings.Epochs_For_New_Coll_Pts = int(Read_Setting(File, "Epochs between new Collocation Points [int] :"));
+    Dataset_Settings.Data_Set_File_Name = Read_Setting(File, "Data Set File Name [str]:");
+    Dataset_Settings.Data_Set_Name      = Read_Setting(File, "Data Set Name [str]:");
+    Dataset_Settings.Noise_Level        = float(Read_Setting(File, "Noise Level [float]:"));
 
 
-
-
-    ############################################################################
-    # Data
-
-    Settings.Data_File_Name        = Read_Setting(File, "Data File [str] :");
-    Settings.Noise_Proportion      = float(Read_Setting(File, "Noise Proportion [float] :"));
 
     # All done! Return the settings!
     File.close();
-    return Settings;
+    return (Solution_Settings, Dataset_Settings);
