@@ -1,25 +1,24 @@
-% Allen-Cahn equation: D_t U = 0.05 D_x^2 U - 10*U^3 + 10*U
+% Allen-Cahn equation: D_t U = 0.003 * D_x^2 U - U^3 + U
 
 % Set up the problem domain. I want this to run on
-%       (t, x) in [0, 50] x [0, 2*pi]
-x_l     = 0;
-x_h     = 2*pi;
+%       (t, x) in [0, 10] x [-1, 1]
+x_l     = -1;
+x_h     = 1;
 t_l     = 0;
-t_h     = 50;
+t_h     = 10;
 Nt      = 201;
 Domain  = [x_l, x_h];
 Tspan   = linspace(t_l, t_h, Nt);
 
 
 % Set up the spinop for the Allen-Cahn equation. For this problem:
-%       L(U)    = 0.5(D_x^2 U) + 100*U 
-%       N(U)    = -100*U^3.
-%       Init(x) = 1/3*tanh(2*sin(x)) - exp(-23.5*(x-pi/2)^2) + 
-%                 exp(-27*(x-4.2)^2) + exp(-38*(x-5.4)^2)
+%       L(U)    = 0.003(D_x^2 U) + U 
+%       N(U)    = -U^3.
+%       Init(x) = 
 S           = spinop(Domain, Tspan);
-S.lin       = @(u) (0.05)*diff(u, 2) + 10*u;
-S.nonlin    = @(u) -10*u.^3;
-S.init      = chebfun(@(x) (1/3)*tanh(2*sin(x)) - exp(-23.5*(x - pi/2).^2) + exp(-27*(x - 4.2).^2) + exp(-38*(x - 5.4).^2), Domain, 'vectorize');
+S.lin       = @(u) (0.003)*diff(u, 2) + u;
+S.nonlin    = @(u) -u.^3;
+S.init      = chebfun(@(x) 0.2*sin(2*pi*x).^5 + 0.8*sin(5*pi*x), Domain, 'vectorize');
 
 % Solve!
 disp("Solving...");
