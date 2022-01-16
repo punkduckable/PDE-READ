@@ -255,10 +255,10 @@ def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
         Solution_Settings.Sol_Activation_Function = "Tanh";
     elif(Buffer[0] == 'S' or Buffer[0] == 's'):
-        Solution_Settings.Sol_Activation_Function = "Sigmoid";
+        Solution_Settings.Sol_Activation_Function = "Sin";
     else:
         raise Read_Error("\"Sol Network - Activation Function [str]:\" should be" + \
-                         "\"Tanh\", \"Rational\", or \"Sigmoid\" Got " + Buffer);
+                         "\"Tanh\", \"Rational\", or \"Sin\" Got " + Buffer);
 
     # PDE network architecture.
     Solution_Settings.PDE_Num_Sol_derivatives = int(Read_Setting(File, "PDE Network - PDE Order [int]:"));
@@ -271,10 +271,10 @@ def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
     elif(Buffer[0] == 'T' or Buffer[0] == 't'):
         Solution_Settings.PDE_Activation_Function = "Tanh";
     elif(Buffer[0] == 'S' or Buffer[0] == 's'):
-        Solution_Settings.PDE_Activation_Function = "Sigmoid";
+        Solution_Settings.PDE_Activation_Function = "Sin";
     else:
         raise Read_Error("\"Sol Network - Activation Function [str]:\" should be" + \
-                         "\"Tanh\", \"Rational\", or \"Sigmoid\" Got " + Buffer);
+                         "\"Tanh\", \"Rational\", or \"Sin\" Got " + Buffer);
 
     # File that houses the dataset.
     Solution_Settings.Data_Set_File_Name = Read_Setting(File, "Data Set File Name [str]:");
