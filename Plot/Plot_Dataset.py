@@ -38,7 +38,7 @@ def Load_Dataset(
     Data_Set : numpy.array = (numpy.real(Data_In['usol'])).astype(dtype  = numpy.float32);
 
     # Add noise to true solution.
-    Noisy_Data_Set : numpy.array = Data_Set + Noise_Level*numpy.std(Data_Set)*numpy.random.randn(*Data_Set.shape);
+    Noisy_Data_Set : numpy.array = Data_Set + Noise_Level*(numpy.std(Data_Set)*numpy.random.randn(*Data_Set.shape));
 
     # Now, make a Data_Container object, package it, and return.
     Container = Data_Container( t_points        = t_points,
@@ -65,7 +65,8 @@ def Plot_Dataset(       Settings    : Settings_Container,
 
     # Set up the Axes object.
     Axes = fig.add_subplot(1, 1, 1);
-    Axes.set_title(Settings.Data_Set_Name);
+    if(Settings.Include_Title == True):
+        Axes.set_title(Settings.Plot_Title);
     Axes.set_xlabel("time (s)");
     Axes.set_ylabel("position (m)");
 
@@ -78,7 +79,15 @@ def Plot_Dataset(       Settings    : Settings_Container,
     Axes.set_box_aspect(1.);
 
     # Set up the colorbar.
-    ColorMap = Axes.contourf(grid_t_coords, grid_x_coords, Data.Noisy_Data_Set, levels = 50, cmap = plt.cm.jet);
+    min : float = numpy.min(Data.Noisy_Data_Set);
+    max : float = numpy.max(Data.Noisy_Data_Set);
+
+    ColorMap = Axes.contourf(
+                    grid_t_coords,                          # x coordinates in plots
+                    grid_x_coords,                          # y coordinates in plot
+                    Data.Noisy_Data_Set,                    # z coordinates in plot
+                    levels = numpy.linspace(min, max, 500), # defines how z values are mapped to colors.
+                    cmap = plt.cm.jet);                     # defines color scheme
     fig.colorbar(ColorMap, ax = Axes, fraction=0.046, pad=0.04, orientation='vertical');
 
     # Set tight layout (to prevent overlapping... I have no idea why this isn't

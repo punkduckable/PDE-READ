@@ -364,7 +364,7 @@ def main():
         Save_File_Path : str = "../Saves/" + Settings.Save_File_Name;
         torch.save({"Sol_Network_State" : Sol_NN.state_dict(),
                     "PDE_Network_State" : PDE_NN.state_dict(),
-                    "Optimizer_State" : Optimizer.state_dict()},
+                    "Optimizer_State"   : Optimizer.state_dict()},
                     Save_File_Path);
 
 

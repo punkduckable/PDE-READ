@@ -288,7 +288,11 @@ def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
     # Data Set Plot Settings.
 
     Dataset_Settings.Data_Set_File_Name = Read_Setting(File, "Data Set File Name [str]:");
-    Dataset_Settings.Data_Set_Name      = Read_Setting(File, "Data Set Name [str]:");
+
+    Dataset_Settings.Include_Title      = Read_Bool_Setting(File, "Include Plot Title [bool]:");
+    if(Dataset_Settings.Include_Title == True):
+        Dataset_Settings.Plot_Title     = Read_Setting(File, "Plot Title [str]:");
+
     Dataset_Settings.Noise_Level        = float(Read_Setting(File, "Noise Level [float]:"));
 
 

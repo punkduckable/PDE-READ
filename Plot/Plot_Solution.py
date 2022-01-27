@@ -274,7 +274,7 @@ if __name__ == "__main__":
                              Activation_Function = Settings.PDE_Activation_Function);
 
     Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
-    Saved_State = torch.load(Load_File_Path);
+    Saved_State = torch.load(Load_File_Path, map_location=torch.device('cpu'));
     Sol_NN.load_state_dict(Saved_State["Sol_Network_State"]);
     PDE_NN.load_state_dict(Saved_State["PDE_Network_State"]);
 

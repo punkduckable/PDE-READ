@@ -1,4 +1,4 @@
-% Set up the problem domain. I want this to work on the domain 
+% Set up the problem domain. I want this to work on the domain
 % (x, t) in [0, 10] x [0, 10]
 x_min   = 0;
 x_max   = 10;
@@ -14,7 +14,7 @@ L = chebop(domain);
 L.op = @(u) .05*diff(u, 2);
 L.bc = 'periodic';
 
-% Set initial condition 
+% Set initial condition
 x_mid = (x_min + x_max)/2;
 u0 = chebfun(@(x) sin(5*(x - x_min)*(2*pi/(x_max - x_min))), domain);
 
@@ -37,10 +37,10 @@ end
 disp("Saving...");
 t = t_range;
 x = x_range;
-save('Heat_Sine.mat','t','x','usol') 
+save('../Data/Heat_Sine.mat','t','x','usol') 
 
 % Plot.
 disp("Plotting...");
-LW = 'linewidth'; 
+LW = 'linewidth';
 figure, waterfall(u, t_range, LW, 2)
 view(10, 70), axis([x_min x_max t_min t_max -1 1])
