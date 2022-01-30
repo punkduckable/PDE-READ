@@ -229,20 +229,48 @@ def Plot_Solution(
                             PDE_NN    = PDE_NN,
                             Coords    = Grid_Point_Coords).reshape(n_x, n_t);
 
-    # Plot the approximate solution + color bar.
-    ColorMap0 = Axes[0].contourf(grid_t_coords, grid_x_coords, Data.Noisy_Data_Set, levels = 50, cmap = plt.cm.jet);
+    # Plot the true solution + color bar.
+    data_min : float = numpy.min(Data.Noisy_Data_Set);
+    data_max : float = numpy.max(Data.Noisy_Data_Set);
+
+    ColorMap0 = Axes[0].contourf(   grid_t_coords,
+                                    grid_x_coords,
+                                    Data.Noisy_Data_Set,
+                                    levels = numpy.linspace(data_min, data_max, 500),
+                                    cmap = plt.cm.jet);
     fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
-    # Plot the true solution + color bar
-    ColorMap1 = Axes[1].contourf(grid_t_coords, grid_x_coords, Approx_Sol_on_grid, levels = 50, cmap = plt.cm.jet);
+    # Plot the learned solution + color bar
+    sol_min : float = numpy.min(Approx_Sol_on_grid);
+    sol_max : float = numpy.max(Approx_Sol_on_grid);
+
+    ColorMap1 = Axes[1].contourf(   grid_t_coords,
+                                    grid_x_coords,
+                                    Approx_Sol_on_grid,
+                                    levels = numpy.linspace(sol_min, sol_max, 500),
+                                    cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
-    # Plot the Error between the true and approximate solution + color bar.
-    ColorMap2 = Axes[2].contourf(grid_t_coords, grid_x_coords, Error_On_Grid, levels = 50, cmap = plt.cm.jet);
+    # Plot the Error between the approx solution and noise-free data set. + color bar.
+    error_min : float = numpy.min(Error_On_Grid);
+    error_max : float = numpy.max(Error_On_Grid);
+
+    ColorMap2 = Axes[2].contourf(   grid_t_coords,
+                                    grid_x_coords,
+                                    Error_On_Grid,
+                                    levels = numpy.linspace(error_min, error_max, 500),
+                                    cmap = plt.cm.jet);
     fig.colorbar(ColorMap2, ax = Axes[2], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the residual + color bar
-    ColorMap3 = Axes[3].contourf(grid_t_coords, grid_x_coords, Residual_on_Grid, levels = 50, cmap = plt.cm.jet);
+    resid_min : float = numpy.min(Residual_on_Grid);
+    resid_max : float = numpy.max(Residual_on_Grid);
+
+    ColorMap3 = Axes[3].contourf(   grid_t_coords,
+                                    grid_x_coords,
+                                    Residual_on_Grid,
+                                    levels = numpy.linspace(resid_min, resid_max, 500),
+                                    cmap = plt.cm.jet);
     fig.colorbar(ColorMap3, ax = Axes[3], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Set tight layout (to prevent overlapping... I have no idea why this isn't
