@@ -8,14 +8,16 @@ from Loss_Functions import IC_Loss, Periodic_BC_Loss, Data_Loss, Collocation_Los
 
 
 def Discovery_Training(
-        Sol_NN              : Neural_Network,
-        PDE_NN              : Neural_Network,
-        Collocation_Coords  : torch.Tensor,
-        Data_Coords         : torch.Tensor,
-        Data_Values         : torch.Tensor,
-        Optimizer           : torch.optim.Optimizer,
-        Data_Type           : torch.dtype = torch.float32,
-        Device              : torch.device = torch.device('cpu')) -> None:
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Collocation_Coords          : torch.Tensor,
+        Data_Coords                 : torch.Tensor,
+        Data_Values                 : torch.Tensor,
+        Optimizer                   : torch.optim.Optimizer,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> None:
     """ This function runs one epoch of training when in "Discovery" mode. In
     this mode, we enforce the leaned PDE at the Collocation_Points and the
     Data_Values at the Data_Points.
@@ -29,6 +31,12 @@ def Discovery_Training(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
+
+    Collocation_Coords: This should be a 2 column Tensor whose ith row holds the
+    t, x coordinates of the ith collocation point.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
@@ -69,11 +77,13 @@ def Discovery_Training(
 
         # Evaluate the Loss (Note, we enforce a BC of 0)
         Loss = (Collocation_Loss(
-                    Sol_NN = Sol_NN,
-                    PDE_NN = PDE_NN,
-                    Collocation_Coords = Collocation_Coords,
-                    Data_Type = Data_Type,
-                    Device    = Device)
+                    Sol_NN                      = Sol_NN,
+                    PDE_NN                      = PDE_NN,
+                    Time_Derivative_Order       = Time_Derivative_Order,
+                    Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                    Collocation_Coords          = Collocation_Coords,
+                    Data_Type                   = Data_Type,
+                    Device                      = Device)
 
                 +
 
@@ -97,13 +107,15 @@ def Discovery_Training(
 
 
 def Discovery_Testing(
-        Sol_NN              : Neural_Network,
-        PDE_NN              :  Neural_Network,
-        Collocation_Coords  : torch.Tensor,
-        Data_Coords         : torch.Tensor,
-        Data_Values         : torch.Tensor,
-        Data_Type           : torch.dtype = torch.float32,
-        Device              : torch.device = torch.device('cpu')) -> Tuple[float, float]:
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Collocation_Coords          : torch.Tensor,
+        Data_Coords                 : torch.Tensor,
+        Data_Values                 : torch.Tensor,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> Tuple[float, float]:
     """ This function runs testing when in "Discovery" mode. You CAN NOT run this
     function with no_grad set True. Why? Because we need to evaluate derivatives
     of the solution with respect to the inputs! Thus, we need torch to build a
@@ -118,6 +130,12 @@ def Discovery_Testing(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
+
+    Collocation_Coords: This should be a 2 column Tensor whose ith row holds the
+    t, x coordinates of the ith collocation point.
 
     Collocation_Coords: the collocation points at which we enforce the learned
     PDE. If u accepts d spatial coordinates, then this should be a d+1 column
@@ -149,27 +167,32 @@ def Discovery_Testing(
     PDE_NN.eval();
 
     # Get the losses at the passed collocation points (Note we enforce a 0 BC)
-    Coloc_Loss : float = Collocation_Loss(
-                            Sol_NN = Sol_NN,
-                            PDE_NN = PDE_NN,
-                            Collocation_Coords = Collocation_Coords,
-                            Data_Type = Data_Type,
-                            Device    = Device).item();
+    Coll_Loss : float = Collocation_Loss(
+                            Sol_NN                      = Sol_NN,
+                            PDE_NN                      = PDE_NN,
+                            Time_Derivative_Order       = Time_Derivative_Order,
+                            Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                            Collocation_Coords          = Collocation_Coords,
+                            Data_Type                   = Data_Type,
+                            Device                      = Device).item();
+
     Data_loss : float  = Data_Loss(
-                            Sol_NN = Sol_NN,
+                            Sol_NN      = Sol_NN,
                             Data_Coords = Data_Coords,
                             Data_Values = Data_Values,
-                            Data_Type = Data_Type,
-                            Device    = Device).item();
+                            Data_Type   = Data_Type,
+                            Device      = Device).item();
 
     # Return the losses.
-    return (Coloc_Loss, Data_loss);
+    return (Coll_Loss, Data_loss);
 
 
 
 def PINNs_Training(
         Sol_NN                      : Neural_Network,
         PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
         IC_Coords                   : torch.Tensor,
         IC_Data                     : torch.Tensor,
         Lower_Bound_Coords          : torch.Tensor,
@@ -192,6 +215,12 @@ def PINNs_Training(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
+
+    Collocation_Coords: This should be a 2 column Tensor whose ith row holds the
+    t, x coordinates of the ith collocation point.
 
     IC_Coords: A tensor that holds the coordinates of each point that we
     enforce the Initial Condition. If u accepts d spatial coordinates, then this
@@ -250,20 +279,22 @@ def PINNs_Training(
 
                 Periodic_BC_Loss(
                     Sol_NN = Sol_NN,
-                    Lower_Bound_Coords = Lower_Bound_Coords,
-                    Upper_Bound_Coords = Upper_Bound_Coords,
-                    Highest_Order = Periodic_BCs_Highest_Order,
-                    Data_Type = Data_Type,
-                    Device    = Device)
+                    Lower_Bound_Coords  = Lower_Bound_Coords,
+                    Upper_Bound_Coords  = Upper_Bound_Coords,
+                    Highest_Order       = Periodic_BCs_Highest_Order,
+                    Data_Type           = Data_Type,
+                    Device              = Device)
 
                 +
 
                 Collocation_Loss(
-                    Sol_NN = Sol_NN,
-                    PDE_NN = PDE_NN,
-                    Collocation_Coords = Collocation_Coords,
-                    Data_Type = Data_Type,
-                    Device    = Device));
+                    Sol_NN                      = Sol_NN,
+                    PDE_NN                      = PDE_NN,
+                    Time_Derivative_Order       = Time_Derivative_Order,
+                    Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                    Collocation_Coords          = Collocation_Coords,
+                    Data_Type                   = Data_Type,
+                    Device                      = Device));
 
         # Back-propigate to compute gradients of Loss with respect to network
         # parameters (only do if this if the loss requires grad)
@@ -278,6 +309,8 @@ def PINNs_Training(
 def PINNs_Testing(
         Sol_NN                      : Neural_Network,
         PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
         IC_Coords                   : torch.Tensor,
         IC_Data                     : torch.Tensor,
         Lower_Bound_Coords          : torch.Tensor,
@@ -299,6 +332,12 @@ def PINNs_Testing(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
+
+    Collocation_Coords: This should be a 2 column Tensor whose ith row holds the
+    t, x coordinates of the ith collocation point.
 
     IC_Coords: A tensor that holds the coordinates of each point that we
     enforce the Initial Condition. If u accepts d spatial coordinates, then this
@@ -348,19 +387,21 @@ def PINNs_Testing(
                                 Device    = Device).item();
 
     BC_Loss_Var : float     = Periodic_BC_Loss(
-                                Sol_NN = Sol_NN,
-                                Lower_Bound_Coords = Lower_Bound_Coords,
-                                Upper_Bound_Coords = Upper_Bound_Coords,
-                                Highest_Order = Periodic_BCs_Highest_Order,
-                                Data_Type = Data_Type,
-                                Device    = Device).item();
+                                Sol_NN              = Sol_NN,
+                                Lower_Bound_Coords  = Lower_Bound_Coords,
+                                Upper_Bound_Coords  = Upper_Bound_Coords,
+                                Highest_Order       = Periodic_BCs_Highest_Order,
+                                Data_Type           = Data_Type,
+                                Device              = Device).item();
 
     Col_Loss_Var : float    = Collocation_Loss(
-                                Sol_NN = Sol_NN,
-                                PDE_NN = PDE_NN,
-                                Collocation_Coords = Collocation_Coords,
-                                Data_Type = Data_Type,
-                                Device    = Device).item();
+                                Sol_NN                      = Sol_NN,
+                                PDE_NN                      = PDE_NN,
+                                Time_Derivative_Order       = Time_Derivative_Order,
+                                Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                                Collocation_Coords          = Collocation_Coords,
+                                Data_Type                   = Data_Type,
+                                Device                      = Device).item();
 
     # Return the losses.
     return (IC_Loss_Var, BC_Loss_Var, Col_Loss_Var);

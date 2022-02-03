@@ -152,15 +152,18 @@ def Periodic_BC_Loss(
 
 # Loss from enforcing the PDE at the collocation points.
 def Collocation_Loss(
-        Sol_NN             : Neural_Network,
-        PDE_NN             : Neural_Network,
-        Collocation_Coords : torch.Tensor,
-        Data_Type          : torch.dtype = torch.float32,
-        Device             : torch.device = torch.device('cpu')) -> torch.Tensor:
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Collocation_Coords          : torch.Tensor,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates how well Sol_NN satisfies the learned PDE at the
     collocation points. For brevity, let u = Sol_NN and N = PDE_NN. At each
     collocation point, we compute the following:
-                                du/dt - N(u, du/dx, d^2u/dx^2)
+                    D_t^m U - N(u, D_x U, D_x^2 U, ... D_x^n U)
+    where m = Time_Derivative_Order, and n = Spatial_Derivative_Order.
     If Sol_NN satisfies the learned PDE, then this quantity will be zero
     everywhere. However, it generally won't be. This function computes the
     square of the quantity above at each Collocation point. We return the mean
@@ -174,6 +177,9 @@ def Collocation_Loss(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
 
     Collocation_Coords: This should be a 2 column Tensor whose ith row holds the
     t, x coordinates of the ith collocation point.
@@ -189,15 +195,17 @@ def Collocation_Loss(
 
     # At each Collocation point, evaluate the square of the residuals
     # du/dt - N(u, du/dx,... ).
-    residual_batch = PDE_Residual(
-                        Sol_NN    = Sol_NN,
-                        PDE_NN    = PDE_NN,
-                        Coords    = Collocation_Coords,
-                        Data_Type = Data_Type,
-                        Device    = Device);
+    Residual : torch.Tensor = PDE_Residual(
+                                Sol_NN                      = Sol_NN,
+                                PDE_NN                      = PDE_NN,
+                                Time_Derivative_Order       = Time_Derivative_Order,
+                                Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                                Coords                      = Collocation_Coords,
+                                Data_Type                   = Data_Type,
+                                Device                      = Device);
 
     # Return the mean square residual.
-    return (residual_batch ** 2).mean();
+    return (Residual ** 2).mean();
 
 
 

@@ -245,6 +245,10 @@ def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
     # Where are the networks saved?
     Solution_Settings.Load_File_Name         = Read_Setting(File, "Load File Name [str]:");
 
+    # PDE parameters.
+    Solution_Settings.PDE_Time_Derivative_Order    = int(Read_Setting(File, "PDE - Time Derivative Order [int]:"));
+    Solution_Settings.PDE_Spatial_Derivative_Order = int(Read_Setting(File, "PDE - Spatial Derivative Order [int]:"))
+
     # Sol network architecture.
     Solution_Settings.Sol_Num_Hidden_Layers  = int(Read_Setting(File, "Sol Network - Number of Hidden Layers [int]:"));
     Solution_Settings.Sol_Neurons_Per_Layer  = int(Read_Setting(File, "Sol Network - Neurons per Hidden Layer [int]:"));
@@ -261,7 +265,6 @@ def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
                          "\"Tanh\", \"Rational\", or \"Sin\" Got " + Buffer);
 
     # PDE network architecture.
-    Solution_Settings.PDE_Num_Sol_derivatives = int(Read_Setting(File, "PDE Network - PDE Order [int]:"));
     Solution_Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int]:"));
     Solution_Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int]:"));
 

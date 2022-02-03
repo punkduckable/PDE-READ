@@ -316,6 +316,16 @@ def Settings_Reader() -> Settings_Container:
 
 
     ############################################################################
+    # PDE settings.
+
+    # Determine the highest order temporal derivatives in the PDE.
+    Settings.PDE_Time_Derivative_Order      = int(Read_Setting(File, "PDE - Time Derivative Order [int] :"));
+
+    # Determine the highest order spatial derivatives in the PDE.
+    Settings.PDE_Spatial_Derivative_Order   = int(Read_Setting(File, "PDE - Spatial Derivative Order [int] :"));
+
+
+    ############################################################################
     # Network Settings
 
     # Read u's network Architecture
@@ -335,7 +345,6 @@ def Settings_Reader() -> Settings_Container:
 
 
     # Read N's network Architecture
-    Settings.PDE_Num_Sol_derivatives = int(Read_Setting(File, "PDE Network - PDE Order [int] :"));
     Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int] :"));
     Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int] :"));
 

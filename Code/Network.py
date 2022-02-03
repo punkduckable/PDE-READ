@@ -134,14 +134,6 @@ class Neural_Network(torch.nn.Module):
                 torch.nn.init.zeros_(self.Layers[i].bias);
 
         elif(Activation_Function == "Sin"):
-            # I initialize my first weight matrix to be full of zeros. This is
-            # NOT what the SIREN paper says to do. However, I found that
-            # following their initialization scheme causes the derivatives of my
-            # network to explode. Zeroing out the first weight matrix
-            # initializes U as the zero map, but eliminates blowup.
-            torch.nn.init.constant_(self.Layers[0].weight, 0);
-            torch.nn.init.zeros_(   self.Layers[0].bias);
-
             # The SIREN paper suggests initializing the elements of every weight
             # matrix (except for the first one) by sampling a uniform
             # distribution over [-c/root(n), c/root(n)], where c > root(6),
@@ -149,7 +141,7 @@ class Neural_Network(torch.nn.Module):
             #
             # Further, for simplicity, I initialize each bias vector to be zero.
             a : float = 3./math.sqrt(Neurons_Per_Layer);
-            for i in range(1, self.Num_Hidden_Layers + 1):
+            for i in range(0, self.Num_Hidden_Layers + 1):
                 torch.nn.init.uniform_( self.Layers[i].weight, -a, a);
                 torch.nn.init.zeros_(   self.Layers[i].bias);
 

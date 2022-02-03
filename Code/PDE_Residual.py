@@ -6,14 +6,16 @@ from Network import Neural_Network;
 
 
 
-def Evaluate_Sol_Derivatives(
-        Sol_NN          : Neural_Network,
-        num_derivatives : int,
-        Coords          : torch.Tensor,
-        Data_Type       : torch.dtype = torch.float32,
-        Device          : torch.device = torch.device('cpu')) -> Tuple[torch.Tensor, torch.Tensor]:
-    """ This function evaluates u, du/dt, and d^i u/dx^i (for i = 1,2... ) at
-    each coordinate in Coords.
+def Evaluate_Derivatives(
+        Sol_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Coords                      : torch.Tensor,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> Tuple[torch.Tensor, torch.Tensor]:
+    """ This function evaluates U, D_t^m U (where m = Time_Derivative_Order)
+    and D_x^i U (for i = 1,2,..., n. Where n = Spatial_Derivative_Order) at each
+    coordinate in Coords.
 
     Note: This function only works if Sol_NN is a function of 1 spatial variable.
 
@@ -22,8 +24,11 @@ def Evaluate_Sol_Derivatives(
 
     Sol_NN: The network that approximates the PDE solution.
 
-    num_derivatives: The number of spatial derivatives of Sol_NN we need to
-    evaluate.
+    Time_Derivative_Order: The order of the time derivative on the left-hand
+    side of the PDE.
+
+    Spatial_Derivative_Order: The highest order spatial derivatives of Sol_NN we
+    need to evaluate.
 
     Coords: A two-column Tensor whose ith row holds the t, x coordinates of the
     ith point we'll evaluate Sol_NN and its derivatives at.
@@ -37,29 +42,29 @@ def Evaluate_Sol_Derivatives(
 
     This returns a two-element Tuple! For brevity in what follows, let
     u = Sol_NN. If Coords is an M by 2 Tensor, then the first return argument
-    is an M element Tensor whose ith element holds the value of du/dt at the ith
-    coordinate. If PDE_NN accepts N arguments, then the second return variable
-    is an M by N Tensor whose i,j element holds the value of d^ju/dx^j at the
-    ith coordinate. """
+    is an M element Tensor whose ith element holds the value of D_t^m U at the
+    ith coordinate. If PDE_NN accepts N arguments, then the second return
+    variable is an M by N Tensor whose i,j element holds the value of D_x^j U
+    at the ith coordinate. """
 
     # We need to evaluate derivatives, so set Requires Grad to true.
     Coords.requires_grad_(True);
 
     # Determine how many derivatives of Sol_NN we'll need to evaluate the PDE.
-    # Remember that PDE_NN is a function of u, du/dx, d^2u/dx^2,
-    # d^(n-1)u/dx^(n-1), where n is the number of inputs that PDE_NN accepts.
+    # Remember that PDE_NN is a function of u, D_x U, D_x^2 U, ... D_x^{n}U,
+    # where n = Spatial_Derivative_Order.
     # Once we know this, and the number of Collocation points, we initialize a
     # Tensor to hold the value of Sol_NN and its first n-1 derivatives at each
     # collocation point. The ith row of this Tensor holds the value of Sol_NN
     # and its first n-1 derivatives at the ith collocation point. Its jth column
     # holds the jth spatial derivative of Sol_NN at each collocation point.
     num_Collocation_Points : int = Coords.shape[0];
-    diu_dxi_batch                = torch.empty((num_Collocation_Points, num_derivatives + 1),
-                                                dtype = Data_Type,
+    Dxn_U                        = torch.empty((num_Collocation_Points, Spatial_Derivative_Order + 1),
+                                                dtype  = Data_Type,
                                                 device = Device);
 
     # Calculate approximate solution at this collocation point.
-    diu_dxi_batch[:, 0] = Sol_NN(Coords).squeeze();
+    Dxn_U[:, 0]                  = Sol_NN(Coords).view(-1);
 
     # Compute the derivative of Sol_NN with respect to t, x at each collocation
     # point. To speed up computations, we batch this computation. It's
@@ -84,53 +89,78 @@ def Evaluate_Sol_Derivatives(
     # Torch does the same thing for derivatives with respect to t. The end
     # result is a 2 column Tensor. whose (i, 0) entry holds (d/dt_i)u(t_i, x_i),
     # and whose (i, 1) entry holds (d/dx_i)u(t_i, x_i).
-    grad_u = torch.autograd.grad(
-                outputs         = diu_dxi_batch[:, 0],
+    Grad_U = torch.autograd.grad(
+                outputs         = Dxn_U[:, 0],
                 inputs          = Coords,
-                grad_outputs    = torch.ones_like(diu_dxi_batch[:, 0]),
+                grad_outputs    = torch.ones_like(Dxn_U[:, 0]),
                 retain_graph    = True,
                 create_graph    = True)[0];
     # So... why do we do this rather than computing the derivatives
     # point-by-point? Performance! This batched approach is much faster because
     # it takes advantage of memory locality.
 
-    # extract du/dx and du/dt (at each collocation point) from grad_u.
-    du_dt_batch         = grad_u[:, 0];
-    diu_dxi_batch[:, 1] = grad_u[:, 1];
+    # extract du/dx and du/dt (at each collocation point) from Grad_U.
+    Dtm_U : torch.Tensor    = Grad_U[:, 0].view(-1);
+    Dxn_U[:, 1]             = Grad_U[:, 1];
 
-    # Compute higher order derivatives
-    for i in range(2, num_derivatives + 1):
-        # At each collocation point, compute d^(i-1)u(x, t/dx^(i-1) with respect
+
+
+    # Compute the requested time derivative of U.
+    for j in range(2, Time_Derivative_Order + 1):
+        # At each coordinate, differentiate D_{t}^{i - 1} U with respect to
+        # to t, x. This uses the same process we used for Grad_U (described
+        # above), but with D_{t}^{i - 1} U in place of U. We need to create
+        # graphs for this so that torch can track this operation when
+        # constructing the computational graph for the loss function (which
+        # it will use in backpropagation). We also need to retain Grad_U's
+        # graph for back-propagation.
+        Grad_Dtm_U = torch.autograd.grad(
+                        outputs         = Dtm_U,
+                        inputs          = Coords,
+                        grad_outputs    = torch.ones_like(Dtm_U),
+                        retain_graph    = True,
+                        create_graph    = True)[0];
+
+        # The 0 column should contain the ith time derivative of U.
+        Dtm_U = Grad_Dtm_U[:, 0].view(-1);
+
+
+    # Compute higher order spatial derivatives
+    for j in range(2, Spatial_Derivative_Order + 1):
+        # At each collocation point, compute D_x^{j} - 1} U with respect
         # to t, x. This uses the same process as is described above for grad_u,
-        # but with (d^(i-1)/dx^(i-1))u in place of u.
+        # but with (D_x^{j - 1} U) in place of u.
         # We need to create graphs for this so that torch can track this
         # operation when constructing the computational graph for the loss
         # function (which it will use in backpropagation). We also need to
         # retain grad_u's graph for backpropagation.
-        grad_diu_dxi = torch.autograd.grad(
-                        outputs         = diu_dxi_batch[:, i - 1],
+        Grad_Dxn_U = torch.autograd.grad(
+                        outputs         = Dxn_U[:, j - 1],
                         inputs          = Coords,
-                        grad_outputs    = torch.ones_like(diu_dxi_batch[:, i - 1]),
+                        grad_outputs    = torch.ones_like(Dxn_U[:, j - 1]),
                         retain_graph    = True,
                         create_graph    = True)[0];
 
-        # Extract (d^i/dx^i)u, which is the 1 column of the above Tensor.
-        diu_dxi_batch[:, i] = grad_diu_dxi[:, 1];
+        # Extract D_x^i U, which is the 1 column of the above Tensor.
+        Dxn_U[:, j] = Grad_Dxn_U[:, 1];
 
-    return (du_dt_batch, diu_dxi_batch);
+    return (Dtm_U, Dxn_U);
 
 
 
 def PDE_Residual(
-        Sol_NN    : Neural_Network,
-        PDE_NN    : Neural_Network,
-        Coords    : torch.Tensor,
-        Data_Type : torch.dtype = torch.float32,
-        Device    : torch.device = torch.device('cpu')) -> torch.Tensor:
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Coords                      : torch.Tensor,
+        Data_Type                   : torch.dtype = torch.float32,
+        Device                      : torch.device = torch.device('cpu')) -> torch.Tensor:
     """ This function evaluates the "PDE residual" at each coordinate in Coords.
     For brevtiy, let u = Sol_NN, and N = PDE_NN. At each coordinate, we compute
-            du/dt - N(u, du/dx, d^2u/dx^2,... )
-    which we call the residual.
+                        D_t^m U - N(u, D_x U, D_x^2 U, ... D_x^n U)
+    which we call the residual. Here, m = Time_Derivative_Order and n =
+    Spatial_Derivative_Order.
 
     Note: this function only works if Sol_NN is a function of 1 spatial variable.
 
@@ -140,6 +170,11 @@ def PDE_Residual(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative on the left-hand
+    side of the PDE.
+
+    Spatial_Derivative_Order: The highest order spatial derivative in the PDE.
 
     Coords: A two-column Tensor whose ith row holds the t, x coordinates of the
     ith point where we evaluate the PDE residual.
@@ -156,25 +191,25 @@ def PDE_Residual(
 
 
     # Determine how many derivatives of Sol_NN we'll need to evaluate the PDE.
-    # Remember that PDE_NN is a function of u, du/dx, d^2u/dx^2,
-    # d^(n-1)u/dx^(n-1), where n is the number of inputs that PDE_NN accepts.
+    # Remember that PDE_NN is a function of u, D_x U, D_x^2 U, ... D_x^{n} U,
+    # where n is one less than the input dimension of PDE_NN.
     # For brevity, let u = Sol_NN.  Thus, the number of derivatives is the number
     # of inputs for PDE_NN minus  1.  Once we know this, we evaluate du/dt, u,
     # and the first n-1 spatial derivatives of u at each collocation point.
-    num_derivatives             = PDE_NN.Input_Dim - 1;
-    du_dt_batch, diu_dxi_batch  = Evaluate_Sol_Derivatives(
-                                        Sol_NN          = Sol_NN,
-                                        num_derivatives = num_derivatives,
-                                        Coords          = Coords,
-                                        Data_Type       = Data_Type,
-                                        Device          = Device);
+    Dtm_U, Dxn_U = Evaluate_Derivatives(
+                        Sol_NN                      = Sol_NN,
+                        Time_Derivative_Order       = Time_Derivative_Order,
+                        Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                        Coords                      = Coords,
+                        Data_Type                   = Data_Type,
+                        Device                      = Device);
 
     # Evaluate PDE_NN at each row of diu_dxi. This yields an N by 1 Tensor
     # (where N is the number of rows in Coords) whose ith row holds the value of
-    # N at (u(t_i, x_i), (d/dx)u(t_i, x_i),... (d^(n-1))/dx^(n-1))u(t_i, x_i)).
+    # N at (U(t_i, x_i), D_x U(t_i, x_i),... D_x^n U(t_i, x_i)).
     # We squeeze this to eliminate the extra dimension.
-    PDE_NN_batch = PDE_NN(diu_dxi_batch).squeeze();
+    PDE_NN_batch = PDE_NN(Dxn_U).view(-1);
 
     # At each Collocation point, evaluate the square of the residuals
-    # du/dt - N(u, du/dx,... ).
-    return (du_dt_batch - PDE_NN_batch);
+    # D_t^m U - N(u, D_x U, ... , D_x^n U).
+    return (Dtm_U - PDE_NN_batch);

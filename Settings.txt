@@ -26,10 +26,10 @@
 Load Sol Network State [bool] :                  False
 Load PDE Network State [bool] :                  False
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Sine_SGD
+  Load File Name [str] :                         Burgers_Sine_Rat_Adam
 
 Save State [Bool] :                              True
-  Save File Name [str] :                         Burgers_Sine_SGD
+  Save File Name [str] :                         Burgers_Sine_Rat_Adam
 
 
 
@@ -67,9 +67,9 @@ Number of Training Collocation Points [int] :    7000
 Number of Testing Collocation Points [int] :     500
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           5000
+Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    5000
+Number of Training Collocation Points [int] :    2500
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
@@ -77,6 +77,18 @@ Extracted PDE maximum term degree [int] :        2
 Number of Extraction Points [int] :              20000
 
 Train on CPU or GPU [GPU, CPU] :                 CPU
+
+
+
+################################################################################
+# PDE settings.
+# These settings control the nature of the PDE we try to uncover. Our goal is
+# to find a PDE of the following form:
+#         D_t^m U = N(U, D_x U, D_x^2 U, ... , D_x^n U)
+# Here, m = Time Derivative Order, and n = Spatial Derivative Order.
+
+PDE - Time Derivative Order [int] :              1
+PDE - Spatial Derivative Order [int] :           2
 
 
 
@@ -89,18 +101,17 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 # Architecture settings below must match those of the saved network. (same
 # number of layers and neurons per layer).
 #
-# Each Network's Activation function must be in {Rational, Tanh, Sin}
+# Each Network's Activation function must be in {Rational, Tanh, Sine}
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Activation Function [str] :        Sin
+Sol Network - Activation Function [str] :        Rat
 
-PDE Network - PDE Order [int] :                  2
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   50
-PDE Network - Activation Function [str] :        Sin
+PDE Network - Activation Function [str] :        Rat
 
-Optimizer [Adam, LBFGS, SGD] :                   SGD
+Optimizer [Adam, LBFGS, SGD] :                   Adam
 
 
 
@@ -121,4 +132,4 @@ Epochs between new Collocation Points [int] :    1
 # Data
 
 Data File [str] :                           Burgers_Sine.mat
-Noise Proportion [float] :                  .0
+Noise Proportion [float] :                  0.0

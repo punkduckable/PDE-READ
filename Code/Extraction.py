@@ -5,7 +5,7 @@ from typing import Tuple, List;
 from sklearn import linear_model;
 
 from Network        import Neural_Network;
-from PDE_Residual   import Evaluate_Sol_Derivatives;
+from PDE_Residual   import Evaluate_Derivatives;
 
 
 
@@ -177,58 +177,60 @@ def Recursive_Multi_Indices(
 
 
 def Generate_Library(
-        Sol_NN          : Neural_Network,
-        PDE_NN          : Neural_Network,
-        Coords          : torch.Tensor,
-        num_derivatives : int,
-        Poly_Degree     : int,
-        Device          : torch.device = torch.device('cpu')) -> Tuple[np.array,
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Coords                      : torch.Tensor,
+        Poly_Degree                 : int,
+        Device                      : torch.device = torch.device('cpu')) -> Tuple[np.array,
                                                                        np.array,
                                                                        np.array,
                                                                        List]:
     """ This function populates the "library" matrix. Let u denote the function
     that Sol_NN approximates. We assume that u satisifies the following:
-            (d/dt)u = c_{0,0} + c_{1,0}u + c_{1,1}(d/dx)u +... c_{n,1}(d^n/dx^n)u
-                    + c_{1,0}u*u + c_{1,1}u*(d/dx)u +....                     {a}
+            D_t^m u = c_{0,0} + c_{1,0}u + c_{1,1}D_x u +... c_{n,1}D_x^n u
+                    + c_{1,0}u*u + c_{1,1}u*D_x u +....                     {a}
     Where each c_{i,j} is a constant. Notice that the right side of the above
-    equation is a polynomial of u, (d/dx)u,... (d^n/dx^n)u. Each term consisits
+    equation is a polynomial of u, D_x u,... D_x^n u. Here, m =
+    Time_Derivative_Order and m = Spatial_Derivative_Order. Each term consisits
     of two parts, the constant part (c_{i,j}) and the "u part" (the product of u
     and its derivatives). Poly_Degree specifies the maximum degree of the
-    polynomial terms. num_derivatives determines the highest order derivative of
-    u that is present in the polynomial terms.
+    polynomial terms.
 
-    To find the constants, we evaluate u, (d/dx)u,... (d^n/dx^n)u at the Coords.
+    To find the constants, we evaluate u, D_x u,... D_x^n u at the Coords.
     We use these values to construct the "u part" of each polynomial term.
     This gives us a set of linear equations (in the constants), one for each
     row of Coords. We then try to find the constants which satisfy
-                [(d/dt)u] = L(u)*c
-    in a least-squares sense. where the ith element of [(d/dt)u] holds the value
-    of (d/dt)u at the ith Coord. The i,j entry of L(u) holds the value of the
+                [D_t^m u] = L(u)*c
+    in a least-squares sense. where the ith element of [D_t^m u] holds the value
+    of D_t^m u at the ith Coord. The i,j entry of L(u) holds the value of the
     "u part" of the jth polynomial term in {a} evaluated at the ith Coord. c is
     a vector holding the coefficients.
 
     This function constructs L(u) and du/dt. We use the Recursive_Multi_Indices
     function to find the set of polynomial terms. Why does this work? Let's
-    consider when Poly_Degree = 2 and num_derivatives = 2. Let u = Sol_NN. In
-    this case, the "u parts" of the polynomial terms are the following:
+    consider when Poly_Degree = 2 and Spatial_Derivative_Order = 2. Let
+    u = Sol_NN. In this case, the "u parts" of the polynomial terms are the
+    following:
         degree 0: 1,
-        degree 1: u, (d/dx)u, (d^2/dx^2)u
-        degree 2: (u)^2, u*(d/dx)u, u*(d^2/dx^2)u, ((d/dx)u)^2, (d/dx)u*(d^2/dx^2)u, ((d^2/dx^2)u)^2
+        degree 1: u, D_x u, D_x^2 u
+        degree 2: (u)^2, u*D_x u, u*D_x^2 u, (D_x u)^2, D_x u*D_x^2 u, (D_x^2 u)^2
     Notice that we can associate each term of degree n with a multi-index with
     n sub-indices. The ith term in the "u part" gets associated with the ith
-    sub-index. In particular, we can associate u with 0, (d/dx)u with 1, and
-    (d^2/dx^2)u with 2. Then, for example, we associate the term u*du_dx with
+    sub-index. In particular, we can associate u with 0, D_x u with 1, and
+    D_x^2 u with 2. Then, for example, we associate the term u*du_dx with
     the multi-index (0, 1). Notice that, since multiplication commutes, only one
-    of u*(d/dx)u, (d/dx)u*u appears in {a}. Thus, the multi-indices (1, 0) and
+    of u*D_x u, (d/dx)u*u appears in {a}. Thus, the multi-indices (1, 0) and
     (0, 1) are "the same". However, this is precisely my definition of
     multi-index equivalence above.
 
     Once we know the set of all "distinct" multi-indices, we can construct L(u).
     In particular, we first allocate an array that has a column for each distinct
     multi-index with up to Poly_Degree sub-indices, each of which takes values
-    in {0, 1, 2,... num_derivatives}. We then evaluate u, du_dx,... at each point
+    in {0, 1, 2,... n}. We then evaluate u, D_x u,... at each point
     in Coords. If the jth column L(u) corresponds to the multi-index (1, 3),
-    then it will hold the element-wise product of (d/dx)u and (d^3/dx^3)u.
+    then it will hold the element-wise product of D_x u and D_x^3 u.
 
     The columns of L(u) are ordered according to what's returned by
     Recursive_Multi_Indices.
@@ -242,11 +244,14 @@ def Generate_Library(
 
     PDE_NN: The network that approximates the PDE.
 
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
+
+    Collocation_Coords: This should be a 2 column Tensor whose ith row holds the
+    t, x coordinates of the ith collocation point.
+
     Coords: The coordinates of the extraction points (The library will contain
     a row for each element of Coords).
-
-    num_derivatives: The highest order derivative that we think is in the
-    governing PDE.
 
     Poly_Degree: the maximum degree of the polynomial terms in {a}. For
     example, if we expect to extract a linear PDE, then Poly_Degree should be 1.
@@ -257,18 +262,18 @@ def Generate_Library(
     ----------------------------------------------------------------------------
     Returns:
 
-    A 4 element tuple. For the first, we evaluate u, u_xx,... at each point in
-    Coords. We then evaluate PDE_NN at each point. This is the first element of
-    the returned tuple. The second holds the library (with a row for each
-    coordinate and a column for each term in the library). The third holds a
-    Poly_Degree element array whose ith element holds the number of
+    A 4 element tuple. For the first, we evaluate u, D_x u, D_x^2 u ,... at each
+    point in Coords. We then evaluate PDE_NN at each point. This is the first
+    element of the returned tuple. The second holds the library (with a row for
+    each coordinate and a column for each term in the library). The third holds
+    a Poly_Degree element array whose ith element holds the number of
     multi_indices with k sub-indices, each of which take values in {0, 1,...
-    num_derivatives}. The 4th is a list of arrays, the ith one of which holds
-    the set of multi-indices of order i whose sub-indices take values in
-    {0, 1,... num_derivatives}. """
+    n}, where n = Spatial_Derivative_Order. The 4th is a list of arrays, the ith
+    one of which holds the set of multi-indices of order i whose sub-indices
+    take values in {0, 1,... n}. """
 
     # We need a sub-index value for each derivative, as well as u itself.
-    num_sub_index_values = num_derivatives + 1;
+    num_sub_index_values = Spatial_Derivative_Order + 1;
 
     # Determine how many multi-indices exist with num_sub_indices sub-indices
     # such that each sub-index takes values in {0, 1,... Poly_Degree}.
@@ -291,39 +296,53 @@ def Generate_Library(
     Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
 
     # Evaluate u, du/dx,... at each point. We use batches to reduce memory load.
-    du_dt   = torch.empty(  (num_rows),
+    Dtm_U   = torch.empty(  (num_rows),
                             dtype  = torch.float32,
                             device = Device);
-    diu_dxi = torch.empty(  (num_rows, num_sub_index_values),
+    Dxn_U = torch.empty(  (num_rows, num_sub_index_values),
                             dtype  = torch.float32,
                             device = Device);
 
-    # Main loop
     Batch_Size : int = 1000;
-    for i in range(0, num_rows - Batch_Size, Batch_Size):
-        (du_dt_Batch, diu_dxi_Batch) = Evaluate_Sol_Derivatives(
-                                Sol_NN          = Sol_NN,
-                                num_derivatives = num_derivatives,
-                                Coords          = Coords[i:(i + Batch_Size)],
-                                Data_Type       = torch.float32,
-                                Device          = Device);
+    if(num_rows > Batch_Size):
+        # Main loop
+        for i in range(0, num_rows - Batch_Size, Batch_Size):
+            (Dtm_U_Batch, Dxn_U_Batch) = Evaluate_Derivatives(
+                                            Sol_NN                      = Sol_NN,
+                                            Time_Derivative_Order       = Time_Derivative_Order,
+                                            Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                                            Coords                      = Coords[i:(i + Batch_Size)],
+                                            Data_Type                   = torch.float32,
+                                            Device                      = Device);
 
-        du_dt[i:(i + Batch_Size)]   = du_dt_Batch.detach();
-        diu_dxi[i:(i + Batch_Size)] = diu_dxi_Batch.detach();
+            Dtm_U[i:(i + Batch_Size)]    = Dtm_U_Batch.detach();
+            Dxn_U[i:(i + Batch_Size), :] = Dxn_U_Batch.detach();
 
-    # Clean up loop.
-    (du_dt_Batch, diu_dxi_Batch) = Evaluate_Sol_Derivatives(
-                                        Sol_NN          = Sol_NN,
-                                        num_derivatives = num_derivatives,
-                                        Coords          = Coords[(i + Batch_Size):],
-                                        Data_Type       = torch.float32,
-                                        Device          = Device);
+        # Clean up loop.
+        (Dtm_U_Batch, Dxn_U_Batch) = Evaluate_Derivatives(
+                                        Sol_NN                      = Sol_NN,
+                                        Time_Derivative_Order       = Time_Derivative_Order,
+                                        Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                                        Coords                      = Coords[(i + Batch_Size):],
+                                        Data_Type                   = torch.float32,
+                                        Device                      = Device);
 
-    du_dt[(i + Batch_Size):]   = du_dt_Batch.detach();
-    diu_dxi[(i + Batch_Size):] = diu_dxi_Batch.detach();
+        Dtm_U[(i + Batch_Size):]    = Dtm_U_Batch.detach();
+        Dxn_U[(i + Batch_Size):, :] = Dxn_U_Batch.detach();
 
-    # Evaluate PDE_NN at the output given by diu_dxi.
-    PDE_NN_At_Coords = PDE_NN(diu_dxi).detach().cpu().squeeze().numpy().astype(dtype = np.float32);
+    else:
+        (Dtm_U, Dxn_U) = Evaluate_Derivatives(
+                            Sol_NN                      = Sol_NN,
+                            Time_Derivative_Order       = Time_Derivative_Order,
+                            Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                            Coords                      = Coords,
+                            Data_Type                   = torch.float32,
+                            Device                      = Device);
+        Dtm_U = Dtm_U.detach();
+        Dxn_U = Dxn_U.detach();
+
+    # Evaluate PDE_NN.
+    PDE_NN_At_Coords = PDE_NN(Dxn_U).detach().cpu().squeeze().numpy().astype(dtype = np.float32);
 
     # Now populate the library using the multi-index approach described above.
     # Note that the first column corresponds to a constant and thus should
@@ -345,7 +364,7 @@ def Generate_Library(
             # Cycle through the sub-indices of this multi-index.
             for j in range(k):
                 Library[:, position] = (Library[:, position]*
-                                        diu_dxi[:, multi_indices[i, j]].detach().cpu().squeeze().numpy().astype(dtype = np.float32));
+                                        Dxn_U[:, multi_indices[i, j]].detach().cpu().squeeze().numpy().astype(dtype = np.float32));
 
             # Increment position
             position += 1;
@@ -422,7 +441,7 @@ def Recursive_Feature_Elimination(
     # component of the solution with the smallest magnitude is the least
     # salient in the sense that removing it will lead to the smallest increase
     # in residual.
-    A_Column_L2_Norms      = np.empty(Num_Cols, dtype = np.float32);
+    A_Column_L2_Norms     = np.empty(Num_Cols, dtype = np.float32);
     A_Scaled              = np.empty((Num_Rows, Num_Cols), dtype = np.float32);
     for j in range(Num_Cols):
         # Sum up the squares of the entries of the jth column of A.
@@ -556,9 +575,10 @@ def Rank_Candidate_Solutions(
 
 
 def Print_Extracted_PDE(
-        Extracted_PDE      : np.array,
-        num_multi_indices  : np.array,
-        multi_indices_list : Tuple) -> None:
+        Extracted_PDE           : np.array,
+        Time_Derivative_Order   : int,
+        num_multi_indices       : np.array,
+        multi_indices_list      : Tuple) -> None:
     """ This function takes in the output of Thresholded_Least_Squares and
     prints it as a human-readable PDE.
 
@@ -571,6 +591,9 @@ def Print_Extracted_PDE(
     Extracted_PDE: This should be the thresholded least-squares solution
     (returned by Thresholded_Least_Squares).
 
+    Time_Derivative_Order: The order of the time derivative in the PDE we're
+    trying to solve.
+
     num_multi_indices, multi_indices_list: the corresponding variables returned
     by Generate_Library.
 
@@ -580,7 +603,10 @@ def Print_Extracted_PDE(
     Nothing! """
 
     # Start the printout.
-    print("du/dt =", end = '');
+    if(Time_Derivative_Order == 1):
+        print("D_t U =", end = '');
+    else:
+        print("D_t^%u U =" % Time_Derivative_Order, end = '')
 
     if (Extracted_PDE[0] != 0):
         print("%f " % Extracted_PDE[0], end = '');
@@ -599,9 +625,11 @@ def Print_Extracted_PDE(
                 # cycle through the sub-indices of this multi-index.
                 for j in range(k):
                     if(multi_index[j] == 0):
-                        print("(u)", end = '');
+                        print("(U)", end = '');
+                    elif(multi_index[j] == 1):
+                        print("(D_x U)", end = '');
                     else:
-                        print("(d^%d u/dx^%d)" % (multi_index[j], multi_index[j]), end = '');
+                        print("(D_x^%u U)" % (multi_index[j]), end = '');
             position += 1;
 
     # Finish printing (this prints a newline character).

@@ -17,7 +17,7 @@ def main():
     Settings = Settings_Reader();
     print("Loaded the following settings:");
     for (setting, value) in Settings.__dict__.items():
-        print(("%-25s = " % setting) + str(value));
+        print(("%-30s = " % setting) + str(value));
 
 
 
@@ -43,7 +43,7 @@ def main():
 
     PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
-                             Input_Dim           = Settings.PDE_Num_Sol_derivatives + 1,
+                             Input_Dim           = Settings.PDE_Spatial_Derivative_Order + 1,
                              Output_Dim          = 1,
                              Data_Type           = torch.float32,
                              Device              = Settings.Device,
@@ -156,6 +156,8 @@ def main():
             PINNs_Training(
                 Sol_NN                      = Sol_NN,
                 PDE_NN                      = PDE_NN,
+                Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
                 IC_Coords                   = Data_Container.IC_Coords,
                 IC_Data                     = Data_Container.IC_Data,
                 Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
@@ -176,6 +178,8 @@ def main():
                 (Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i]) = PINNs_Testing(
                     Sol_NN                      = Sol_NN,
                     PDE_NN                      = PDE_NN,
+                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
                     IC_Coords                   = Data_Container.IC_Coords,
                     IC_Data                     = Data_Container.IC_Data,
                     Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
@@ -188,6 +192,8 @@ def main():
                 (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i]) = PINNs_Testing(
                     Sol_NN                      = Sol_NN,
                     PDE_NN                      = PDE_NN,
+                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
                     IC_Coords                   = Data_Container.IC_Coords,
                     IC_Data                     = Data_Container.IC_Data,
                     Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
@@ -243,14 +249,16 @@ def main():
 
             # Now train!
             Discovery_Training(
-                Sol_NN              = Sol_NN,
-                PDE_NN              = PDE_NN,
-                Collocation_Coords  = Train_Colloc_Coords,
-                Data_Coords         = Data_Container.Train_Data_Coords,
-                Data_Values         = Data_Container.Train_Data_Values,
-                Optimizer           = Optimizer,
-                Data_Type           = torch.float32,
-                Device              = Settings.Device);
+                Sol_NN                      = Sol_NN,
+                PDE_NN                      = PDE_NN,
+                Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
+                Collocation_Coords          = Train_Colloc_Coords,
+                Data_Coords                 = Data_Container.Train_Data_Coords,
+                Data_Values                 = Data_Container.Train_Data_Values,
+                Optimizer                   = Optimizer,
+                Data_Type                   = torch.float32,
+                Device                      = Settings.Device);
 
             # Periodically print loss updates. Otherwise, just print the Epoch #
             # to indicate that we're still alive.
@@ -260,22 +268,26 @@ def main():
 
                 # Evaluate losses on Testing, Training points.
                 (Test_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
-                    Sol_NN              = Sol_NN,
-                    PDE_NN              = PDE_NN,
-                    Collocation_Coords  = Test_Colloc_Coords,
-                    Data_Coords         = Data_Container.Test_Data_Coords,
-                    Data_Values         = Data_Container.Test_Data_Values,
-                    Data_Type           = torch.float32,
-                    Device              = Settings.Device);
+                    Sol_NN                      = Sol_NN,
+                    PDE_NN                      = PDE_NN,
+                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
+                    Collocation_Coords          = Test_Colloc_Coords,
+                    Data_Coords                 = Data_Container.Test_Data_Coords,
+                    Data_Values                 = Data_Container.Test_Data_Values,
+                    Data_Type                   = torch.float32,
+                    Device                      = Settings.Device);
 
                 (Train_Coll_Loss[i], Train_Data_Loss[i]) = Discovery_Testing(
-                    Sol_NN              = Sol_NN,
-                    PDE_NN              = PDE_NN,
-                    Collocation_Coords  = Train_Colloc_Coords,
-                    Data_Coords         = Data_Container.Train_Data_Coords,
-                    Data_Values         = Data_Container.Train_Data_Values,
-                    Data_Type           = torch.float32,
-                    Device              = Settings.Device);
+                    Sol_NN                      = Sol_NN,
+                    PDE_NN                      = PDE_NN,
+                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
+                    Collocation_Coords          = Train_Colloc_Coords,
+                    Data_Coords                 = Data_Container.Train_Data_Coords,
+                    Data_Values                 = Data_Container.Train_Data_Values,
+                    Data_Type                   = torch.float32,
+                    Device                      = Settings.Device);
 
                 # Print losses!
                 print("Epoch #%-4d | Test: \t Collocation = %.7f\t Data = %.7f\t Total = %.7f"
@@ -302,12 +314,13 @@ def main():
          Library,
          num_multi_indices,
          multi_indices_list) = Generate_Library(
-                                    Sol_NN          = Sol_NN,
-                                    PDE_NN          = PDE_NN,
-                                    Coords          = Extraction_Coords,
-                                    num_derivatives = Settings.PDE_Num_Sol_derivatives,
-                                    Poly_Degree     = Settings.Extracted_Term_Degree,
-                                    Device          = Settings.Device);
+                                    Sol_NN                      = Sol_NN,
+                                    PDE_NN                      = PDE_NN,
+                                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
+                                    Coords                      = Extraction_Coords,
+                                    Poly_Degree                 = Settings.Extracted_Term_Degree,
+                                    Device                      = Settings.Device);
 
         # Recursively find a sequence of candidate least squares solutions.
         (X, Residual) = Recursive_Feature_Elimination(
@@ -326,9 +339,10 @@ def main():
         for i in range(Num_Cols - 5, Num_Cols):
             print(("The #%u most likely PDE gives a residual of %.4lf (%.2lf%% better than the next sparsest PDE)." % (Num_Cols - i, Residual_Ranked[i], Residual_Change[i]*100)));
             Print_Extracted_PDE(
-                Extracted_PDE      = X_Ranked[:, i],
-                num_multi_indices  = num_multi_indices,
-                multi_indices_list = multi_indices_list);
+                Extracted_PDE           = X_Ranked[:, i],
+                Time_Derivative_Order   = Settings.PDE_Time_Derivative_Order,
+                num_multi_indices       = num_multi_indices,
+                multi_indices_list      = multi_indices_list);
 
 
     else:

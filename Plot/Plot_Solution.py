@@ -59,9 +59,11 @@ def Evaluate_Approx_Sol(
 
 
 def Evaluate_Residual(
-        Sol_NN          : Neural_Network,
-        PDE_NN          : Neural_Network,
-        Coords          : torch.Tensor):
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Coords                      : torch.Tensor):
     """ This function evaluates the PDE residual at each coordinate in Coords.
     Coords should be a B by 2 tensor, where B is the batch size.
     The ith row of Coords should house the (t, x) coordinates of the ith
@@ -82,18 +84,22 @@ def Evaluate_Residual(
     for i in range(0, Num_Coords - Batch_Size, Batch_Size):
         # Evaluate the PDE Residual for this batch of coordinates.
         Batch_Residual : torch.Tensor = PDE_Residual(
-                            Sol_NN    = Sol_NN,
-                            PDE_NN    = PDE_NN,
-                            Coords    = Coords[i:(i+Batch_Size), :]).view(-1);
+                            Sol_NN                      = Sol_NN,
+                            PDE_NN                      = PDE_NN,
+                            Time_Derivative_Order       = Time_Derivative_Order,
+                            Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                            Coords                      = Coords[i:(i+Batch_Size), :]).view(-1);
 
         # Store these in the appropriate components of Residual.
         Residual[i:(i + Batch_Size)] = Batch_Residual.detach().numpy();
 
     # Clean up loop.
     Batch_Residual : torch.Tensor = PDE_Residual(
-                        Sol_NN    = Sol_NN,
-                        PDE_NN    = PDE_NN,
-                        Coords    = Coords[(i+Batch_Size):, :]).view(-1);
+                        Sol_NN                      = Sol_NN,
+                        PDE_NN                      = PDE_NN,
+                        Time_Derivative_Order       = Time_Derivative_Order,
+                        Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                        Coords                      = Coords[(i+Batch_Size):, :]).view(-1);
     Residual[(i + Batch_Size):] = Batch_Residual.detach().numpy();
 
     # All done! Return!
@@ -163,11 +169,13 @@ def Initialize_Axes() -> Tuple[plt.figure, numpy.array]:
 
 
 def Plot_Solution(
-        fig                 : plt.figure,
-        Axes                : numpy.ndarray,
-        Sol_NN              : Neural_Network,
-        PDE_NN              : Neural_Network,
-        Data                : Data_Container) -> None:
+        fig                         : plt.figure,
+        Axes                        : numpy.ndarray,
+        Sol_NN                      : Neural_Network,
+        PDE_NN                      : Neural_Network,
+        Time_Derivative_Order       : int,
+        Spatial_Derivative_Order    : int,
+        Data                        : Data_Container) -> None:
     """ This function makes four plots. One for the approximate solution, one
     for the true solution, one for their difference, and one for the PDE
     residual. x_points and t_points specify the domain of all four plots.
@@ -186,6 +194,12 @@ def Plot_Solution(
     Sol_NN: The network that approximates the PDE solution.
 
     PDE_NN: The network that approximates the PDE.
+
+    Time_Derivative_Order: The order of the time derivative on the left-hand
+    side of the PDE.
+
+    Spatial_Derivative_Order: The highest order spatial derivatives of Sol_NN we
+    need to evaluate.
 
     Data: This is a Data_Container object. It should contain four members (all
     of which are numpy arrays): x_points, t_points, Data_Set, and Noisy_Data_Set.
@@ -225,9 +239,11 @@ def Plot_Solution(
     Approx_Sol_on_grid = Evaluate_Approx_Sol(Sol_NN, Grid_Point_Coords).reshape(n_x, n_t);
     Error_On_Grid      = numpy.abs(Approx_Sol_on_grid - Data.Data_Set);
     Residual_on_Grid   = Evaluate_Residual(
-                            Sol_NN    = Sol_NN,
-                            PDE_NN    = PDE_NN,
-                            Coords    = Grid_Point_Coords).reshape(n_x, n_t);
+                            Sol_NN                      = Sol_NN,
+                            PDE_NN                      = PDE_NN,
+                            Time_Derivative_Order       = Time_Derivative_Order,
+                            Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                            Coords                      = Grid_Point_Coords).reshape(n_x, n_t);
 
     # Plot the true solution + color bar.
     data_min : float = numpy.min(Data.Noisy_Data_Set);
@@ -297,7 +313,7 @@ if __name__ == "__main__":
 
     PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
-                             Input_Dim           = Settings.PDE_Num_Sol_derivatives + 1,
+                             Input_Dim           = Settings.PDE_Spatial_Derivative_Order + 1,
                              Output_Dim          = 1,
                              Activation_Function = Settings.PDE_Activation_Function);
 
@@ -308,11 +324,13 @@ if __name__ == "__main__":
 
     # Finally, make the plot.
     fig, Axes = Initialize_Axes();
-    Plot_Solution(      fig              = fig,
-                        Axes             = Axes,
-                        Sol_NN           = Sol_NN,
-                        PDE_NN           = PDE_NN,
-                        Data             = Data);
+    Plot_Solution(      fig                         = fig,
+                        Axes                        = Axes,
+                        Sol_NN                      = Sol_NN,
+                        PDE_NN                      = PDE_NN,
+                        Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
+                        Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
+                        Data                        = Data);
 
     # Show the plot and save it!
     plt.show();
