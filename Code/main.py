@@ -69,7 +69,7 @@ def main():
         elif(Settings.Optimizer == "LBFGS"):
             Optimizer = torch.optim.LBFGS(  Params, lr = Learning_Rate);
         elif(Settings.Optimizer == "SGD"):
-            Optimizer = torch.optim.SGD(    Params, lr = Learning_Rate);
+            Optimizer = torch.optim.SGD(    Params, lr = Learning_Rate, momentum = 0.9, nesterov = True);
         else:
             print(("Optimizer is %s when it should be \"Adam\", \"LBFGS\", or \"SGD\"" % Settings.Optimizer));
             print("Aborting.");
