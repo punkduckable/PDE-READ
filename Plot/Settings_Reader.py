@@ -265,6 +265,7 @@ def Settings_Reader() -> Tuple[Settings_Container, Settings_Container]:
                          "\"Tanh\", \"Rational\", or \"Sin\" Got " + Buffer);
 
     # PDE network architecture.
+    Solution_Settings.PDE_Normalize_Inputs    = Read_Bool_Setting(File, "PDE Network - Normalize Inputs [bool]:");
     Solution_Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int]:"));
     Solution_Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int]:"));
 

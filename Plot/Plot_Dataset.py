@@ -57,6 +57,8 @@ def Plot_Dataset(       Settings    : Settings_Container,
     # First, set up the figure object.
     fig = plt.figure(figsize = (9, 7));
 
+    # Second, set the font size.
+    plt.rcParams.update({'font.size': 16});
 
     # Next, construct the set of possible coordinates. grid_t_coords and
     # grid_x_coords are 2d NumPy arrays. Each row of these arrays corresponds to
@@ -69,10 +71,6 @@ def Plot_Dataset(       Settings    : Settings_Container,
         Axes.set_title(Settings.Plot_Title);
     Axes.set_xlabel("time (s)");
     Axes.set_ylabel("position (m)");
-
-    # Set x, y bounds
-    Axes.set_xbound(0., 1.);
-    Axes.set_ybound(0., 1.);
 
     # This forces Python to produce a square plot.
     Axes.set_aspect('auto', adjustable = 'datalim');

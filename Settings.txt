@@ -23,13 +23,13 @@
 # The code will NOT load the Optimizer if in Extraction mode. In this case, the
 # Reader ignores the load optimizer setting.
 
-Load Sol Network State [bool] :                  False
-Load PDE Network State [bool] :                  False
+Load Sol Network State [bool] :                  True
+Load PDE Network State [bool] :                  True
 Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Burgers_Sine_Rat_Adam
+  Load File Name [str] :                         Beam_Exp_Rat_LBFGS_50
 
 Save State [Bool] :                              True
-  Save File Name [str] :                         Burgers_Sine_Rat_Adam
+  Save File Name [str] :                         Beam_Exp_Rat_LBFGS_50
 
 
 
@@ -59,7 +59,7 @@ Save State [Bool] :                              True
 # has degree 2, u^2 (du_dx)^3 d^2u_dx^2 has order 6, etc.). The latter controls
 # the number of points (in the PDE domain) at which we attempt to fit the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Discovery
+PINNs, Discovery, or Extraction mode [str] :     Extraction
 
 # PINNs mode specific settings.
 Periodic BCs highest order [int] :               1
@@ -69,7 +69,7 @@ Number of Testing Collocation Points [int] :     500
 # Discovery mode specific settings.
 Number of Data Training Points [int] :           10000
 Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    2500
+Number of Training Collocation Points [int] :    5000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
@@ -87,8 +87,8 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 #         D_t^m U = N(U, D_x U, D_x^2 U, ... , D_x^n U)
 # Here, m = Time Derivative Order, and n = Spatial Derivative Order.
 
-PDE - Time Derivative Order [int] :              1
-PDE - Spatial Derivative Order [int] :           2
+PDE - Time Derivative Order [int] :              2
+PDE - Spatial Derivative Order [int] :           4
 
 
 
@@ -107,19 +107,20 @@ Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
 Sol Network - Activation Function [str] :        Rat
 
+PDE Network - Normalize Inputs [bool] :          False
 PDE Network - Number of Hidden Layers [int] :    2
 PDE Network - Neurons per Hidden Layer [int] :   50
 PDE Network - Activation Function [str] :        Rat
 
-Optimizer [Adam, LBFGS, SGD] :                   Adam
+Optimizer [Adam, LBFGS, SGD] :                   LBFGS
 
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         1000
-Learning Rate [float] :                          .001
+Number of Epochs [int] :                         100
+Learning Rate [float] :                          .1
 
 Epochs between testing [int] :                   10
 
@@ -131,5 +132,5 @@ Epochs between new Collocation Points [int] :    1
 ################################################################################
 # Data
 
-Data File [str] :                           Burgers_Sine.mat
-Noise Proportion [float] :                  0.0
+Data File [str] :                           Beam_Exp.mat
+Noise Proportion [float] :                  0.5

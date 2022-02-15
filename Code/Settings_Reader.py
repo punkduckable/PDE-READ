@@ -345,6 +345,7 @@ def Settings_Reader() -> Settings_Container:
 
 
     # Read N's network Architecture
+    Settings.PDE_Normalize_Inputs    = Read_Bool_Setting(File, "PDE Network - Normalize Inputs [bool] :");
     Settings.PDE_Num_Hidden_Layers   = int(Read_Setting(File, "PDE Network - Number of Hidden Layers [int] :"));
     Settings.PDE_Neurons_Per_Layer   = int(Read_Setting(File, "PDE Network - Neurons per Hidden Layer [int] :"));
 

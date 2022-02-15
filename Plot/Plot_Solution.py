@@ -156,10 +156,6 @@ def Initialize_Axes() -> Tuple[plt.figure, numpy.array]:
 
     # Set settings that are the same for each Axes object.
     for i in range(4):
-        # Set x, y bounds
-        Axes[i].set_xbound(0., 1.);
-        Axes[i].set_ybound(0., 1.);
-
         # This forces Python to produce a square plot.
         Axes[i].set_aspect('auto', adjustable = 'datalim');
         Axes[i].set_box_aspect(1.);
@@ -309,13 +305,15 @@ if __name__ == "__main__":
                              Neurons_Per_Layer   = Settings.Sol_Neurons_Per_Layer,
                              Input_Dim           = 2,
                              Output_Dim          = 1,
-                             Activation_Function = Settings.Sol_Activation_Function);
+                             Activation_Function = Settings.Sol_Activation_Function,
+                             Batch_Norm          = False);
 
     PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
                              Input_Dim           = Settings.PDE_Spatial_Derivative_Order + 1,
                              Output_Dim          = 1,
-                             Activation_Function = Settings.PDE_Activation_Function);
+                             Activation_Function = Settings.PDE_Activation_Function,
+                             Batch_Norm          = Settings.PDE_Normalize_Inputs);
 
     Load_File_Path : str = "../Saves/" + Settings.Load_File_Name;
     Saved_State = torch.load(Load_File_Path, map_location=torch.device('cpu'));

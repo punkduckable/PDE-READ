@@ -604,9 +604,9 @@ def Print_Extracted_PDE(
 
     # Start the printout.
     if(Time_Derivative_Order == 1):
-        print("D_t U =", end = '');
+        print("D_t U = ", end = '');
     else:
-        print("D_t^%u U =" % Time_Derivative_Order, end = '')
+        print("D_t^%u U = " % Time_Derivative_Order, end = '')
 
     if (Extracted_PDE[0] != 0):
         print("%f " % Extracted_PDE[0], end = '');

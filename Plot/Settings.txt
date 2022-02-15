@@ -3,15 +3,15 @@
 
 # Where are the state_dict's for the networks we want to plot? (The plot we
 # generate will have the same name)
-Load File Name [str]:                            Burgers_Sine_Rat_Adam
+Load File Name [str]:                            Beam_Exp_Rat_LBFGS_50
 
 
 # Characterize the PDE want to identify. We look for a PDE of the following
 # form:
 #           D_t^m U = N(U, D_x U, D_x^2 U, ... , D_x^n U)
 # where m = Time Derivative Order and n = Spatial Derivative Order.
-PDE - Time Derivative Order [int]:               1
-PDE - Spatial Derivative Order [int]:            2
+PDE - Time Derivative Order [int]:               2
+PDE - Spatial Derivative Order [int]:            4
 
 # What is the architecture of the solution network? (this must match the
 # architecture of the saved network or pytorch will throw an error)
@@ -20,15 +20,16 @@ Sol Network - Neurons per Hidden Layer [int]:    50
 Sol Network - Activation Function [str]:         Rat
 
 # What about the PDE network?
+PDE Network - Normalize Inputs [bool]:           False 
 PDE Network - Number of Hidden Layers [int]:     2
 PDE Network - Neurons per Hidden Layer [int]:    50
 PDE Network - Activation Function [str]:         Rat
 
 # Which dataset did the networks train on?
-Data Set File Name [str]:                        Burgers_Sine.mat
+Data Set File Name [str]:                        Beam_Exp.mat
 
 # How much noise should we add to the dataset?
-Noise Level [float]:                             0.0
+Noise Level [float]:                             0.5
 
 
 
@@ -36,7 +37,7 @@ Noise Level [float]:                             0.0
 # Data Set Plot Settings
 
 # Which dataset do you want to load?
-Data Set File Name [str]:                        KS_Chaotic.mat
+Data Set File Name [str]:                        Heat_Sine.mat
 
 # What do you want the plot to have a title? If so, what?
 Include Plot Title [bool]:                       False

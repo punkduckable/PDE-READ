@@ -39,7 +39,8 @@ def main():
                              Output_Dim          = 1,
                              Data_Type           = torch.float32,
                              Device              = Settings.Device,
-                             Activation_Function = Settings.Sol_Activation_Function);
+                             Activation_Function = Settings.Sol_Activation_Function,
+                             Batch_Norm          = False);
 
     PDE_NN = Neural_Network( Num_Hidden_Layers   = Settings.PDE_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.PDE_Neurons_Per_Layer,
@@ -47,7 +48,8 @@ def main():
                              Output_Dim          = 1,
                              Data_Type           = torch.float32,
                              Device              = Settings.Device,
-                             Activation_Function = Settings.PDE_Activation_Function);
+                             Activation_Function = Settings.PDE_Activation_Function,
+                             Batch_Norm          = Settings.PDE_Normalize_Inputs);
 
     # Setup the optimizer.
     Optimizer = None;
