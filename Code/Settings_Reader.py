@@ -282,6 +282,10 @@ def Settings_Reader() -> Settings_Container:
         raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be" + \
                          "\"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
 
+    # DataSet name.
+    Settings.DataSet_Name                   = Read_Setting(File, "DataSet Name [str] :");
+
+
     # PINNs mode specific settings
     if(Settings.Mode == "PINNs"):
         Settings.Periodic_BCs_Highest_Order = int(Read_Setting(File, "Periodic BCs highest order [int] :"));
@@ -290,8 +294,6 @@ def Settings_Reader() -> Settings_Container:
 
     # Discovery mode specific settings
     if(Settings.Mode == "Discovery"):
-        Settings.Num_Train_Data_Points   = int(Read_Setting(File, "Number of Data Training Points [int] :"));
-        Settings.Num_Test_Data_Points    = int(Read_Setting(File, "Number of Data Testing Points [int] :"));
         Settings.Num_Train_Colloc_Points = int(Read_Setting(File, "Number of Training Collocation Points [int] :"));
         Settings.Num_Test_Colloc_Points  = int(Read_Setting(File, "Number of Testing Collocation Points [int] :"));
 
@@ -383,15 +385,6 @@ def Settings_Reader() -> Settings_Container:
 
     if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
         Settings.Epochs_For_New_Coll_Pts = int(Read_Setting(File, "Epochs between new Collocation Points [int] :"));
-
-
-
-
-    ############################################################################
-    # Data
-
-    Settings.Data_File_Name        = Read_Setting(File, "Data File [str] :");
-    Settings.Noise_Proportion      = float(Read_Setting(File, "Noise Proportion [float] :"));
 
     # All done! Return the settings!
     File.close();

@@ -104,10 +104,12 @@ def main():
     ############################################################################
     # Set up Data
     # If we're in Discovery mode, this will set up the testing and training
-    # data points and values. If we're in PINNs mode, this will also set up IC
-    # and BC points. This should also give us the upper and lower bounds for the
+    # data points and values. If we're in PINNs mode, this will set up IC and
+    # BC points. This should also give us the upper and lower bounds for the
     # domain.
-    Data_Container = Data_Loader(Settings);
+    Data_Container = Data_Loader(   DataSet_Name    = Settings.DataSet_Name,
+                                    Device          = Settings.Device,
+                                    Mode            = Settings.Mode);
 
     # Setup is done! Figure out how long it took.
     Setup_Time : float = Setup_Timer.Stop();
