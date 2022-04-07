@@ -1,0 +1,11 @@
+ 0.000000e+00            # Node  1 - y displacement
+ 1.447206e-03            # Node  2 - y displacement
+ 2.457610e-03            # Node  3 - y displacement
+ 3.074412e-03            # Node  4 - y displacement
+ 3.340813e-03            # Node  5 - y displacement
+ 3.300013e-03            # Node  6 - y displacement
+ 2.995212e-03            # Node  7 - y displacement
+ 2.469610e-03            # Node  8 - y displacement
+ 1.766407e-03            # Node  9 - y displacement
+ 9.288037e-04            # Node 10 - y displacement
+ 0.000000e+00            # Node 11 - y displacement

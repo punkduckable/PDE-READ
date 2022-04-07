@@ -106,29 +106,21 @@ def Data_Loader(DataSet_Name   : str,
         # max/min x/t coordinates - x_min, x_max, t_min, and t_max - in the
         # training set. We assume the problem domain is [t_min, t_max] x
         # [x_min, x_max].
-        t_min : float = Train_Data_Coords[0, 0];        # t component of first training point.
-        t_max : float = Train_Data_Coords[0, 0];        # t component of first training point.
-
-        x_min : float = Train_Data_Coords[0, 1];        # x component of first training point.
-        x_max : float = Train_Data_Coords[0, 1];        # x component of first training point.
+        x_min : float = Train_Data_Coords[0];        # x component of first training point.
+        x_max : float = Train_Data_Coords[0];        # x component of first training point.
 
         N : int = Train_Data_Coords.shape[0];
         for i in range(N):
-            t_i : float = Train_Data_Coords[i, 0];
-            x_i : float = Train_Data_Coords[i, 1];
+            x_i : float = Train_Data_Coords[i];
 
-            if(t_i < t_min):
-                t_min = t_i;
-            if(t_i > t_max):
-                t_max = t_i;
             if(x_i < x_min):
                 x_min = x_i;
             if(x_i > x_max):
                 x_max = x_i;
 
         # Store these bounds in the Container.
-        Container.Dim_Lower_Bounds = numpy.array((t_min, x_min), dtype = numpy.float32);
-        Container.Dim_Upper_Bounds = numpy.array((t_max, x_max), dtype = numpy.float32);
+        Container.Dim_Lower_Bounds = numpy.array((x_min), dtype = numpy.float32);
+        Container.Dim_Upper_Bounds = numpy.array((x_max), dtype = numpy.float32);
 
     # The container is now full. Return it!
     return Container;
@@ -170,7 +162,7 @@ def Generate_Random_Coords(
 
     # Populate the coordinates with random values.
     for i in range(Num_Points):
-        for k in range(d):
-            Coords[i, k] = random.uniform(Dim_Lower_Bounds[k], Dim_Upper_Bounds[k]);
+        Coords[i, 0] = random.uniform(Dim_Lower_Bounds[0], Dim_Upper_Bounds[0]);
+
 
     return Coords;

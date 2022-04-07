@@ -100,11 +100,11 @@ def Evaluate_Derivatives(
     # it takes advantage of memory locality.
 
     # extract du/dx and du/dt (at each collocation point) from Grad_U.
-    Dtm_U : torch.Tensor    = Grad_U[:, 0].view(-1);
-    Dxn_U[:, 1]             = Grad_U[:, 1];
+    #Dtm_U : torch.Tensor    = Grad_U[:, 0].view(-1);
+    Dxn_U[:, 1]             = Grad_U[:, 0];
 
 
-
+    """
     # Compute the requested time derivative of U.
     for j in range(2, Time_Derivative_Order + 1):
         # At each coordinate, differentiate D_{t}^{i - 1} U with respect to
@@ -122,7 +122,7 @@ def Evaluate_Derivatives(
                         create_graph    = True)[0];
 
         # The 0 column should contain the ith time derivative of U.
-        Dtm_U = Grad_Dtm_U[:, 0].view(-1);
+        Dtm_U = Grad_Dtm_U[:].view(-1);"""
 
 
     # Compute higher order spatial derivatives
@@ -142,9 +142,9 @@ def Evaluate_Derivatives(
                         create_graph    = True)[0];
 
         # Extract D_x^i U, which is the 1 column of the above Tensor.
-        Dxn_U[:, j] = Grad_Dxn_U[:, 1];
+        Dxn_U[:, j] = Grad_Dxn_U[:, 0];
 
-    return (Dtm_U, Dxn_U);
+    return (Dxn_U);
 
 
 
@@ -196,7 +196,7 @@ def PDE_Residual(
     # For brevity, let u = Sol_NN.  Thus, the number of derivatives is the number
     # of inputs for PDE_NN minus  1.  Once we know this, we evaluate du/dt, u,
     # and the first n-1 spatial derivatives of u at each collocation point.
-    Dtm_U, Dxn_U = Evaluate_Derivatives(
+    Dxn_U = Evaluate_Derivatives(
                         Sol_NN                      = Sol_NN,
                         Time_Derivative_Order       = Time_Derivative_Order,
                         Spatial_Derivative_Order    = Spatial_Derivative_Order,
@@ -211,5 +211,10 @@ def PDE_Residual(
     PDE_NN_batch = PDE_NN(Dxn_U).view(-1);
 
     # At each Collocation point, evaluate the square of the residuals
-    # D_t^m U - N(u, D_x U, ... , D_x^n U).
-    return (Dtm_U - PDE_NN_batch);
+    #       T - N(u, D_x U, ... , D_x^n U).
+    # Here, T is the internal torque. Assuming a torque of +100 NM at 0, and
+    # -10 NM at 20, this should be given by
+    #       T(x) = -100 + (9/2)x
+    T : torch.Tensor = -100.0 + (9./2.)*Coords.view(-1);
+
+    return (T - PDE_NN_batch);

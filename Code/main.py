@@ -35,7 +35,7 @@ def main():
     # Initialize the Solution, PDE networks.
     Sol_NN = Neural_Network( Num_Hidden_Layers   = Settings.Sol_Num_Hidden_Layers,
                              Neurons_Per_Layer   = Settings.Sol_Neurons_Per_Layer,
-                             Input_Dim           = 2,
+                             Input_Dim           = 1,
                              Output_Dim          = 1,
                              Data_Type           = torch.float32,
                              Device              = Settings.Device,

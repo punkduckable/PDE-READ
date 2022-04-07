@@ -296,9 +296,9 @@ def Generate_Library(
     Library : np.array = np.ones((num_rows, num_cols), dtype = np.float32);
 
     # Evaluate u, du/dx,... at each point. We use batches to reduce memory load.
-    Dtm_U   = torch.empty(  (num_rows),
-                            dtype  = torch.float32,
-                            device = Device);
+    #Dtm_U   = torch.empty(  (num_rows),
+    #                        dtype  = torch.float32,
+    #                        device = Device);
     Dxn_U   = torch.empty( (num_rows, num_sub_index_values),
                             dtype  = torch.float32,
                             device = Device);
@@ -307,7 +307,7 @@ def Generate_Library(
     if(num_rows > Batch_Size):
         # Main loop
         for i in range(0, num_rows - Batch_Size, Batch_Size):
-            (Dtm_U_Batch, Dxn_U_Batch) = Evaluate_Derivatives(
+            Dxn_U_Batch =               Evaluate_Derivatives(
                                             Sol_NN                      = Sol_NN,
                                             Time_Derivative_Order       = Time_Derivative_Order,
                                             Spatial_Derivative_Order    = Spatial_Derivative_Order,
@@ -315,11 +315,11 @@ def Generate_Library(
                                             Data_Type                   = torch.float32,
                                             Device                      = Device);
 
-            Dtm_U[i:(i + Batch_Size)]    = Dtm_U_Batch.detach();
+            #Dtm_U[i:(i + Batch_Size)]    = Dtm_U_Batch.detach();
             Dxn_U[i:(i + Batch_Size), :] = Dxn_U_Batch.detach();
 
         # Clean up loop.
-        (Dtm_U_Batch, Dxn_U_Batch) = Evaluate_Derivatives(
+        Dxn_U_Batch =               Evaluate_Derivatives(
                                         Sol_NN                      = Sol_NN,
                                         Time_Derivative_Order       = Time_Derivative_Order,
                                         Spatial_Derivative_Order    = Spatial_Derivative_Order,
@@ -327,18 +327,18 @@ def Generate_Library(
                                         Data_Type                   = torch.float32,
                                         Device                      = Device);
 
-        Dtm_U[(i + Batch_Size):]    = Dtm_U_Batch.detach();
+        #Dtm_U[(i + Batch_Size):]    = Dtm_U_Batch.detach();
         Dxn_U[(i + Batch_Size):, :] = Dxn_U_Batch.detach();
 
     else:
-        (Dtm_U, Dxn_U) = Evaluate_Derivatives(
+        Dxn_U        = Evaluate_Derivatives(
                             Sol_NN                      = Sol_NN,
                             Time_Derivative_Order       = Time_Derivative_Order,
-                            Spatial_Derivative_Order    = Spatial_Derivative_Order,
+                            Spatial_Derivative_Order    = 2,
                             Coords                      = Coords,
                             Data_Type                   = torch.float32,
                             Device                      = Device);
-        Dtm_U = Dtm_U.detach();
+        #Dtm_U = Dtm_U.detach();
         Dxn_U = Dxn_U.detach();
 
     # Evaluate PDE_NN.
@@ -603,10 +603,11 @@ def Print_Extracted_PDE(
     Nothing! """
 
     # Start the printout.
+    print("m = ", end = ''); """
     if(Time_Derivative_Order == 1):
         print("D_t U = ", end = '');
     else:
-        print("D_t^%u U = " % Time_Derivative_Order, end = '')
+        print("D_t^%u U = " % Time_Derivative_Order, end = '')"""
 
     if (Extracted_PDE[0] != 0):
         print("%f " % Extracted_PDE[0], end = '');
