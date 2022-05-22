@@ -2,10 +2,11 @@ import numpy;
 import torch;
 
 from Network         import Neural_Network;
-from Test_Train      import Discovery_Testing, Discovery_Training, PINNs_Testing, PINNs_Training;
+from Test_Train      import Discovery_Testing, Discovery_Training;
 from Extraction      import Generate_Library, Print_Extracted_PDE, Recursive_Feature_Elimination, Rank_Candidate_Solutions;
 from Settings_Reader import Settings_Reader, Settings_Container;
-from Data_Setup      import Data_Loader, Data_Container, Generate_Random_Coords;
+from Data_Setup      import Data_Loader, Data_Container;
+from Points          import Generate_Points;
 from Timing          import Timer;
 
 
@@ -53,17 +54,13 @@ def main():
 
     # Setup the optimizer.
     Optimizer = None;
-    if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
+    if(Settings.Mode == "Discovery"):
         # Construct Params (this depends on the mode).
         if  (Settings.Mode == "Discovery"):
             # If we're in discovery mode, then we need to train both Sol_NN and
             # PDE_NN. Thus, we need to pass both networks' paramaters to the
             # optimizer.
             Params = list(Sol_NN.parameters()) + list(PDE_NN.parameters());
-        elif(Settings.Mode == "PINNs"):
-            # If we're in PINNs mode, then we only need to train Sol_NN.
-            PDE_NN.requires_grad_(False);
-            Params = Sol_NN.parameters();
 
         # Now pass Params to the Optimizer.
         if  (Settings.Optimizer == "Adam"):
@@ -104,9 +101,8 @@ def main():
     ############################################################################
     # Set up Data
     # If we're in Discovery mode, this will set up the testing and training
-    # data points and values. If we're in PINNs mode, this will set up IC and
-    # BC points. This should also give us the upper and lower bounds for the
-    # domain.
+    # data points and values. This should also give us the upper and lower
+    # bounds for the domain.
     Data_Container = Data_Loader(   DataSet_Name    = Settings.DataSet_Name,
                                     Device          = Settings.Device,
                                     Mode            = Settings.Mode);
@@ -124,103 +120,7 @@ def main():
     Main_Timer = Timer();
     Main_Timer.Start();
 
-    if  (Settings.Mode == "PINNs"):
-        # Setup Loss tracking.
-        if(Epochs != 0):
-            # Set up array for the different losses. We only print the losses
-            # every few Epochs. As a result, the loss arrays only need
-            # (Epochs - 2)//Epochs_Between_Prints + 2 rows (think about it).
-            Num_Loss_Measurements : int = (Epochs - 2)//Settings.Epochs_Between_Prints + 2;
-            Test_IC_Loss    = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Test_BC_Loss    = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Test_Data_Loss  = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_IC_Loss   = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_BC_Loss   = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
-            Train_Data_Loss = numpy.empty(Num_Loss_Measurements, dtype = numpy.float32);
-
-            Loss_Counter : int = 0;
-
-        for t in range(Epochs):
-            # Check if we should generate new Collocation points.
-            if(t % Settings.Epochs_For_New_Coll_Pts == 0):
-                Train_Colloc_Coords = Generate_Random_Coords(
-                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
-                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
-                        Num_Points       = Settings.Num_Train_Colloc_Points,
-                        Data_Type        = torch.float32,
-                        Device           = Settings.Device);
-
-                Test_Colloc_Coords = Generate_Random_Coords(
-                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
-                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
-                        Num_Points       = Settings.Num_Test_Colloc_Points,
-                        Data_Type        = torch.float32,
-                        Device           = Settings.Device);
-
-            PINNs_Training(
-                Sol_NN                      = Sol_NN,
-                PDE_NN                      = PDE_NN,
-                Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
-                Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                IC_Coords                   = Data_Container.IC_Coords,
-                IC_Data                     = Data_Container.IC_Data,
-                Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
-                Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
-                Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                Collocation_Coords          = Train_Colloc_Coords,
-                Optimizer                   = Optimizer,
-                Data_Type                   = torch.float32,
-                Device                      = Settings.Device);
-
-            # Periodically print loss updates. In all other Epochs, print the
-            # epoch number to indiciate that the code is still running.
-            if((t % Settings.Epochs_Between_Prints == 0) or t == Epochs - 1):
-                # Alias the Loss counter for brevity
-                i : int = Loss_Counter;
-
-                # Determine losses on the testing, training data.
-                (Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i]) = PINNs_Testing(
-                    Sol_NN                      = Sol_NN,
-                    PDE_NN                      = PDE_NN,
-                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
-                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                    IC_Coords                   = Data_Container.IC_Coords,
-                    IC_Data                     = Data_Container.IC_Data,
-                    Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
-                    Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
-                    Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                    Collocation_Coords          = Test_Colloc_Coords,
-                    Data_Type                   = torch.float32,
-                    Device                      = Settings.Device);
-
-                (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i]) = PINNs_Testing(
-                    Sol_NN                      = Sol_NN,
-                    PDE_NN                      = PDE_NN,
-                    Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
-                    Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                    IC_Coords                   = Data_Container.IC_Coords,
-                    IC_Data                     = Data_Container.IC_Data,
-                    Lower_Bound_Coords          = Data_Container.Lower_Bound_Coords,
-                    Upper_Bound_Coords          = Data_Container.Upper_Bound_Coords,
-                    Periodic_BCs_Highest_Order  = Settings.Periodic_BCs_Highest_Order,
-                    Collocation_Coords          = Train_Colloc_Coords,
-                    Data_Type                   = torch.float32,
-                    Device                      = Settings.Device);
-
-                # Print losses!
-                print("Epoch #%-4d | Test: \t IC = %.7f\t BC = %.7f\t Collocation = %.7f\t Total = %.7f"
-                      % (t, Test_IC_Loss[i], Test_BC_Loss[i], Test_Data_Loss[i],
-                         Test_IC_Loss[i] + Test_BC_Loss[i] + Test_Data_Loss[i]));
-                print("            | Train:\t IC = %.7f\t BC = %.7f\t Collocation = %.7f\t Total = %.7f"
-                      % (Train_IC_Loss[i], Train_BC_Loss[i], Train_Data_Loss[i],
-                         Train_IC_Loss[i] + Train_BC_Loss[i] + Train_Data_Loss[i]));
-
-                # Increment the counter.
-                Loss_Counter += 1;
-            else:
-                print(("Epoch #%-4d | "   % t));
-
-    elif(Settings.Mode == "Discovery"):
+    if  (Settings.Mode == "Discovery"):
         # Setup Loss tracking.
         if(Epochs != 0):
             # Set up arrays for the different losses. We only measure the loss every
@@ -235,21 +135,12 @@ def main():
             Loss_Counter : int = 0;
 
         for t in range(Epochs):
-            # Check if we should generate new Collocation points.
-            if(t % Settings.Epochs_For_New_Coll_Pts == 0):
-                Train_Colloc_Coords = Generate_Random_Coords(
-                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
-                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
-                        Num_Points       = Settings.Num_Train_Colloc_Points,
-                        Data_Type        = torch.float32,
-                        Device           = Settings.Device);
-
-                Test_Colloc_Coords = Generate_Random_Coords(
-                        Dim_Lower_Bounds = Data_Container.Dim_Lower_Bounds,
-                        Dim_Upper_Bounds = Data_Container.Dim_Upper_Bounds,
-                        Num_Points       = Settings.Num_Test_Colloc_Points,
-                        Data_Type        = torch.float32,
-                        Device           = Settings.Device);
+            # generate new Collocation points.
+            Train_Colloc_Points = Generate_Points(
+                    Bounds           = Data_Container.Input_Bounds,
+                    Num_Points       = Settings.Num_Train_Colloc_Points,
+                    Data_Type        = torch.float32,
+                    Device           = Settings.Device);
 
             # Now train!
             Discovery_Training(
@@ -257,9 +148,9 @@ def main():
                 PDE_NN                      = PDE_NN,
                 Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
                 Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                Collocation_Coords          = Train_Colloc_Coords,
-                Data_Coords                 = Data_Container.Train_Data_Coords,
-                Data_Values                 = Data_Container.Train_Data_Values,
+                Collocation_Coords          = Train_Colloc_Points,
+                Data_Coords                 = Data_Container.Train_Inputs,
+                Data_Values                 = Data_Container.Train_Targets,
                 Optimizer                   = Optimizer,
                 Data_Type                   = torch.float32,
                 Device                      = Settings.Device);
@@ -270,15 +161,22 @@ def main():
                 # Alias the Loss counter for brevity
                 i : int = Loss_Counter;
 
+                # Generate collocation points for testing.
+                Test_Colloc_Points = Generate_Points(
+                        Bounds           = Data_Container.Input_Bounds,
+                        Num_Points       = Settings.Num_Test_Colloc_Points,
+                        Data_Type        = torch.float32,
+                        Device           = Settings.Device);
+
                 # Evaluate losses on Testing, Training points.
                 (Test_Coll_Loss[i], Test_Data_Loss[i]) = Discovery_Testing(
                     Sol_NN                      = Sol_NN,
                     PDE_NN                      = PDE_NN,
                     Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
                     Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                    Collocation_Coords          = Test_Colloc_Coords,
-                    Data_Coords                 = Data_Container.Test_Data_Coords,
-                    Data_Values                 = Data_Container.Test_Data_Values,
+                    Collocation_Coords          = Test_Colloc_Points,
+                    Data_Coords                 = Data_Container.Test_Inputs,
+                    Data_Values                 = Data_Container.Test_Targets,
                     Data_Type                   = torch.float32,
                     Device                      = Settings.Device);
 
@@ -287,9 +185,9 @@ def main():
                     PDE_NN                      = PDE_NN,
                     Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
                     Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                    Collocation_Coords          = Train_Colloc_Coords,
-                    Data_Coords                 = Data_Container.Train_Data_Coords,
-                    Data_Values                 = Data_Container.Train_Data_Values,
+                    Collocation_Coords          = Train_Colloc_Points,
+                    Data_Coords                 = Data_Container.Train_Inputs,
+                    Data_Values                 = Data_Container.Train_Targets,
                     Data_Type                   = torch.float32,
                     Device                      = Settings.Device);
 
@@ -306,9 +204,8 @@ def main():
 
     elif(Settings.Mode == "Extraction"):
         # Setup Extraction Coords
-        Extraction_Coords = Generate_Random_Coords(
-                Dim_Lower_Bounds    = Data_Container.Dim_Lower_Bounds,
-                Dim_Upper_Bounds    = Data_Container.Dim_Upper_Bounds,
+        Extraction_Points = Generate_Points(
+                Bounds              = Data_Container.Input_Bounds,
                 Num_Points          = Settings.Num_Extraction_Points,
                 Data_Type           = torch.float32,
                 Device              = Settings.Device);
@@ -322,7 +219,7 @@ def main():
                                     PDE_NN                      = PDE_NN,
                                     Time_Derivative_Order       = Settings.PDE_Time_Derivative_Order,
                                     Spatial_Derivative_Order    = Settings.PDE_Spatial_Derivative_Order,
-                                    Coords                      = Extraction_Coords,
+                                    Coords                      = Extraction_Points,
                                     Poly_Degree                 = Settings.Extracted_Term_Degree,
                                     Device                      = Settings.Device);
 
@@ -350,7 +247,7 @@ def main():
 
 
     else:
-        print(("Mode is %s. It should be one of \"PINNs\", \"Discovery\", \"Extraction\"." % Settings.Mode));
+        print(("Mode is %s. It should be one of \"Discovery\", \"Extraction\"." % Settings.Mode));
         print("Something went wrong. Aborting. Thrown by main.");
         exit();
 
@@ -358,8 +255,8 @@ def main():
     # Epochs are done. Figure out how long they took!
     Main_Time = Main_Timer.Stop();
 
-    if (Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        # In these modes, training can take hours. Thus, it's usually more
+    if (Settings.Mode == "Discovery"):
+        # In this mode, training can take hours. Thus, it's usually more
         # useful to report the time in minutes, seconds.
         Minutes : int   = int(Main_Time) // 60;
         Seconds : float = Main_Time - 60*Minutes;
@@ -375,10 +272,10 @@ def main():
 
     ############################################################################
     # Save the network and optimizer states!
-    # This only makes sense if we're in PINNs or Discovery modes since those
-    # those modes actually train something.
+    # This only makes sense if we're in Discovery mode since that mode actually
+    # trains something.
 
-    if((Settings.Mode == "PINNs" or Settings.Mode == "Discovery") and Settings.Save_To_File == True):
+    if(Settings.Mode == "Discovery" and Settings.Save_To_File == True):
         Save_File_Path : str = "../Saves/" + Settings.Save_File_Name;
         torch.save({"Sol_Network_State" : Sol_NN.state_dict(),
                     "PDE_Network_State" : PDE_NN.state_dict(),

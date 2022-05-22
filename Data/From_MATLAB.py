@@ -1,17 +1,20 @@
 import numpy;
 import random;
 import scipy.io;
+import matplotlib.pyplot as pyplot;
 
 from Create_Data_Set import Create_Data_Set;
 
 
 
+Make_Plot : bool = True;
+
 def main():
     # Specify settings.
     Data_File_Name      : str   = "Burgers_Sine";
-    Noise_Proportion    : float = 0.5;
+    Noise_Proportion    : float = 1.0;
 
-    Num_Train_Examples  : int   = 4000;
+    Num_Train_Examples  : int   = 5000;
     Num_Test_Examples   : int   = 1000;
 
     # Now pass them to "From_MATLAB".
@@ -71,28 +74,53 @@ def From_MATLAB(    Data_File_Name      : str,
     x_points    = data_in['x'].reshape(-1).astype(dtype = numpy.float32);
     Data_Set    = (numpy.real(data_in['usol'])).astype( dtype = numpy.float32);
 
+    # Determine problem bounds.
+    Input_Bounds : numpy.ndarray    = numpy.empty(shape = (2, 2), dtype = numpy.float32);
+    Input_Bounds[0, 0]              = t_points[ 0];
+    Input_Bounds[0, 1]              = t_points[-1];
+    Input_Bounds[1, 0]              = x_points[ 0];
+    Input_Bounds[1, 1]              = x_points[-1];
+
     # Add noise to true solution.
     Noisy_Data_Set = Data_Set + (Noise_Proportion)*numpy.std(Data_Set)*numpy.random.randn(*Data_Set.shape);
 
     # Generate the grid of (t, x) coordinates where we'll enforce the "true
     # solution". Each row of these arrays corresponds to a particular position.
     # Each column corresponds to a particular time.
-    grid_t_coords, grid_x_coords = numpy.meshgrid(t_points, x_points);
+    t_coords_matrix, x_coords_matrix = numpy.meshgrid(t_points, x_points);
 
-    # Flatten t_coods, x_coords into column vectors.
-    flattened_grid_t_coords  = grid_t_coords.reshape(-1, 1);
-    flattened_grid_x_coords  = grid_x_coords.reshape(-1, 1);
+    if(Make_Plot == True):
+        epsilon : float = .0001;
+        Data_min : float = numpy.min(Noisy_Data_Set) - epsilon;
+        Data_max : float = numpy.max(Noisy_Data_Set) + epsilon;
+
+        # Plot!
+        pyplot.contourf(    t_coords_matrix,
+                            x_coords_matrix,
+                            Noisy_Data_Set,
+                            levels      = numpy.linspace(Data_min, Data_max, 500),
+                            cmap        = pyplot.cm.jet);
+
+        pyplot.colorbar();
+        pyplot.xlabel("t");
+        pyplot.ylabel("x");
+        pyplot.show();
+
+    # Now, stitch successive the rows of the coordinate matrices together
+    # to make a 1D array. We interpert the result as a 1 column matrix.
+    t_coords_1D : numpy.ndarray = t_coords_matrix.flatten().reshape(-1, 1);
+    x_coords_1D : numpy.ndarray = x_coords_matrix.flatten().reshape(-1, 1);
 
     # Generate data coordinates, corresponding Data Values.
-    All_Data_Coords = numpy.hstack((flattened_grid_t_coords, flattened_grid_x_coords));
-    All_Data_Values = Noisy_Data_Set.flatten();
+    All_Data_Coords : numpy.ndarray = numpy.hstack((t_coords_1D, x_coords_1D));
+    All_Data_Values : numpy.ndarray = Noisy_Data_Set.flatten();
 
     # Next, generate the Testing/Training sets. To do this, we sample a uniform
     # distribution over subsets of {1, ... , N} of size Num_Train_Examples,
     # and another over subsets of {1, ... , N} of size Num_Test_Examples.
     # Here, N is the number of coordinates.
-    Train_Indicies = numpy.random.choice(All_Data_Coords.shape[0], Num_Train_Examples, replace = False);
-    Test_Indicies  = numpy.random.choice(All_Data_Coords.shape[0], Num_Test_Examples , replace = False);
+    Train_Indicies : numpy.ndarray = numpy.random.choice(All_Data_Coords.shape[0], Num_Train_Examples, replace = False);
+    Test_Indicies  : numpy.ndarray = numpy.random.choice(All_Data_Coords.shape[0], Num_Test_Examples , replace = False);
 
     # Now select the corresponding testing, training data points/values.
     Train_Inputs    = All_Data_Coords[Train_Indicies, :];
@@ -103,14 +131,15 @@ def From_MATLAB(    Data_File_Name      : str,
 
     # Send everything to Create_Data_Set
     DataSet_Name : str = (  Data_File_Name + "_" +
-                            str(int(100*Noise_Proportion)) + "_" +
-                            str(Num_Train_Examples) );
+                            "N" + str(int(100*Noise_Proportion)) + "_" +
+                            "P" + str(Num_Train_Examples) );
 
     Create_Data_Set(    Name            = DataSet_Name,
                         Train_Inputs    = Train_Inputs,
                         Train_Targets   = Train_Targets,
                         Test_Inputs     = Test_Inputs,
-                        Test_Targets    = Test_Targets);
+                        Test_Targets    = Test_Targets,
+                        Input_Bounds    = Input_Bounds);
 
 
 

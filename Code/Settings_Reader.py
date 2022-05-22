@@ -270,27 +270,18 @@ def Settings_Reader() -> Settings_Container:
     ############################################################################
     # Mode
 
-    # PINNS, PDE Discovery, or PDE Extraction mode?
-    Buffer = Read_Setting(File, "PINNs, Discovery, or Extraction mode [str] :");
-    if  (Buffer[0] == 'P' or Buffer[0] == 'p'):
-        Settings.Mode = "PINNs";
-    elif(Buffer[0] == 'D' or Buffer[0] == 'd'):
+    # Discovery, or Extraction mode?
+    Buffer = Read_Setting(File, "Discovery, or Extraction mode [str] :");
+    if  (Buffer[0] == 'D' or Buffer[0] == 'd'):
         Settings.Mode = "Discovery";
     elif(Buffer[0] == 'E' or Buffer[0] == 'e'):
         Settings.Mode = "Extraction";
     else:
-        raise Read_Error("\"PINNs, Discovery, or Extraction mode\" should be" + \
-                         "\"PINNs\", \"Discovery\", or \"Extraction\". Got " + Buffer);
+        raise Read_Error("\"Discovery, or Extraction mode\" should be" + \
+                         "\"Discovery\", or \"Extraction\". Got " + Buffer);
 
     # DataSet name.
     Settings.DataSet_Name                   = Read_Setting(File, "DataSet Name [str] :");
-
-
-    # PINNs mode specific settings
-    if(Settings.Mode == "PINNs"):
-        Settings.Periodic_BCs_Highest_Order = int(Read_Setting(File, "Periodic BCs highest order [int] :"));
-        Settings.Num_Train_Colloc_Points    = int(Read_Setting(File, "Number of Training Collocation Points [int] :"));
-        Settings.Num_Test_Colloc_Points     = int(Read_Setting(File, "Number of Testing Collocation Points [int] :"));
 
     # Discovery mode specific settings
     if(Settings.Mode == "Discovery"):
@@ -382,9 +373,6 @@ def Settings_Reader() -> Settings_Container:
     Settings.Epochs                 = int(  Read_Setting(File, "Number of Epochs [int] :"));
     Settings.Learning_Rate          = float(Read_Setting(File, "Learning Rate [float] :"));
     Settings.Epochs_Between_Prints  = int(  Read_Setting(File, "Epochs between testing [int] :"));
-
-    if(Settings.Mode == "PINNs" or Settings.Mode == "Discovery"):
-        Settings.Epochs_For_New_Coll_Pts = int(Read_Setting(File, "Epochs between new Collocation Points [int] :"));
 
     # All done! Return the settings!
     File.close();
