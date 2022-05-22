@@ -25,31 +25,25 @@
 
 Load Sol Network State [bool] :                  True
 Load PDE Network State [bool] :                  True
-Load Optimizer State [bool] :                    False
-  Load File Name [str] :                         Beam_Exp_Rat_LBFGS_50
+Load Optimizer State [bool] :                    True
+  Load File Name [str] :                         Burgers_Sine_Adam_N100_P5000
 
 Save State [Bool] :                              True
-  Save File Name [str] :                         Beam_Exp_Rat_LBFGS_50
+  Save File Name [str] :                         Burgers_Sine_Adam_N100_P5000
 
 
 
 ################################################################################
 # Mode
-# The "PINNs, Discovery, or Extraction mode" setting controls what the code
-# does. The allowed values for this setting are "PINNs", "Discovery", and
+# The "Discovery, or Extraction mode" setting controls what the code
+# does. The allowed values for this setting are "Discovery" or
 # "Extraction". Actually, the reader will interpret any word that begins with
-# "p" or "P" as "PINNs", any word that begins with "d" or "D" as "Discovery",
-# and any word that begins with "e" or "E" as "Extraction"... PDE's, get it? ;)
+# "d" or "D" as "Discovery" and any word that begins with "e" or "E" as
+# "Extraction".
 #
 # In Discovery mode, the code trains both the Solution and PDE networks. The
 # loss consists of data and collocation losses. In this mode, the reader will
-# ignore the PINNs and Extraction settings (so you can too!)
-#
-# In PINNs mode, the code trains the solution network (not the PDE network,
-# which means that you should load a trained PDE network). The loss comes from
-# the collocation points, the IC, and the periodic BCs. In this mode, you MUST
-# set the "Periodic BCs highest order" setting. If this setting is N, we will
-# enforce periodic BCs on the solution and its first N-1 derivatives.
+# ignore the Extraction settings (so you can too!)
 #
 # In Extraction mode, the code trains neither network. Instead, it attempts to
 # extract a PDE from the PDE network (which means you should load a trained
@@ -59,17 +53,13 @@ Save State [Bool] :                              True
 # has degree 2, u^2 (du_dx)^3 d^2u_dx^2 has order 6, etc.). The latter controls
 # the number of points (in the PDE domain) at which we attempt to fit the PDE.
 
-PINNs, Discovery, or Extraction mode [str] :     Extraction
+Discovery, or Extraction mode [str] :            Extraction
 
-# PINNs mode specific settings.
-Periodic BCs highest order [int] :               1
-Number of Training Collocation Points [int] :    7000
-Number of Testing Collocation Points [int] :     500
+# Which dataset do we want to use?
+DataSet Name [str] :                             Burgers_Sine_N100_P5000
 
 # Discovery mode specific settings.
-Number of Data Training Points [int] :           10000
-Number of Data Testing Points [int] :            1000
-Number of Training Collocation Points [int] :    5000
+Number of Training Collocation Points [int] :    10000
 Number of Testing Collocation Points [int] :     1000
 
 # Extraction mode specific settings.
@@ -87,8 +77,8 @@ Train on CPU or GPU [GPU, CPU] :                 CPU
 #         D_t^m U = N(U, D_x U, D_x^2 U, ... , D_x^n U)
 # Here, m = Time Derivative Order, and n = Spatial Derivative Order.
 
-PDE - Time Derivative Order [int] :              2
-PDE - Spatial Derivative Order [int] :           4
+PDE - Time Derivative Order [int] :              1
+PDE - Spatial Derivative Order [int] :           2
 
 
 
@@ -105,32 +95,21 @@ PDE - Spatial Derivative Order [int] :           4
 
 Sol Network - Number of Hidden Layers [int] :    5
 Sol Network - Neurons per Hidden Layer [int] :   50
-Sol Network - Activation Function [str] :        Rat
+Sol Network - Activation Function [str] :        Tanh
 
 PDE Network - Normalize Inputs [bool] :          False
 PDE Network - Number of Hidden Layers [int] :    2
-PDE Network - Neurons per Hidden Layer [int] :   50
-PDE Network - Activation Function [str] :        Rat
+PDE Network - Neurons per Hidden Layer [int] :   100
+PDE Network - Activation Function [str] :        Tanh
 
-Optimizer [Adam, LBFGS, SGD] :                   LBFGS
+Optimizer [Adam, LBFGS, SGD] :                   Adam
 
 
 
 ################################################################################
 # Learning hyper-parameters
 
-Number of Epochs [int] :                         100
-Learning Rate [float] :                          .1
+Number of Epochs [int] :                         2000
+Learning Rate [float] :                          .001
 
 Epochs between testing [int] :                   10
-
-# PINNs, Discovery mode specific settings
-Epochs between new Collocation Points [int] :    1
-
-
-
-################################################################################
-# Data
-
-Data File [str] :                           Beam_Exp.mat
-Noise Proportion [float] :                  0.5
