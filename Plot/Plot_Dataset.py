@@ -28,7 +28,7 @@ def Load_Dataset(
     second element contains the dataset with added noise. """
 
     # Load data file.
-    Data_Set_File_Path  = "../Data/" + Data_Set_File_Name;
+    Data_Set_File_Path  = "../MATLAB/Data/" + Data_Set_File_Name;
     Data_In             = scipy.io.loadmat(Data_Set_File_Path);
 
     # Fetch spatial, temporal coordinates and the true solution. We cast these

@@ -2,7 +2,6 @@ import numpy as np;
 import torch;
 import math;
 from typing import Tuple, List;
-from sklearn import linear_model;
 
 from Network        import Neural_Network;
 from PDE_Residual   import Evaluate_Derivatives;
