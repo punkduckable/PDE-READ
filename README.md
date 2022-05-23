@@ -37,6 +37,7 @@ The "Extracted PDE maximum term degree" setting specifies $K$. RFE uses an itera
 # Running the code: #
  Once you have selected the appropriate settings, you can run the code by entering the `Code` directory (`cd ./Code`) and running the main file (`Python3 ./main.py`).
 
+ *What to do if you get nan:* `PDE-READ` can use the `LBFGS` optimizer. Unfortunately, PyTorch's `LBFGS` optimizer is known to yield nan (see <https://github.com/pytorch/pytorch/issues/5953>). Using the `LBFGS` optimizer occasionally causes `PDE-READ` to break down and start reporting nan. If this occurs, you should kill `PDE-READ` (in the terminal window, press `Ctrl + C`), and then re-run `PDE-READ.` Since `PDE-READ` randomly samples the collocation points from the problem domain, two runs of `PDE-READ` are identical. Thus, even if you keep the settings the same, re-running `PDE-READ` may avoid the nan issue. If you encounter nan on several successive runs of `PDE-READ,` reduce the learning rate by a factor of $10$ and try again. If all else fails, consider training using another optimizer.
 
 
 # Dependencies: #
