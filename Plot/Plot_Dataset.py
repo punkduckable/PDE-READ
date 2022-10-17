@@ -8,15 +8,17 @@ from    Settings_Reader import Settings_Reader, Settings_Container;
 
 class Data_Container:
     def __init__(   self,
-                    t_points : numpy.array,
-                    x_points : numpy.array,
-                    Data_Set : numpy.array,
-                    Noisy_Data_Set : numpy.array):
+                    t_points        : numpy.array,
+                    x_points        : numpy.array,
+                    Data_Set        : numpy.array,
+                    Noisy_Data_Set  : numpy.array, 
+                    Data_Set_Name   : str):
 
         self.t_points       = t_points;
         self.x_points       = x_points;
         self.Data_Set       = Data_Set;
-        self.Noisy_Data_Set = Noisy_Data_Set;
+        self.Noisy_Data_Set = Noisy_Data_Set
+        self.Data_Set_Name  = Data_Set_Name;
 
 
 
@@ -44,7 +46,8 @@ def Load_Dataset(
     Container = Data_Container( t_points        = t_points,
                                 x_points        = x_points,
                                 Data_Set        = Data_Set,
-                                Noisy_Data_Set  = Noisy_Data_Set);
+                                Noisy_Data_Set  = Noisy_Data_Set,
+                                Data_Set_Name   = Data_Set_File_Name.split('.')[0]);
 
     return Container;
 
@@ -55,10 +58,8 @@ def Plot_Dataset(       Settings    : Settings_Container,
     """ This function plots a dataset. """
 
     # First, set up the figure object.
-    fig = plt.figure(figsize = (9, 7));
-
-    # Second, set the font size.
-    plt.rcParams.update({'font.size': 16});
+    plt.style.use('dark_background')
+    fig = plt.figure();
 
     # Next, construct the set of possible coordinates. grid_t_coords and
     # grid_x_coords are 2d NumPy arrays. Each row of these arrays corresponds to
@@ -72,10 +73,6 @@ def Plot_Dataset(       Settings    : Settings_Container,
     Axes.set_xlabel("time (s)");
     Axes.set_ylabel("position (m)");
 
-    # This forces Python to produce a square plot.
-    Axes.set_aspect('auto', adjustable = 'datalim');
-    Axes.set_box_aspect(1.);
-
     # Set up the colorbar.
     min : float = numpy.min(Data.Noisy_Data_Set);
     max : float = numpy.max(Data.Noisy_Data_Set);
@@ -88,11 +85,8 @@ def Plot_Dataset(       Settings    : Settings_Container,
                     cmap = plt.cm.jet);                     # defines color scheme
     fig.colorbar(ColorMap, ax = Axes, fraction=0.046, pad=0.04, orientation='vertical');
 
-    # Set tight layout (to prevent overlapping... I have no idea why this isn't
-    # a default setting. Matplotlib, you are special kind of awful).
-    fig.tight_layout();
-
-    # Show the plot!
+    # Save, show the plot!
+    plt.savefig("../Figures/" + Data.Data_Set_Name + "_Dataset.png", dpi = 500, transparent = True);
     plt.show();
 
 

@@ -12,7 +12,7 @@ Make_Plot : bool = True;
 def main():
     # Specify settings.
     Data_File_Name      : str   = "Burgers_Sine";
-    Noise_Proportion    : float = 1.0;
+    Noise_Proportion    : float = 0.5;
 
     Num_Train_Examples  : int   = 5000;
     Num_Test_Examples   : int   = 1000;

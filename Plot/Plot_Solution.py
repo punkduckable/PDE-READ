@@ -125,7 +125,7 @@ def Initialize_Axes() -> Tuple[plt.figure, numpy.array]:
     Update_Axes). """
 
     # Set up the figure object.
-    fig = plt.figure(figsize = (9, 7));
+    fig = plt.figure(figsize = (11, 7));
 
     # Approximate solution subplot.
     Axes1 = fig.add_subplot(2, 2, 1);
@@ -242,46 +242,40 @@ def Plot_Solution(
                             Coords                      = Grid_Point_Coords).reshape(n_x, n_t);
 
     # Plot the true solution + color bar.
-    data_min : float = numpy.min(Data.Noisy_Data_Set);
-    data_max : float = numpy.max(Data.Noisy_Data_Set);
+    top_min  : float = numpy.min(Approx_Sol_on_grid);
+    top_max  : float = numpy.max(Approx_Sol_on_grid);
 
     ColorMap0 = Axes[0].contourf(   grid_t_coords,
                                     grid_x_coords,
                                     Data.Noisy_Data_Set,
-                                    levels = numpy.linspace(data_min, data_max, 500),
+                                    levels = numpy.linspace(top_min, top_max, 500),
                                     cmap = plt.cm.jet);
-    fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
+    #fig.colorbar(ColorMap0, ax = Axes[0], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the learned solution + color bar
-    sol_min : float = numpy.min(Approx_Sol_on_grid);
-    sol_max : float = numpy.max(Approx_Sol_on_grid);
-
     ColorMap1 = Axes[1].contourf(   grid_t_coords,
                                     grid_x_coords,
                                     Approx_Sol_on_grid,
-                                    levels = numpy.linspace(sol_min, sol_max, 500),
+                                    levels = numpy.linspace(top_min, top_max, 500),
                                     cmap = plt.cm.jet);
     fig.colorbar(ColorMap1, ax = Axes[1], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the Error between the approx solution and noise-free data set. + color bar.
-    error_min : float = numpy.min(Error_On_Grid);
-    error_max : float = numpy.max(Error_On_Grid);
+    bottom_min  : float = min(numpy.min(Error_On_Grid), numpy.min(Residual_on_Grid));
+    bottom_max  : float = max(numpy.max(Error_On_Grid), numpy.max(Residual_on_Grid));
 
     ColorMap2 = Axes[2].contourf(   grid_t_coords,
                                     grid_x_coords,
                                     Error_On_Grid,
-                                    levels = numpy.linspace(error_min, error_max, 500),
+                                    levels = numpy.linspace(bottom_min, bottom_max, 500),
                                     cmap = plt.cm.jet);
-    fig.colorbar(ColorMap2, ax = Axes[2], fraction=0.046, pad=0.04, orientation='vertical');
+    #fig.colorbar(ColorMap2, ax = Axes[2], fraction=0.046, pad=0.04, orientation='vertical');
 
     # Plot the residual + color bar
-    resid_min : float = numpy.min(Residual_on_Grid);
-    resid_max : float = numpy.max(Residual_on_Grid);
-
     ColorMap3 = Axes[3].contourf(   grid_t_coords,
                                     grid_x_coords,
                                     Residual_on_Grid,
-                                    levels = numpy.linspace(resid_min, resid_max, 500),
+                                    levels = numpy.linspace(bottom_min, bottom_max, 500),
                                     cmap = plt.cm.jet);
     fig.colorbar(ColorMap3, ax = Axes[3], fraction=0.046, pad=0.04, orientation='vertical');
 
@@ -331,5 +325,5 @@ if __name__ == "__main__":
                         Data                        = Data);
 
     # Show the plot and save it!
+    fig.savefig(fname = "../Figures/%s" % Settings.Load_File_Name, transparent = True);
     plt.show();
-    fig.savefig(fname = "../Figures/%s" % Settings.Load_File_Name);

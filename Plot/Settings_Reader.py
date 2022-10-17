@@ -16,7 +16,7 @@ class Settings_Container:
 
 
 ################################################################################
-# Fucntions
+# Functions
 
 def Index_After_Phrase(
         Line_In         : str,
