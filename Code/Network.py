@@ -18,13 +18,13 @@ class Rational(torch.nn.Module):
         # rational function approximation to ReLU. These coefficients are listed
         # in appendix A of the paper.
         self.a = torch.nn.parameter.Parameter(
-                        torch.tensor((1.1915, 1.5957, 0.5, .0218),
+                        torch.tensor((0.0218, 0.5, 1.5957, 1.1915),
                                      dtype = Data_Type,
                                      device = Device));
         self.a.requires_grad_(True);
 
         self.b = torch.nn.parameter.Parameter(
-                        torch.tensor((2.3830, 0.0, 1.0),
+                        torch.tensor((1.0, 0.0, 2.3830),
                                      dtype = Data_Type,
                                      device = Device));
         self.b.requires_grad_(True);
